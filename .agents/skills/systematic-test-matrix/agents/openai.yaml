@@ -1,0 +1,4 @@
+interface:
+  display_name: "Systematic Test Matrix"
+  short_description: "Full POSCursor QA matrix with evidence"
+  default_prompt: "Use $systematic-test-matrix to run all POSCursor test surfaces systematically, read the newest tmp/systematic-test-matrix summary, and report evidence."

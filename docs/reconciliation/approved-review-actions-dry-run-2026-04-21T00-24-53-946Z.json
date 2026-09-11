@@ -1,0 +1,60 @@
+{
+  "generatedAt": "2026-04-21T00:24:53.946Z",
+  "mode": "dry-run",
+  "input": "docs/reconciliation/approved-review-actions.template.json",
+  "results": [
+    {
+      "id": "example-1",
+      "action": "reopen_loan_to_active",
+      "approved_by": "reviewer-name",
+      "result": {
+        "rowCount": 1,
+        "target": "replace-with-loan-id",
+        "simulated": true
+      }
+    },
+    {
+      "id": "example-2",
+      "action": "set_schedule_status",
+      "approved_by": "reviewer-name",
+      "result": {
+        "rowCount": 1,
+        "target": "replace-with-schedule-id",
+        "status": "paid",
+        "simulated": true
+      }
+    },
+    {
+      "id": "example-3",
+      "action": "link_payment_schedule",
+      "approved_by": "reviewer-name",
+      "result": {
+        "rowCount": 1,
+        "target": "replace-with-payment-id",
+        "schedule_id": "replace-with-schedule-id",
+        "simulated": true
+      }
+    },
+    {
+      "id": "example-4",
+      "action": "reverse_savings_overcredit",
+      "approved_by": "reviewer-name",
+      "result": {
+        "rowCount": 1,
+        "target": "replace-with-borrower-id",
+        "amount": 100,
+        "simulated": true
+      }
+    },
+    {
+      "id": "example-5",
+      "action": "add_manual_note_only",
+      "approved_by": "reviewer-name",
+      "result": {
+        "rowCount": 0,
+        "target": "example-5",
+        "note": "No-op documented action"
+      }
+    }
+  ]
+}

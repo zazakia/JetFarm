@@ -1,0 +1,62 @@
+{
+  "generatedAt": "2026-06-19T08:33:33.871Z",
+  "targetUrl": "https://YOUR_SUPABASE_PROJECT.supabase.co",
+  "backupDir": "backups\\production-before-agap-reset-2026-06-19T08-32-34-299Z",
+  "beforeCounts": {
+    "app_action_logs": 79,
+    "app_collection_logs": 0,
+    "app_remittances": 0,
+    "app_savings_transactions": 12,
+    "app_loan_penalties": 0,
+    "app_payment_schedules": 914,
+    "app_payments": 33,
+    "app_loans": 333,
+    "app_borrowers": 329,
+    "collection_groups": 0,
+    "app_collectors": 8
+  },
+  "afterClearCounts": {
+    "app_action_logs": 0,
+    "app_collection_logs": 0,
+    "app_remittances": 0,
+    "app_savings_transactions": 0,
+    "app_loan_penalties": 0,
+    "app_payment_schedules": 0,
+    "app_payments": 0,
+    "app_loans": 0,
+    "app_borrowers": 0,
+    "collection_groups": 0,
+    "app_collectors": 0
+  },
+  "verification": {
+    "expected": {
+      "borrowers": 298,
+      "loans": 371,
+      "payments": 490
+    },
+    "actual": {
+      "borrowers": 298,
+      "loans": 371,
+      "payments": 490
+    },
+    "overpaidLoans": 0,
+    "borrowersWithMultipleActive": 12
+  },
+  "planSummary": {
+    "sourceSummaryPath": "docs\\SUMMARY.xlsx",
+    "sourceCollectionPath": "E:/Users/HI/Downloads/Spreadsheets/COLLECTION SHEET.xlsx",
+    "sourceCollectionSheets": 90,
+    "parsedSheets": 90,
+    "borrowers": 298,
+    "borrowersWithLoans": 289,
+    "loans": 371,
+    "payments": 490,
+    "rollovers": 64,
+    "totalPrincipal": 5481500,
+    "totalInterest": 1096300,
+    "totalSavings": 1096300,
+    "totalReceivable": 7748300,
+    "totalStatedBalance": 1589530,
+    "issueCount": 465
+  }
+}

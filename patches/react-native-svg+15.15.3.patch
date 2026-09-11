@@ -1,0 +1,70 @@
+diff --git a/node_modules/react-native-svg/lib/commonjs/web/utils/prepare.js b/node_modules/react-native-svg/lib/commonjs/web/utils/prepare.js
+index d57e7c8..c62f325 100644
+--- a/node_modules/react-native-svg/lib/commonjs/web/utils/prepare.js
++++ b/node_modules/react-native-svg/lib/commonjs/web/utils/prepare.js
+@@ -46,9 +46,9 @@ const prepare = (self, props = self.props) => {
+     ...rest
+   };
+   if (origin != null) {
+-    clean['transform-origin'] = origin.toString().replace(',', ' ');
++    clean['transformOrigin'] = origin.toString().replace(',', ' ');
+   } else if (originX != null || originY != null) {
+-    clean['transform-origin'] = `${originX || 0} ${originY || 0}`;
++    clean['transformOrigin'] = `${originX || 0} ${originY || 0}`;
+   }
+ 
+   // we do it like this because setting transform as undefined causes error in web
+diff --git a/node_modules/react-native-svg/lib/module/web/utils/prepare.js b/node_modules/react-native-svg/lib/module/web/utils/prepare.js
+index 113eb2b..7d9d45e 100644
+--- a/node_modules/react-native-svg/lib/module/web/utils/prepare.js
++++ b/node_modules/react-native-svg/lib/module/web/utils/prepare.js
+@@ -40,9 +40,9 @@ export const prepare = (self, props = self.props) => {
+     ...rest
+   };
+   if (origin != null) {
+-    clean['transform-origin'] = origin.toString().replace(',', ' ');
++    clean['transformOrigin'] = origin.toString().replace(',', ' ');
+   } else if (originX != null || originY != null) {
+-    clean['transform-origin'] = `${originX || 0} ${originY || 0}`;
++    clean['transformOrigin'] = `${originX || 0} ${originY || 0}`;
+   }
+ 
+   // we do it like this because setting transform as undefined causes error in web
+diff --git a/node_modules/react-native-svg/lib/typescript/web/utils/prepare.d.ts b/node_modules/react-native-svg/lib/typescript/web/utils/prepare.d.ts
+index 6fdda98..733cd23 100644
+--- a/node_modules/react-native-svg/lib/typescript/web/utils/prepare.d.ts
++++ b/node_modules/react-native-svg/lib/typescript/web/utils/prepare.d.ts
+@@ -21,7 +21,7 @@ export declare const prepare: <T extends BaseProps>(self: WebShape<T>, props?: R
+     transform?: string;
+     gradientTransform?: string;
+     patternTransform?: string;
+-    'transform-origin'?: string;
++    'transformOrigin'?: string;
+     href?: RNImageProps["source"] | string | null;
+     style?: object;
+     ref?: unknown;
+diff --git a/node_modules/react-native-svg/src/web/utils/prepare.ts b/node_modules/react-native-svg/src/web/utils/prepare.ts
+index 4106784..a021068 100644
+--- a/node_modules/react-native-svg/src/web/utils/prepare.ts
++++ b/node_modules/react-native-svg/src/web/utils/prepare.ts
+@@ -50,7 +50,7 @@ export const prepare = <T extends BaseProps>(
+     transform?: string;
+     gradientTransform?: string;
+     patternTransform?: string;
+-    'transform-origin'?: string;
++    'transformOrigin'?: string;
+     href?: RNImageProps['source'] | string | null;
+     style?: object;
+     ref?: unknown;
+@@ -71,9 +71,9 @@ export const prepare = <T extends BaseProps>(
+   };
+ 
+   if (origin != null) {
+-    clean['transform-origin'] = origin.toString().replace(',', ' ');
++    clean['transformOrigin'] = origin.toString().replace(',', ' ');
+   } else if (originX != null || originY != null) {
+-    clean['transform-origin'] = `${originX || 0} ${originY || 0}`;
++    clean['transformOrigin'] = `${originX || 0} ${originY || 0}`;
+   }
+ 
+   // we do it like this because setting transform as undefined causes error in web

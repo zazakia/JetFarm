@@ -1,0 +1,108 @@
+# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
+
+# dependencies
+node_modules/
+
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Environment variables (never commit secrets)
+.env
+.env.local
+.env.production
+
+# Native
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Metro
+.metro-health-check*
+
+# debug
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# macOS
+.DS_Store
+*.pem
+
+# local env files
+.env*
+!.env.example
+!.env.neon.example
+
+# typescript
+*.tsbuildinfo
+
+# generated native folders
+/ios
+/android
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+/playwright/.auth/
+
+# Build artifacts
+*.apk
+
+# Logs and temporary files
+*.log
+*.txt
+*.xml
+tmp/
+coverage/
+builds/
+output/
+scratch/
+status.json
+comparison_report.json
+excel_dump.json
+green_payments.json
+infinity_backup_*.json
+auth_state_debug.png
+full_dashboard_debug.png
+logout_btn_debug.png
+DCM-as-of-march-21.xlsx
+artifacts/
+backups/
+data/
+app_loans_full.json
+excel_loans.json
+
+# Local Netlify folder
+.netlify
+.vercel
+
+# Local OMX runtime state
+.omx/
+.gradle-codex/
+.gradle-user-home/
+
+# Local git worktrees
+.worktrees/
+.main-ship-wt/
+
+# Local Supabase runtime folders
+supabase/.branches/
+supabase/.temp/
+
+# Temporary sisyphus and test files
+.sisyphus/
+.tmp-*
+.tmp_issues*
+*.pdf
+# Allow Crispy King audit PDF
+!docs/crispyking/*.pdf
+

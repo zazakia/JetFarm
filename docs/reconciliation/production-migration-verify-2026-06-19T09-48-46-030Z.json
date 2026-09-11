@@ -1,0 +1,233 @@
+{
+  "generatedAt": "2026-06-19T09:48:46.030Z",
+  "targetUrl": "https://YOUR_SUPABASE_PROJECT.supabase.co",
+  "keyType": "service_role",
+  "counts": {
+    "app_collectors": 3,
+    "app_borrowers": 297,
+    "app_loans": 370,
+    "app_payments": 489,
+    "app_payment_schedules": 7400,
+    "app_savings_transactions": 0,
+    "collection_groups": 0
+  },
+  "expectedFromExcelPlan": {
+    "sourceSummaryPath": "docs\\SUMMARY.xlsx",
+    "sourceCollectionPath": "E:/Users/HI/Downloads/Spreadsheets/COLLECTION SHEET.xlsx",
+    "sourceCollectionSheets": 90,
+    "parsedSheets": 90,
+    "borrowers": 298,
+    "borrowersWithLoans": 289,
+    "loans": 371,
+    "payments": 490,
+    "rollovers": 64,
+    "totalPrincipal": 5481500,
+    "totalInterest": 1096300,
+    "totalSavings": 1096300,
+    "totalReceivable": 7748300,
+    "totalStatedBalance": 1589530,
+    "issueCount": 465
+  },
+  "summary": {
+    "issues": {
+      "duplicateMemberIds": 0,
+      "duplicateBorrowerNames": 9,
+      "duplicateLoanNumbers": 1,
+      "duplicatePayments": 0,
+      "orphanLoans": 0,
+      "orphanPayments": 0,
+      "orphanSchedules": 0,
+      "overpaidLoans": 0,
+      "borrowersWithMultipleActiveLoans": 12
+    }
+  },
+  "samples": {
+    "duplicateMemberIds": [],
+    "duplicateBorrowerNames": [
+      {
+        "key": "marilou g respicio",
+        "count": 2,
+        "ids": [
+          "cf0ab74d-e6d2-4a13-9180-ebdbbd61aa99",
+          "ae577e6b-44d1-4e7a-a421-9057c64ef93d"
+        ]
+      },
+      {
+        "key": "chita l sanchez",
+        "count": 2,
+        "ids": [
+          "b3e9c537-43c8-4221-aaa5-d5c72436f106",
+          "512c2a93-d833-4fc9-b2b2-29ceb779cb01"
+        ]
+      },
+      {
+        "key": "girlie g carson",
+        "count": 2,
+        "ids": [
+          "538e693a-8183-43e8-b9bf-573064482581",
+          "0cbc8a9a-d024-4c67-b45e-1007e496562d"
+        ]
+      },
+      {
+        "key": "divina s gabriel",
+        "count": 2,
+        "ids": [
+          "feae5d89-dcdb-4087-862e-634cfb674c89",
+          "d4521b44-4bd0-4981-addb-b1906db304a3"
+        ]
+      },
+      {
+        "key": "analin m hidalgo",
+        "count": 2,
+        "ids": [
+          "0725d89d-8ad5-45d2-87d8-a2292c0cb0bd",
+          "c2ef86e1-b7a2-4c23-9918-f133cb0dbce2"
+        ]
+      },
+      {
+        "key": "sinamar l tamayo",
+        "count": 2,
+        "ids": [
+          "4e0244f4-be9c-432c-a10f-7a825ca2b80a",
+          "97f893b4-30b9-4afe-97cb-a9f513543a7f"
+        ]
+      },
+      {
+        "key": "anita u capinpin",
+        "count": 2,
+        "ids": [
+          "4bb10b44-9c00-4503-ba58-9e19899ec912",
+          "f92cadee-cbef-49fa-9bad-3c8f558ef78e"
+        ]
+      },
+      {
+        "key": "marichu t saludo",
+        "count": 2,
+        "ids": [
+          "3d62543d-b266-4146-8be9-88ab068d67b0",
+          "000f9ac6-fae0-4fb6-b5b6-ee14531e81ee"
+        ]
+      },
+      {
+        "key": "adela s agpaoa",
+        "count": 2,
+        "ids": [
+          "6e2486f1-87d3-40d7-9deb-8aad016397d3",
+          "91b942bf-48b3-47b8-9fe4-04161d50b3a2"
+        ]
+      }
+    ],
+    "duplicateLoanNumbers": [
+      {
+        "key": "AG-AG00072-C1-2025-11-30",
+        "count": 2,
+        "ids": [
+          "c6724cf5-7c81-4a94-9b79-a68ac38a59c0",
+          "167d240e-f02d-4f66-839c-a7a50cc8f8ab"
+        ]
+      }
+    ],
+    "duplicatePayments": [],
+    "orphanPayments": [],
+    "orphanSchedules": [],
+    "multipleActiveByBorrower": [
+      {
+        "key": "728af9e3-a8be-4029-be63-b2f64aaa55d4",
+        "count": 2,
+        "ids": [
+          "8110ffc7-4ad8-4b17-aded-808e06e5d755",
+          "e0bde937-41c6-491f-a946-452572244388"
+        ]
+      },
+      {
+        "key": "36821d8f-f51f-49f8-8d07-28537cf14357",
+        "count": 2,
+        "ids": [
+          "9f4abd69-e38f-4ae5-ab25-c2a97550c887",
+          "e7e75917-8059-463e-ac36-00ff7ff29d31"
+        ]
+      },
+      {
+        "key": "6c20d314-ea15-431e-9e09-012587b06330",
+        "count": 2,
+        "ids": [
+          "866879e4-fb55-4e2b-914e-6b1a90cf16c6",
+          "33dcf2d4-fa98-4db0-982b-618d7bccd474"
+        ]
+      },
+      {
+        "key": "fe5e348b-37c2-40cb-a5cd-8a54674f846e",
+        "count": 2,
+        "ids": [
+          "cb59774b-f064-4f3f-97b8-5d79c8f0634c",
+          "c4ff07ac-e4b6-474a-8490-11fa2006b982"
+        ]
+      },
+      {
+        "key": "512d01e6-77a9-466e-9b64-5a2ba3f8fb16",
+        "count": 2,
+        "ids": [
+          "8489a690-4e2f-464c-b5af-1eda467b385e",
+          "2f4eccfb-a85d-46a2-ba56-0f690484cf53"
+        ]
+      },
+      {
+        "key": "3e599a03-9227-47a9-b4db-9f72b0f4c0a8",
+        "count": 2,
+        "ids": [
+          "c101a7ef-f75c-4a12-b26a-f4c5c4f31ba5",
+          "47d5849f-a32f-442d-9d3d-6d9e20bc8a1c"
+        ]
+      },
+      {
+        "key": "555857dd-d403-470d-b764-b5a3280dd5e2",
+        "count": 2,
+        "ids": [
+          "e13cea79-260d-4d7f-81bf-72b52ac0e49d",
+          "41ea4f02-ff3f-4150-8ce4-569247fcf543"
+        ]
+      },
+      {
+        "key": "eead2989-085e-40fa-9b8b-04e4bf6fe0c3",
+        "count": 2,
+        "ids": [
+          "c74bbae9-5d15-4e9c-b405-c8613ed23d68",
+          "1352af5c-47f5-4e44-8848-cffa35c4ce56"
+        ]
+      },
+      {
+        "key": "93cda9a4-8cfe-4678-b4dd-d885ea73e04c",
+        "count": 2,
+        "ids": [
+          "8f86a0a4-8858-41a5-8491-899731780e97",
+          "b3991326-19f6-4bae-b229-73d9a581bb8b"
+        ]
+      },
+      {
+        "key": "0cf3cac7-740e-42c4-928a-27a5143b1f67",
+        "count": 2,
+        "ids": [
+          "ef3535b0-719d-47ad-a0f1-1c370d9465ab",
+          "8e0fadb4-b6a5-4833-9763-c0d6040bbeb6"
+        ]
+      },
+      {
+        "key": "485c14fc-a31f-4bd6-b0f0-b6cab24ec176",
+        "count": 2,
+        "ids": [
+          "256fad75-d5bc-476a-9653-93d105fa76ab",
+          "c926736b-4e94-4f70-8de5-f51a006059c8"
+        ]
+      },
+      {
+        "key": "6cd46ee8-f3d2-48d9-a8e7-7b44fdcfc108",
+        "count": 2,
+        "ids": [
+          "e5ea1580-54ac-4daf-8d25-ab8a8bea9c62",
+          "d82ca65e-24f9-42a3-8e4d-31cf3312c7e1"
+        ]
+      }
+    ],
+    "overpaidLoans": []
+  }
+}

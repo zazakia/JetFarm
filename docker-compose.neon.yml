@@ -1,0 +1,16 @@
+services:
+  neon-db:
+    image: neondatabase/neon_local:latest
+    container_name: poscursor-neon-local
+    restart: unless-stopped
+    ports:
+      # Host port 45532 avoids collisions with local Postgres/Supabase on 5432.
+      - "${NEON_LOCAL_PORT:-45532}:5432"
+    environment:
+      NEON_API_KEY: ${NEON_API_KEY}
+      NEON_PROJECT_ID: ${NEON_PROJECT_ID}
+      # Use BRANCH_ID to connect to an existing Neon branch.
+      # For ephemeral branches, replace this with:
+      # PARENT_BRANCH_ID: ${PARENT_BRANCH_ID}
+      BRANCH_ID: ${BRANCH_ID}
+

@@ -1,0 +1,368 @@
+{
+  "generatedAt": "2026-06-15T19:03:37.213Z",
+  "targetUrl": "https://YOUR_SUPABASE_PROJECT.supabase.co",
+  "keyType": "publishable",
+  "counts": {
+    "app_collectors": 8,
+    "app_borrowers": 329,
+    "app_loans": 333,
+    "app_payments": 33,
+    "app_payment_schedules": 914,
+    "app_savings_transactions": 12,
+    "collection_groups": 0
+  },
+  "expectedFromExcelPlan": {
+    "sourceSummaryPath": "docs\\SUMMARY.xlsx",
+    "sourceCollectionPath": "E:/Users/HI/Downloads/Spreadsheets/COLLECTION SHEET.xlsx",
+    "sourceCollectionSheets": 90,
+    "parsedSheets": 90,
+    "borrowers": 298,
+    "borrowersWithLoans": 289,
+    "loans": 371,
+    "payments": 490,
+    "rollovers": 64,
+    "totalPrincipal": 5481500,
+    "totalInterest": 1096300,
+    "totalSavings": 1096300,
+    "totalReceivable": 7748300,
+    "totalStatedBalance": 1589530,
+    "issueCount": 465
+  },
+  "summary": {
+    "issues": {
+      "duplicateMemberIds": 0,
+      "duplicateBorrowerNames": 0,
+      "duplicateLoanNumbers": 50,
+      "duplicatePayments": 0,
+      "orphanLoans": 0,
+      "orphanPayments": 2,
+      "orphanSchedules": 0,
+      "overpaidLoans": 0,
+      "borrowersWithMultipleActiveLoans": 0
+    }
+  },
+  "samples": {
+    "duplicateMemberIds": [],
+    "duplicateBorrowerNames": [],
+    "duplicateLoanNumbers": [
+      {
+        "key": "L-BC-0007",
+        "count": 6,
+        "ids": [
+          "e2a18b3d-5743-43ee-88e9-0babf2b462a2",
+          "75c14fe0-7da6-494e-9578-836cf42ba23d",
+          "ddd7ec94-9c70-4775-8dc8-a490b449beee",
+          "dec6af57-7548-4024-bdc8-ac896c952058",
+          "2dbeae00-3332-43a4-90d4-b6bdb50546f6",
+          "0627dbf1-0c30-4147-94d1-3aa7ee8c83cc"
+        ]
+      },
+      {
+        "key": "L-BC-0008",
+        "count": 6,
+        "ids": [
+          "988819b7-c423-4029-aff8-291e0c561fd2",
+          "77947976-420c-42ff-ad8f-2de959486b52",
+          "14bc8f33-4225-44c0-81ca-1f11d89ab5fc",
+          "a5c7366d-0cd5-4923-ad86-65705d73022b",
+          "fbe467fd-0a02-490f-b7d5-87ac9485a8b1",
+          "090b4399-a33a-49cc-8f6a-c553fa599e97"
+        ]
+      },
+      {
+        "key": "L-BC-0010",
+        "count": 6,
+        "ids": [
+          "9f9dbae5-91d8-4a6c-aa84-3f576c6eb3e0",
+          "0fe22543-52d5-4c69-be71-93ed3d8c3f2f",
+          "ee06f9f7-6f7e-4706-9bb9-29cba393173a",
+          "fbcde5f0-60bb-4441-82ae-6745aca40edc",
+          "04fb9b7b-ecf9-4fa9-b567-02eed679db15",
+          "d4d35a4d-419b-426c-af1e-fbcde306c834"
+        ]
+      },
+      {
+        "key": "L-BC-0011",
+        "count": 6,
+        "ids": [
+          "52856f2b-2525-454d-b30d-3ec4b94665da",
+          "c64b6d30-89a5-46ec-8a4a-e8641fe1be90",
+          "93547e7e-19ff-4768-a72d-963d3c39de84",
+          "b059fc78-3b4a-4d4b-8476-3213c1dc952c",
+          "7b6958f0-52f1-44e7-b84d-48703b2e4018",
+          "29b9752a-61ae-449a-9132-7d7be0138441"
+        ]
+      },
+      {
+        "key": "L-BC-0012",
+        "count": 6,
+        "ids": [
+          "47eba1c0-aa03-4d4b-b4c7-442edc53932f",
+          "531b51a2-8849-4b75-ae13-e8be3bc49f43",
+          "63fd5a94-38c7-40cd-9347-bb31773a3fa3",
+          "8f4e40be-aff5-4228-a90b-c154c32d59af",
+          "c51301ba-adeb-4f80-af76-c53bcf0b927e",
+          "2afe365e-3fee-4d87-b790-ee1c8d276d93"
+        ]
+      },
+      {
+        "key": "L-BC-0013",
+        "count": 6,
+        "ids": [
+          "8ea449ab-5f06-4358-bac9-4f9a137e1609",
+          "aa5de3d5-b0c3-4d00-8883-bbe61a0a01c0",
+          "997207ac-0cca-4650-a72b-3fea2c8ef68c",
+          "650d51fc-96c0-46be-a12c-37c2df77793f",
+          "13085710-df7e-48f8-92d5-93aeaaa7a9c8",
+          "d5669455-81b4-4c71-a0d2-fddb0d33781a"
+        ]
+      },
+      {
+        "key": "L-BC-0014",
+        "count": 6,
+        "ids": [
+          "0ba1e2aa-3dfa-4c76-a387-0ff41a515f98",
+          "f6101273-69a4-4ce5-8dcc-205141c6341f",
+          "55a6bf3d-987e-485e-b3c7-75f8caed6295",
+          "2ec40c26-0971-406b-a603-25b63c3beca2",
+          "7783a834-ad44-46c2-b244-e85f66687630",
+          "d31d6d24-a015-431d-8975-3ba3e1241fac"
+        ]
+      },
+      {
+        "key": "L-BC-0015",
+        "count": 6,
+        "ids": [
+          "ca148bce-c147-4fc5-9418-39d57c805eaa",
+          "838e2a8d-ecb4-4274-a251-ff946d80cb77",
+          "c15bd2cf-783c-42e2-822f-a1669e84ba35",
+          "5b9e81f6-86ea-4312-84b2-bb31e17d8b57",
+          "3098a421-d8fe-41b4-b1a7-eb4157aa96f3",
+          "2ce0116a-a353-4437-93aa-90365cb52ead"
+        ]
+      },
+      {
+        "key": "L-BC-0016",
+        "count": 6,
+        "ids": [
+          "e7558802-1f93-4ae1-a8b0-b2d4da43a64c",
+          "b3472f5f-d7ac-4e22-a63c-1b42dd361179",
+          "33863a7e-7612-4133-a94c-7aac097fc8a4",
+          "fc436501-9bcd-4afe-aad6-63b40c000dfd",
+          "ce8e09eb-f481-400f-aee4-526fa1b20fe8",
+          "eff82d99-0ebe-4016-8bd0-e0e4b53067c8"
+        ]
+      },
+      {
+        "key": "L-BC-0017",
+        "count": 6,
+        "ids": [
+          "9dea5548-2560-4198-8ff1-d229628a1482",
+          "c2bb6396-d9e0-4c5e-a202-94ee5251f1c5",
+          "4e29176b-8143-49dc-81f8-6bcd0b6639a9",
+          "23f9c028-f7e9-41b8-968c-a1525c296d4e",
+          "b35bf320-5873-42a7-b5d3-dd23f22b71cd",
+          "00125762-cc35-40ad-afa4-939e8f727ebf"
+        ]
+      },
+      {
+        "key": "L-BC-0018",
+        "count": 6,
+        "ids": [
+          "a5858c60-c40e-4b6a-934b-e8ab32c0a5a7",
+          "b9f48f9e-3c4f-423e-bd0f-8806d6f355e5",
+          "fe56ef80-f88d-46e9-ad4b-5006e26c4719",
+          "60687138-57c1-4fc8-a471-b8d0d3adbca9",
+          "abd28b68-1375-4918-a1ff-e32be132a001",
+          "42d9d147-13b8-49f3-b84c-26762f8371dc"
+        ]
+      },
+      {
+        "key": "L-BC-0019",
+        "count": 6,
+        "ids": [
+          "d219119c-3f62-4b5b-9f28-09ea1bf8f169",
+          "f6fd7648-6ea7-46d6-a311-f9e96d7f77a5",
+          "23400569-764e-4b66-8728-a9c601ae0c4e",
+          "7ac54ff9-6ed3-4c9f-af4a-8a5df3da244a",
+          "fbe8a045-1c69-496b-bb64-46f16651e5a4",
+          "9927de18-452f-441c-91b8-b6af86a6a8b0"
+        ]
+      },
+      {
+        "key": "L-BC-0020",
+        "count": 6,
+        "ids": [
+          "dc5305c9-19ee-4f72-85a6-928fcc09ba3c",
+          "f32c7412-0b88-41f0-a840-4f053b00ee53",
+          "a60e4a1e-3154-4d61-ab47-ce58a3abca28",
+          "420782aa-8747-4812-b1d2-76ada4a96532",
+          "c5f61a21-e296-4ff1-9c7e-970a41ceb49b",
+          "d13157ca-9eb9-4f5a-b214-2356acc9538b"
+        ]
+      },
+      {
+        "key": "L-BC-0021",
+        "count": 6,
+        "ids": [
+          "b75aea2e-19ba-4b4b-98fe-91e5ffad30cc",
+          "92ecaa13-cda0-4904-90cb-1a83a3ca7fc1",
+          "e680f030-95b8-4654-b484-ebc843fdfc1e",
+          "25bf8586-96ac-44a0-a42c-664f38f88689",
+          "e7cf4030-2e6a-4681-aea4-e0c2ac91c098",
+          "ebb61105-a348-4f4c-a4b8-609b30e1e7b8"
+        ]
+      },
+      {
+        "key": "L-BC-0022",
+        "count": 6,
+        "ids": [
+          "c781cdb8-6cb3-4f0e-8f79-922afcef125e",
+          "af7a4fe2-86de-4c3b-a749-04e1dcd5bea5",
+          "1b84aca9-7f01-4922-95fb-0128b066683b",
+          "901dbde1-b28a-44c8-8971-fec50a9978f1",
+          "6dbe6a82-b7c2-4888-afdc-1f45cbe7a8d5",
+          "815d38d4-518f-49af-886b-484556637fed"
+        ]
+      },
+      {
+        "key": "L-BC-0023",
+        "count": 6,
+        "ids": [
+          "c1c2634d-ed1b-43c9-b271-c20a7dbc0312",
+          "a65b2a94-e16c-4a7d-a64b-115e7467c7d4",
+          "8e500bb0-0c89-4351-a562-dd8ff5f0e257",
+          "0efd1165-5fb2-4641-a1b2-9da54548eb2b",
+          "ff05d9e4-4969-4e00-a3a2-91122c239782",
+          "f5709682-e208-4ba8-8a5d-7019e2d02edf"
+        ]
+      },
+      {
+        "key": "L-BC-0024",
+        "count": 6,
+        "ids": [
+          "45ad9cdc-3e44-4350-954c-d75089e176ff",
+          "09b2d5ed-d6fe-4e0b-b989-777512ffe5ca",
+          "2590027b-7057-45cb-b921-09327e4d325a",
+          "a6466eb7-ad4c-4c63-b576-3b60900140c6",
+          "dc8782f8-ff4d-46e3-9766-4398a0c732fe",
+          "0c3bf3ef-e059-4342-a4f2-ef6ba2fc207a"
+        ]
+      },
+      {
+        "key": "L-BC-0025",
+        "count": 6,
+        "ids": [
+          "b050ca7a-bc19-47a9-bdd3-33c6c8b78c9f",
+          "2df83553-a150-4abf-9a85-dfbb68bbb88e",
+          "f7cf6f55-d82e-491c-8ada-e8afd3156ae3",
+          "1eb32c49-d975-40d4-acc8-c28c167f8193",
+          "3ea0591e-81df-4ca5-a61d-f1c42b718baa",
+          "3e0369a6-720d-403a-9f6f-40a2a41db1c6"
+        ]
+      },
+      {
+        "key": "L-MO-0026",
+        "count": 6,
+        "ids": [
+          "c5850444-c510-49b4-9903-0f49e823e3ff",
+          "fd9d68fd-93ca-47e3-be70-a17cf1ba7fdd",
+          "291a192e-f412-47d4-9967-00883b88341d",
+          "9971883a-eeb8-45fc-9742-6654e4b2a4e1",
+          "71f2f5fb-408f-4cb5-a0ba-e07927d4ec05",
+          "dafcd0fc-b5fe-4a39-9c95-21587ee0bd11"
+        ]
+      },
+      {
+        "key": "L-MO-0027",
+        "count": 6,
+        "ids": [
+          "22832043-29da-453c-bf0e-9a8055a0620c",
+          "281867c0-a7bb-41bd-9411-d65a547e1c6c",
+          "1020a33b-02b5-4055-b2ca-01d41b221e22",
+          "2bd38685-dca0-4b95-9615-3e64589ae092",
+          "52afbe58-2d1f-45ff-9f29-f024cd67f856",
+          "11316906-232c-40fd-a114-4e637d64dfd2"
+        ]
+      },
+      {
+        "key": "L-MO-0028",
+        "count": 6,
+        "ids": [
+          "05c9f71b-e3c0-4d33-baca-df9a37ed5320",
+          "f12fd579-a76b-40bd-84b7-4617562888b3",
+          "3039b224-0569-4e5f-8fc9-1dd982bb3ac9",
+          "72a7a6e6-705e-4de8-bdd5-4e17bc1a7a8b",
+          "b8fb9998-56f0-43fd-8274-bbf9d0e47160",
+          "5a071317-9fb2-4b5e-a4c3-874badebdf98"
+        ]
+      },
+      {
+        "key": "L-MO-0029",
+        "count": 6,
+        "ids": [
+          "7eadc513-d368-460f-9d9d-208655dccd2d",
+          "c94a99b6-81f1-4c61-9275-4b1c19181645",
+          "94e88ee3-e347-4b26-9e55-80cf53c23b47",
+          "36ada73e-c3a4-47a0-87d0-ab8601a5cf8d",
+          "6d98b02e-8bbc-44c5-96ef-6f5b11faf6d5",
+          "44940050-742a-4c87-9f99-631a9f5e3c7a"
+        ]
+      },
+      {
+        "key": "L-MO-0030",
+        "count": 6,
+        "ids": [
+          "250385d1-16cd-487b-a108-cf33499ad364",
+          "d956bafb-34ad-44c5-a067-6f1435d7b91f",
+          "ac43d560-12d3-4f17-8854-c56fe674c479",
+          "74689f3a-3b41-4d73-a875-e609d10e179d",
+          "31f23526-1bf8-4f92-89ea-325923e768eb",
+          "24773f01-b77a-4d88-9f57-b1d75f7b4373"
+        ]
+      },
+      {
+        "key": "L-MO-0031",
+        "count": 6,
+        "ids": [
+          "5caa7198-8890-4e3e-8603-48c9522a423e",
+          "8e6d003a-02f6-412c-b49b-006c42a5d39d",
+          "30cd5eb1-83d0-4d1f-baca-faeb7c5f3d16",
+          "9fcb7026-c327-4c0e-abca-704f77e66740",
+          "e6c70564-3e9e-492c-9e33-a9072460e99c",
+          "192ecc29-95fa-4e0a-be3f-0ecced56e973"
+        ]
+      },
+      {
+        "key": "L-MO-0032",
+        "count": 6,
+        "ids": [
+          "986f3600-f881-4ac3-a523-3fd943ddffe1",
+          "169031e2-8116-4de4-bf1c-994c8dcb33e2",
+          "7e506fbd-8160-483d-a698-0d67e3b478f4",
+          "5544ffa0-ffbe-4a78-8681-a85d22309119",
+          "69fc9ccd-9071-4a88-92af-0a119e30941b",
+          "b90e71cb-75f0-4e13-96b8-f5b5026351a8"
+        ]
+      }
+    ],
+    "duplicatePayments": [],
+    "orphanPayments": [
+      {
+        "id": "b2455690-b3b4-46d7-b656-ed33a7470a02",
+        "loan_id": "8127e7b3-b4e3-4fcd-be5b-ceef128c7e29",
+        "amount": 1011.1666666666666,
+        "payment_date": "2026-04-18T05:42:55.307+00:00"
+      },
+      {
+        "id": "9a5c3ad4-9142-43fc-a94e-bdc1d38bb6d8",
+        "loan_id": "3f591fe5-513d-433f-8f49-a146aea4bc15",
+        "amount": 1011.1666666666666,
+        "payment_date": "2026-04-18T05:42:52.882+00:00"
+      }
+    ],
+    "orphanSchedules": [],
+    "multipleActiveByBorrower": [],
+    "overpaidLoans": []
+  }
+}

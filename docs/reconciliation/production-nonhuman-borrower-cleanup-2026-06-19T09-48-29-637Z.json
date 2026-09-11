@@ -1,0 +1,67 @@
+{
+  "generatedAt": "2026-06-19T09:48:29.637Z",
+  "targetUrl": "https://YOUR_SUPABASE_PROJECT.supabase.co",
+  "mode": "dry-run",
+  "beforeCounts": {
+    "borrowers": 298,
+    "loans": 371,
+    "payments": 490,
+    "schedules": 7420,
+    "savings": 0
+  },
+  "candidates": [
+    {
+      "id": "8b6845e3-302e-4fea-91b1-32f03aee67cb",
+      "full_name": "Overdue Balance",
+      "first_name": "Overdue",
+      "last_name": "Balance",
+      "group": "SAN DIONISIO",
+      "area": null,
+      "reasons": [
+        "pattern:\\bbalance\\b"
+      ],
+      "loanIds": [
+        "a5a96425-f047-45fc-9fe2-201c5326b463"
+      ],
+      "paymentIds": [
+        "a2cc6698-8a20-4913-bd8f-23be5a6ad0f9"
+      ],
+      "scheduleIds": [
+        "9796c2dc-0fa4-4f49-b23c-32b131acc51c",
+        "d6941daa-18c2-4d71-b1e1-e5e8bea2ba59",
+        "23777873-aa40-4e24-a8ce-fa6f53562aa3",
+        "6d7c0413-3ae6-4996-b0be-f762d8129d01",
+        "9bd5cf3b-e549-4dd1-8858-f0f585e55c3f",
+        "c644a5a2-048c-410e-98b2-2ea0dc450f8f",
+        "7b227c02-756f-4680-81f9-815e53a8b818",
+        "61da2891-6edc-4a49-85b7-cf7bea8ad231",
+        "95935ffe-67a8-4a40-9387-3ca7f54363d2",
+        "a4aa4af8-ccfa-419b-88ab-9bb72bbc217d",
+        "b06ced88-e4c2-43d0-8a2c-ae1ca8d06031",
+        "1b135c8f-ef14-46b4-ba48-7f7a1c325df7",
+        "85eefec0-8a2c-4a73-a2f5-afaeb867509a",
+        "0d3493ce-7a99-4373-bd8b-a5d3dcbdcbdf",
+        "fd5eb5a6-a798-4f2f-9fab-b21ca0b91ec5",
+        "26545785-c179-4bab-a714-d3dcdc4f2712",
+        "c8457b9f-b781-45df-aece-5b7782901e13",
+        "d8bdd779-a6ea-41b3-a374-4bdd66deafb0",
+        "90f5e1fc-9045-497f-b7ad-56b809af033d",
+        "a48817e8-cf53-4d16-9658-823cabb6b9ec"
+      ],
+      "savingsIds": [],
+      "loanCount": 1,
+      "paymentCount": 1,
+      "scheduleCount": 20,
+      "savingsCount": 0,
+      "isNonHuman": true
+    }
+  ],
+  "candidateSummary": {
+    "borrowers": 1,
+    "loans": 1,
+    "payments": 1,
+    "schedules": 20,
+    "savings": 0
+  },
+  "deleted": null
+}

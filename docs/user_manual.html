@@ -1,0 +1,1876 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>POS Cursor-CCF Savings and Credit Cooperative LMS User Manual</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        line-height: 1.6;
+        color: #333;
+        margin: 40px;
+    }
+    h1 {
+        color: #1e3a8a;
+        border-bottom: 2px solid #1e3a8a;
+        padding-bottom: 10px;
+        margin-top: 30px;
+    }
+    h2 {
+        color: #0d9488;
+        border-bottom: 1px solid #ddd;
+        padding-bottom: 5px;
+        margin-top: 25px;
+    }
+    h3 {
+        color: #b45309;
+        margin-top: 20px;
+    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 20px 0;
+    }
+    th, td {
+        border: 1px solid #ddd;
+        padding: 10px;
+        text-align: left;
+    }
+    th {
+        background-color: #f3f4f6;
+        font-weight: bold;
+    }
+    code {
+        font-family: Consolas, monospace;
+        background-color: #f3f4f6;
+        padding: 2px 4px;
+        border-radius: 4px;
+        font-size: 0.9em;
+    }
+    pre {
+        background-color: #f3f4f6;
+        padding: 15px;
+        border-left: 4px solid #1e3a8a;
+        overflow-x: auto;
+    }
+    pre code {
+        padding: 0;
+        background-color: transparent;
+        font-size: 1em;
+    }
+    blockquote {
+        border-left: 4px solid #d97706;
+        background-color: #fffbeb;
+        padding: 15px;
+        margin: 20px 0;
+    }
+    ul, ol {
+        margin-bottom: 20px;
+        padding-left: 25px;
+    }
+    li {
+        margin-bottom: 5px;
+    }
+    hr {
+        border: 0;
+        border-top: 1px solid #ccc;
+        margin: 30px 0;
+    }
+</style>
+</head>
+<body>
+<h1>POSCURSOR-CCF SAVINGS AND CREDIT COOPERATIVE (SCSCC)</h1>
+<h2>Infinity Finance — Lending Management System (LMS)</h2>
+<h3>System User Manual</h3>
+<hr />
+<p><strong>Application:</strong> Infinity Finance LMS  </p>
+<p><strong>Cooperative:</strong> POS Cursor-CCF Savings and Credit Cooperative (SCSCC)  </p>
+<p><strong>Platform:</strong> Mobile (iOS / Android) + Web  </p>
+<p><strong>Currency:</strong> Philippine Peso (&#8369;)  </p>
+<p><strong>Version:</strong> 1.0  </p>
+<p><strong>Prepared:</strong> July 2026  </p>
+<hr />
+<h2>TABLE OF CONTENTS</h2>
+<ol>
+  <li><a href="#1-system-overview">System Overview</a></li>
+  <li><a href="#2-getting-started--login--access">Getting Started — Login &amp; Access</a></li>
+  <li><a href="#3-interface-features--conventions">Interface Features &amp; Conventions</a></li>
+  <li><a href="#4-role-administrator">Role: Administrator</a></li>
+  <li><a href="#5-role-collector">Role: Collector</a></li>
+  <li><a href="#6-role-loan-encoder">Role: Loan Encoder</a></li>
+  <li><a href="#7-role-payment-encoder">Role: Payment Encoder</a></li>
+  <li><a href="#8-role-expenses-encoder">Role: Expenses Encoder</a></li>
+  <li><a href="#9-role-borrower">Role: Borrower</a></li>
+  <li><a href="#10-business-rules-reference">Business Rules Reference</a></li>
+  <li><a href="#11-financial-formulas--kpi-definitions">Financial Formulas &amp; KPI Definitions</a></li>
+  <li><a href="#12-offline-first-operations">Offline-First Operations</a></li>
+  <li><a href="#13-data-sync--cloud-backup">Data Sync &amp; Cloud Backup</a></li>
+  <li><a href="#14-glossary">Glossary</a></li>
+</ol>
+<hr />
+<h2>1. SYSTEM OVERVIEW</h2>
+<h3>1.1 What is Infinity Finance LMS?</h3>
+<p>Infinity Finance is a <strong>mobile-first lending and microfinance management system</strong> built for POS Cursor-CCF Savings and Credit Cooperative (SCSCC). It enables collectors, loan officers, administrators, and borrowers to manage the full loan lifecycle — even without an internet connection.</p>
+<h3>1.2 Core Capabilities</h3>
+<table border="1" style="border-collapse: collapse; width: 100%;">
+  <tr>
+    <th>Feature</th>
+    <th>Description</th>
+  </tr>
+  <tr>
+    <td><strong>Offline-First</strong></td>
+    <td>All operations work without internet; data syncs automatically when online</td>
+  </tr>
+  <tr>
+    <td><strong>Role-Based Access</strong></td>
+    <td>6 distinct roles, each with its own portal and permissions</td>
+  </tr>
+  <tr>
+    <td><strong>Encrypted PII</strong></td>
+    <td>Borrower address and phone number are encrypted at rest on the device</td>
+  </tr>
+  <tr>
+    <td><strong>Automated Calculations</strong></td>
+    <td>Flat and diminishing interest, payment schedules, penalties auto-computed</td>
+  </tr>
+  <tr>
+    <td><strong>Collection Sheets</strong></td>
+    <td>Daily, weekly, and custom collection route management</td>
+  </tr>
+  <tr>
+    <td><strong>Remittance Tracking</strong></td>
+    <td>Full audit trail from collection to admin deposit acknowledgment</td>
+  </tr>
+  <tr>
+    <td><strong>Financial KPIs</strong></td>
+    <td>PAR, OSS, collection efficiency, disbursement totals auto-calculated</td>
+  </tr>
+  <tr>
+    <td><strong>Reports</strong></td>
+    <td>35+ report screens covering income statements, balance sheets, aging, dividends</td>
+  </tr>
+  <tr>
+    <td><strong>Sunlight Mode</strong></td>
+    <td>Neobrutalist high-contrast UI for field use under direct sunlight</td>
+  </tr>
+</table>
+<h3>1.3 System Architecture (Non-Technical Summary)</h3>
+<p>The app stores all data <strong>locally on your device</strong> in an offline database (SQLite). When you connect to the internet, the app automatically synchronizes your local records with the cooperative's cloud server (Supabase). This means:</p>
+<ul>
+  <li>You will <strong>never lose work</strong> from going offline mid-operation.</li>
+  <li>All changes are queued locally and uploaded as soon as connectivity is restored.</li>
+  <li>Multiple users can work simultaneously; conflicts are resolved by the sync engine.</li>
+</ul>
+<hr />
+<h2>2. GETTING STARTED — LOGIN &amp; ACCESS</h2>
+<h3>2.1 Launching the App</h3>
+<ol>
+  <li>Open the <strong>Infinity Finance</strong> app on your device.</li>
+  <li>The app will show a loading screen while it initializes the local database and checks for an active session.</li>
+  <li>If you have a saved session, you will be taken directly to your role's dashboard.</li>
+</ol>
+<h3>2.2 Logging In</h3>
+<p><strong>Step 1:</strong> On the Login screen, enter your registered <strong>Email Address</strong>.  </p>
+<p><strong>Step 2:</strong> Enter your <strong>Password</strong>.  </p>
+<p><strong>Step 3:</strong> Tap <strong>Sign In</strong>.  </p>
+<p><strong>Step 4:</strong> The app will verify your credentials and redirect you to the appropriate role portal.</p>
+<blockquote><strong>Note:</strong> If login fails, check your internet connection. First-time login always requires internet access to verify your account. Subsequent logins can use locally cached credentials.</blockquote>
+<h3>2.3 Logging Out</h3>
+<ul>
+  <li>Tap the <strong>Logout icon</strong> (→ door icon) in the top-right corner of your dashboard.</li>
+  <li>You will be signed out and returned to the Login screen.</li>
+</ul>
+<h3>2.4 User Roles</h3>
+<table border="1" style="border-collapse: collapse; width: 100%;">
+  <tr>
+    <th>Role</th>
+    <th>Default Access</th>
+  </tr>
+  <tr>
+    <td><strong>Admin</strong></td>
+    <td>Full system access: all borrowers, all loans, reports, settings, approvals</td>
+  </tr>
+  <tr>
+    <td><strong>Collector</strong></td>
+    <td>Their assigned borrowers only; collection sheets; remittances</td>
+  </tr>
+  <tr>
+    <td><strong>Loan Encoder</strong></td>
+    <td>Create and manage loans; view borrower history</td>
+  </tr>
+  <tr>
+    <td><strong>Payment Encoder</strong></td>
+    <td>Post payments to active loans</td>
+  </tr>
+  <tr>
+    <td><strong>Expenses Encoder</strong></td>
+    <td>Record operational expenses</td>
+  </tr>
+  <tr>
+    <td><strong>Borrower</strong></td>
+    <td>View their own loan status, payment schedule, profile</td>
+  </tr>
+</table>
+<hr />
+<h2>3. INTERFACE FEATURES &amp; CONVENTIONS</h2>
+<h3>3.1 Sunlight Mode</h3>
+<p>Sunlight Mode is a <strong>high-contrast neobrutalist display setting</strong> designed for field collectors who work outdoors in bright sunlight, where standard screens may be hard to read.</p>
+<p><strong>How to Toggle Sunlight Mode:</strong></p>
+<ol>
+  <li>Tap the <strong>Sun icon</strong> (☀) in the top-right area of the Collector or Admin dashboard header.</li>
+  <li>The interface immediately switches between:</li>
+</ol>
+<ul>
+  <li><strong>Standard Mode</strong>: Dark green gradient header, soft colors.</li>
+  <li><strong>Sunlight Mode</strong>: Stark white background, thick black borders, heavy black typography — maximum readability.</li>
+</ul>
+<blockquote><strong>Tip:</strong> Enable Sunlight Mode during outdoor field collection routes. Return to standard mode indoors for a more comfortable viewing experience.</blockquote>
+<h3>3.2 Sync Status Badges</h3>
+<p>Sync status is always visible at the top of the screen:</p>
+<table border="1" style="border-collapse: collapse; width: 100%;">
+  <tr>
+    <th>Badge</th>
+    <th>Meaning</th>
+  </tr>
+  <tr>
+    <td>🟢 <strong>Online / Synced</strong></td>
+    <td>Your local data is up-to-date with the server</td>
+  </tr>
+  <tr>
+    <td>🟡 <strong>Syncing...</strong></td>
+    <td>A sync operation is in progress</td>
+  </tr>
+  <tr>
+    <td>🔴 <strong>Offline</strong></td>
+    <td>No internet connection; changes are saved locally</td>
+  </tr>
+  <tr>
+    <td>🔵 <strong>Pending</strong></td>
+    <td>You have local changes that have not yet been uploaded</td>
+  </tr>
+</table>
+<h3>3.3 Pull-to-Refresh</h3>
+<p>On any list or dashboard screen, <strong>pull down</strong> with your finger to manually refresh data from the local database.</p>
+<h3>3.4 Currency Display</h3>
+<p>All monetary values in the app are displayed in <strong>Philippine Peso (&#8369;)</strong>. Example: <code>&#8369;10,000.00</code>.</p>
+<h3>3.5 Navigation Patterns</h3>
+<ul>
+  <li>The app uses <strong>tab-based navigation</strong> on the bottom of role dashboards.</li>
+  <li>Deep screens use a <strong>Back arrow</strong> (←) on the top-left.</li>
+  <li>Action buttons are prominently placed as large colored tiles on dashboards.</li>
+</ul>
+<hr />
+<h2>4. ROLE: ADMINISTRATOR</h2>
+<h3>4.1 Admin Dashboard Overview</h3>
+<p>The Admin Dashboard is the <strong>command center</strong> of the LMS. It displays real-time KPIs, portfolio performance charts, a delinquency watchlist, and quick access to all management modules.</p>
+<p><strong>Dashboard KPI Cards</strong> (tap any card to see a breakdown):</p>
+<table border="1" style="border-collapse: collapse; width: 100%;">
+  <tr>
+    <th>KPI Card</th>
+    <th>What it Shows</th>
+  </tr>
+  <tr>
+    <td><strong>Active Loans</strong></td>
+    <td>Count of loans currently in <code>active</code> or <code>defaulted</code> status</td>
+  </tr>
+  <tr>
+    <td><strong>Weekly Target</strong></td>
+    <td>Total installment amounts scheduled for this week</td>
+  </tr>
+  <tr>
+    <td><strong>Outstanding</strong></td>
+    <td>Total remaining balance across all active + defaulted loans, including penalties</td>
+  </tr>
+  <tr>
+    <td><strong>Total Disbursed</strong></td>
+    <td>Sum of all principals released to borrowers (active, paid, defaulted)</td>
+  </tr>
+  <tr>
+    <td><strong>Overdue (PAR&gt;30)</strong></td>
+    <td>Principal balance of loans with payments more than 30 days past due</td>
+  </tr>
+  <tr>
+    <td><strong>Collected Today</strong></td>
+    <td>Total payments received today</td>
+  </tr>
+  <tr>
+    <td><strong>This Month</strong></td>
+    <td>Total payments received in the current calendar month</td>
+  </tr>
+  <tr>
+    <td><strong>Cash on Hand</strong></td>
+    <td>Current net cash balance in the vault (receipts minus expenses/disbursements)</td>
+  </tr>
+  <tr>
+    <td><strong>Borrowers</strong></td>
+    <td>Total count of registered borrowers in the system</td>
+  </tr>
+  <tr>
+    <td><strong>Daily Portfolio</strong></td>
+    <td>Aggregated metrics for loans with daily payment frequency</td>
+  </tr>
+  <tr>
+    <td><strong>Weekly Portfolio</strong></td>
+    <td>Aggregated metrics for loans with weekly payment frequency</td>
+  </tr>
+</table>
+<h3>4.2 Lending Performance Chart</h3>
+<p>Below the KPI cards, a <strong>weekly collection bar chart</strong> shows daily collection amounts for the current week (Monday–Sunday) for both daily and weekly portfolio loans. This helps identify collection gaps day by day.</p>
+<h3>4.3 Delinquency Watchlist</h3>
+<p>The <strong>Overdue Watchlist</strong> section lists individual borrowers with overdue payment schedules, showing:</p>
+<ul>
+  <li>Borrower name</li>
+  <li>Days overdue</li>
+  <li>Amount due</li>
+  <li>Loan balance</li>
+  <li>Direct call/message shortcut (phone number)</li>
+</ul>
+<p>The watchlist groups accounts into <strong>Aging Buckets</strong>:</p>
+<table border="1" style="border-collapse: collapse; width: 100%;">
+  <tr>
+    <th>Bucket</th>
+    <th>Days Overdue</th>
+  </tr>
+  <tr>
+    <td>1–30 days</td>
+    <td>Early warning</td>
+  </tr>
+  <tr>
+    <td>31–60 days</td>
+    <td>Moderate risk</td>
+  </tr>
+  <tr>
+    <td>61–90 days</td>
+    <td>High risk</td>
+  </tr>
+  <tr>
+    <td>90+ days</td>
+    <td>Write-off risk</td>
+  </tr>
+</table>
+<h3>4.4 Admin Module Navigation</h3>
+<p>#### 4.4.1 Borrowers</p>
+<ul>
+  <li>View all registered borrowers across all collectors.</li>
+  <li>Search by name.</li>
+  <li>View borrower profile, loan history, and payment records.</li>
+</ul>
+<p>#### 4.4.2 Loans</p>
+<ul>
+  <li>View all loans across all collectors.</li>
+  <li>Filter by status: <code>pending</code>, <code>active</code>, <code>closed</code>, <code>defaulted</code>.</li>
+  <li>View individual loan details including schedule, payments made, and remaining balance.</li>
+</ul>
+<p>#### 4.4.3 Loan Approvals</p>
+<ul>
+  <li>Review loans submitted with <code>pending</code> status.</li>
+</ul>
+<p><strong>Step-by-Step: Approving a Loan</strong></p>
+<ol>
+  <li>Tap <strong>Loan Approvals</strong> from the Admin sidebar.</li>
+  <li>View the list of pending loans.</li>
+  <li>Tap a loan to view its full details and borrower credit profile.</li>
+  <li>Tap <strong>Approve</strong> to activate the loan and generate payment schedules, or <strong>Reject</strong> to return it.</li>
+</ol>
+<blockquote><strong>Business Rule:</strong> All loan applications must be evaluated and approved by the Credit Committee / Admin before becoming active. No disbursements occur without explicit approval.</blockquote>
+<p>#### 4.4.4 Payments</p>
+<ul>
+  <li>View all payment records system-wide.</li>
+  <li>Filter by date range, collector, or borrower.</li>
+</ul>
+<p>#### 4.4.5 Remittances</p>
+<ul>
+  <li>Review pending cash remittances submitted by collectors.</li>
+</ul>
+<p><strong>Step-by-Step: Reviewing a Remittance</strong></p>
+<ol>
+  <li>Tap <strong>Remittances</strong> from the Admin nav.</li>
+  <li>See all <code>pending</code> remittances sorted by date (newest first).</li>
+  <li>Tap a remittance to view the collector name, amount, and date.</li>
+  <li>Tap <strong>Approve</strong> to confirm receipt of cash, or <strong>Reject</strong> to send it back.</li>
+  <li>Approved remittances add the remitted amount to the cooperative's <strong>Cash on Hand</strong> balance.</li>
+</ol>
+<p>#### 4.4.6 Collectors</p>
+<ul>
+  <li>View all registered collector accounts.</li>
+  <li>Assign borrowers to collectors.</li>
+  <li>Manage collector area assignments.</li>
+</ul>
+<p>#### 4.4.7 Users</p>
+<ul>
+  <li>Manage all user accounts (create, activate, deactivate).</li>
+  <li>Assign roles to new users.</li>
+</ul>
+<p>#### 4.4.8 Areas</p>
+<ul>
+  <li>Manage geographic areas/routes for borrower assignment.</li>
+</ul>
+<p>#### 4.4.9 Groups</p>
+<ul>
+  <li>Manage borrower group assignments (for group lending).</li>
+</ul>
+<p>#### 4.4.10 Expenses</p>
+<ul>
+  <li>View all recorded operational expenses.</li>
+</ul>
+<p>#### 4.4.11 File Cases</p>
+<ul>
+  <li>View and manage delinquency file cases opened against defaulting borrowers.</li>
+</ul>
+<p>#### 4.4.12 Bank Accounts</p>
+<ul>
+  <li>Manage the cooperative's bank account records for remittance and deposit tracking.</li>
+</ul>
+<p>#### 4.4.13 Cash on Hand</p>
+<ul>
+  <li>View the real-time cash balance in the vault.</li>
+  <li>Review the detailed cash transaction history.</li>
+</ul>
+<p>#### 4.4.14 Payroll</p>
+<ul>
+  <li>Manage staff payroll records and disbursements.</li>
+</ul>
+<p>#### 4.4.15 Settings</p>
+<ul>
+  <li>Configure system-level settings including loan product presets, interest rates, and cooperative information.</li>
+</ul>
+<h3>4.5 Admin Reports (35+ Reports)</h3>
+<p>Access via the <strong>Reports</strong> tab. Available reports:</p>
+<table border="1" style="border-collapse: collapse; width: 100%;">
+  <tr>
+    <th>Report</th>
+    <th>Description</th>
+  </tr>
+  <tr>
+    <td><strong>Dashboard</strong></td>
+    <td>Executive summary with all KPIs</td>
+  </tr>
+  <tr>
+    <td><strong>Active Loans</strong></td>
+    <td>Full active loan portfolio listing</td>
+  </tr>
+  <tr>
+    <td><strong>Daily Collection</strong></td>
+    <td>Payments received today per collector</td>
+  </tr>
+  <tr>
+    <td><strong>Weekly Collection</strong></td>
+    <td>Weekly collection summary per collector</td>
+  </tr>
+  <tr>
+    <td><strong>Collection</strong></td>
+    <td>All-time collection summary</td>
+  </tr>
+  <tr>
+    <td><strong>Collection Logs</strong></td>
+    <td>Detailed log of every payment transaction</td>
+  </tr>
+  <tr>
+    <td><strong>Collector Efficiency</strong></td>
+    <td>Each collector's collection rate vs. target</td>
+  </tr>
+  <tr>
+    <td><strong>MFI KPIs</strong></td>
+    <td>Industry-standard microfinance performance indicators</td>
+  </tr>
+  <tr>
+    <td><strong>PAR (Portfolio at Risk)</strong></td>
+    <td>PAR&gt;30 ratio and aging analysis</td>
+  </tr>
+  <tr>
+    <td><strong>Portfolio Aging</strong></td>
+    <td>Aging schedule of all outstanding balances</td>
+  </tr>
+  <tr>
+    <td><strong>Aging</strong></td>
+    <td>Account aging summary</td>
+  </tr>
+  <tr>
+    <td><strong>Past Due</strong></td>
+    <td>All overdue accounts</td>
+  </tr>
+  <tr>
+    <td><strong>Delinquent Accounts</strong></td>
+    <td>Severely overdue / defaulted accounts</td>
+  </tr>
+  <tr>
+    <td><strong>Financial Summary</strong></td>
+    <td>Combined income and balance overview</td>
+  </tr>
+  <tr>
+    <td><strong>Income Statement</strong></td>
+    <td>Revenue vs. expenses for a selected period</td>
+  </tr>
+  <tr>
+    <td><strong>Balance Sheet</strong></td>
+    <td>Assets, liabilities, and equity snapshot</td>
+  </tr>
+  <tr>
+    <td><strong>Cash Flows</strong></td>
+    <td>Statement of cash inflows and outflows</td>
+  </tr>
+  <tr>
+    <td><strong>Changes in Equity</strong></td>
+    <td>Equity movement statement</td>
+  </tr>
+  <tr>
+    <td><strong>Disbursements</strong></td>
+    <td>All loan releases in a period</td>
+  </tr>
+  <tr>
+    <td><strong>Renewals</strong></td>
+    <td>Reloan / renewal history</td>
+  </tr>
+  <tr>
+    <td><strong>Savings</strong></td>
+    <td>Borrower savings balance summary</td>
+  </tr>
+  <tr>
+    <td><strong>Share Capital</strong></td>
+    <td>Member share capital summary</td>
+  </tr>
+  <tr>
+    <td><strong>CBU (Capital Build-Up)</strong></td>
+    <td>Individual CBU tracking</td>
+  </tr>
+  <tr>
+    <td><strong>Dividends</strong></td>
+    <td>Dividend distribution records</td>
+  </tr>
+  <tr>
+    <td><strong>Statutory Reserves</strong></td>
+    <td>Required reserve fund status</td>
+  </tr>
+  <tr>
+    <td><strong>Membership</strong></td>
+    <td>Active/inactive member count</td>
+  </tr>
+  <tr>
+    <td><strong>Expenses</strong></td>
+    <td>Operational expense breakdown</td>
+  </tr>
+  <tr>
+    <td><strong>Monthly Receipts</strong></td>
+    <td>Monthly payment receipt summary</td>
+  </tr>
+  <tr>
+    <td><strong>Monthly Sales</strong></td>
+    <td>Monthly loan disbursement volume</td>
+  </tr>
+  <tr>
+    <td><strong>SOA Masterlist</strong></td>
+    <td>Statement of Account for all borrowers</td>
+  </tr>
+  <tr>
+    <td><strong>Audit</strong></td>
+    <td>System audit trail and discrepancy report</td>
+  </tr>
+  <tr>
+    <td><strong>Excess Cash Receipts</strong></td>
+    <td>Excess cash collected beyond installment</td>
+  </tr>
+  <tr>
+    <td><strong>Creditors Group Life</strong></td>
+    <td>Group life insurance summary</td>
+  </tr>
+  <tr>
+    <td><strong>Cash Advances</strong></td>
+    <td>Cash advance tracking</td>
+  </tr>
+  <tr>
+    <td><strong>Bank Export</strong></td>
+    <td>Data export for bank submission</td>
+  </tr>
+</table>
+<hr />
+<h2>5. ROLE: COLLECTOR</h2>
+<h3>5.1 Collector Dashboard Overview</h3>
+<p>The Collector Portal is designed for <strong>field agents</strong> who collect daily or weekly payments from borrowers. The dashboard shows:</p>
+<ul>
+  <li><strong>Greeting header</strong> with collector's name and time-of-day salutation</li>
+  <li><strong>Daily Goal Progress Bar</strong>: Shows &#8369;Collected Today / &#8369;Target Today and efficiency percentage</li>
+  <li><strong>KPI Cards</strong>: Active Cases, Efficiency %, Outstanding Balance, Collected Today</li>
+  <li><strong>My Borrowers</strong>: Scrollable list of all assigned borrowers (searchable)</li>
+</ul>
+<h3>5.2 Action Cards on Dashboard</h3>
+<table border="1" style="border-collapse: collapse; width: 100%;">
+  <tr>
+    <th>Action Card</th>
+    <th>What it Does</th>
+  </tr>
+  <tr>
+    <td><strong>Field List</strong> (Daily Route)</td>
+    <td>Opens the Collection Sheet — all due payments for the selected date</td>
+  </tr>
+  <tr>
+    <td><strong>Remit Cash</strong> (Submit Funds)</td>
+    <td>Opens the Remittance submission form</td>
+  </tr>
+  <tr>
+    <td><strong>Daily Sheet</strong></td>
+    <td>Opens the simplified Daily Collection Sheet</td>
+  </tr>
+  <tr>
+    <td><strong>Weekly Sheet</strong></td>
+    <td>Opens the Weekly Collection Summary</td>
+  </tr>
+  <tr>
+    <td><strong>Submit Daily Log</strong></td>
+    <td>Opens the Daily Activity Log submission form</td>
+  </tr>
+</table>
+<h3>5.3 Collection Sheet (Field List)</h3>
+<p>The Collection Sheet is the <strong>primary tool for field collection</strong>. It lists every borrower with a payment due on the selected date.</p>
+<p><strong>Step-by-Step: Recording a Payment on the Collection Sheet</strong></p>
+<ol>
+  <li>From the Collector Dashboard, tap <strong>Field List</strong>.</li>
+  <li>The collection sheet loads all borrowers with <strong>pending or overdue schedules</strong> up to today.</li>
+  <li>Use the <strong>date picker</strong> to select the collection date (defaults to today).</li>
+  <li>Use the <strong>search bar</strong> to filter borrowers by name.</li>
+  <li>Scroll through the borrower list. Each row shows:</li>
+</ol>
+<ul>
+  <li>Borrower name</li>
+  <li>Loan number</li>
+  <li>Amount due (installment amount)</li>
+  <li>Schedule due date</li>
+  <li>Overdue indicator (🔴 if past due)</li>
+</ul>
+<ol>
+  <li>Tap a borrower row to open the <strong>Payment Entry Modal</strong>.</li>
+  <li>In the modal:</li>
+</ol>
+<ul>
+  <li><strong>Amount</strong>: Pre-filled with the installment amount. Edit if the borrower pays a different amount (partial or excess).</li>
+  <li><strong>Payment Method</strong>: Select <code>Cash</code> or <code>GCash</code> (reference number field appears for GCash).</li>
+  <li><strong>Reference Number</strong>: Enter the GCash/bank reference number if applicable.</li>
+</ul>
+<ol>
+  <li>Tap <strong>Mark as Paid</strong> to record the payment.</li>
+  <li>The row turns green / disappears from the list. The daily collection total updates.</li>
+</ol>
+<blockquote><strong>Business Rule:</strong> Payments are saved immediately to the local database. They are uploaded to the cloud on next sync. Collectors can record payments offline with no data loss.</blockquote>
+<p><strong>Collection Sheet Totals Banner:</strong></p>
+<ul>
+  <li><strong>Target</strong>: Total scheduled amount for all items in the list</li>
+  <li><strong>Count</strong>: Number of borrowers in the list</li>
+  <li><strong>Overdue</strong>: Number of past-due items (red indicator)</li>
+</ul>
+<h3>5.4 Daily Collection Sheet</h3>
+<p>A simplified view of the daily collection filtered for the <strong>current day only</strong>, useful for a quick progress overview.</p>
+<h3>5.5 Weekly Collection Sheet</h3>
+<p>Shows the full week's (Mon–Sun) collection schedule. Allows the collector to plan their route and track daily progress across the full week.</p>
+<h3>5.6 Daily Log</h3>
+<p>The Daily Log is a <strong>required end-of-day report</strong> that collectors submit to administration.</p>
+<p><strong>Step-by-Step: Submitting the Daily Log</strong></p>
+<ol>
+  <li>From the dashboard, tap <strong>Submit Daily Log</strong>.</li>
+  <li>Fill in the following fields:</li>
+</ol>
+<ul>
+  <li><strong>Total Cash Collected</strong> (auto-populated if synced)</li>
+  <li><strong>Notes / Remarks</strong> (any incidents, missed collections, borrower updates)</li>
+  <li><strong>Date</strong> (defaults to today)</li>
+</ul>
+<ol>
+  <li>Tap <strong>Submit</strong>.</li>
+  <li>The log is saved and will sync to the admin's view.</li>
+</ol>
+<h3>5.7 Cash Remittance</h3>
+<p>After completing daily collections, the collector must <strong>remit (hand over) all collected cash</strong> to the cooperative office.</p>
+<p><strong>Step-by-Step: Submitting a Remittance</strong></p>
+<ol>
+  <li>From the dashboard, tap <strong>Remit Cash</strong>.</li>
+  <li>The remittance form loads:</li>
+</ol>
+<ul>
+  <li><strong>Amount</strong>: Enter the total cash amount being handed over.</li>
+  <li><strong>Date</strong>: Defaults to today.</li>
+  <li><strong>Notes</strong>: Any remarks about the remittance.</li>
+</ul>
+<ol>
+  <li>Tap <strong>Submit Remittance</strong>.</li>
+  <li>The remittance record is created with status <code>pending</code> and queued for Admin approval.</li>
+  <li>The Admin will review and approve or reject the remittance (see Section 4.4.5).</li>
+</ol>
+<blockquote><strong>Business Rule:</strong> Collectors must remit all collected cash daily. Cash remittances are not considered received until the Admin approves them. The cooperative's Cash on Hand balance only increases upon Admin approval.</blockquote>
+<h3>5.8 Borrowers Sub-Screen</h3>
+<p>Accessible from the Collector Dashboard's "My Borrowers" section. Tap any borrower card to view:</p>
+<ul>
+  <li>Borrower profile (name, area, phone)</li>
+  <li>All loans (active, closed, defaulted)</li>
+  <li>Payment history</li>
+  <li>Outstanding balance</li>
+</ul>
+<hr />
+<h2>6. ROLE: LOAN ENCODER</h2>
+<h3>6.1 Loan Encoder Dashboard Overview</h3>
+<p>The Loan Encoder creates new loan records and manages loan applications. The dashboard is a <strong>loan entry form</strong> with a summary of recently processed loans.</p>
+<h3>6.2 Creating a New Loan — Step by Step</h3>
+<p><strong>Step 1: Select Borrower</strong></p>
+<ol>
+  <li>Tap <strong>Select Borrower</strong> at the top of the form.</li>
+  <li>A borrower search modal opens. Search by name and tap to select.</li>
+  <li>Once selected, the system automatically:</li>
+</ol>
+<ul>
+  <li>Checks for any existing active loans for this borrower.</li>
+  <li>If an active loan exists, the form pre-fills <code>isReloan = true</code> and links to the previous loan.</li>
+  <li>Auto-populates the principal from the borrower's loan code if configured.</li>
+</ul>
+<p><strong>Step 2: Select Loan Type</strong></p>
+<p>Tap the loan type selector. Available types:</p>
+<table border="1" style="border-collapse: collapse; width: 100%;">
+  <tr>
+    <th>Loan Type</th>
+    <th>Description</th>
+  </tr>
+  <tr>
+    <td>Standard Micro Loan</td>
+    <td>General microfinance loan with flat computation</td>
+  </tr>
+  <tr>
+    <td>Petty Cash Loan</td>
+    <td>Short-term, share-capital-based</td>
+  </tr>
+  <tr>
+    <td>Livelihood Loan</td>
+    <td>Self-employed members</td>
+  </tr>
+  <tr>
+    <td>Salary Loan</td>
+    <td>Employed members</td>
+  </tr>
+  <tr>
+    <td>Emergency Loan</td>
+    <td>Urgent needs with collateral</td>
+  </tr>
+</table>
+<blockquote>Selecting a loan type <strong>automatically pre-fills</strong> the default rate, term, term unit, frequency, and fees per the loan product preset.</blockquote>
+<p><strong>Step 3: Enter Loan Parameters</strong></p>
+<table border="1" style="border-collapse: collapse; width: 100%;">
+  <tr>
+    <th>Field</th>
+    <th>Description</th>
+    <th>Validation</th>
+  </tr>
+  <tr>
+    <td><strong>Principal</strong></td>
+    <td>Loan amount in &#8369;</td>
+    <td>Must be &gt; 0; must not exceed max principal for loan type</td>
+  </tr>
+  <tr>
+    <td><strong>Interest Rate (%)</strong></td>
+    <td>Monthly interest rate</td>
+    <td>Cannot be negative</td>
+  </tr>
+  <tr>
+    <td><strong>Term</strong></td>
+    <td>Loan duration</td>
+    <td>Must be &gt; 0; must match term rules for loan type</td>
+  </tr>
+  <tr>
+    <td><strong>Term Unit</strong></td>
+    <td><code>Months</code>, <code>Weeks</code>, or <code>Days</code></td>
+    <td>Institutional loans require months</td>
+  </tr>
+  <tr>
+    <td><strong>Interest Type</strong></td>
+    <td><code>Flat</code> or <code>Diminishing</code></td>
+    <td></td>
+  </tr>
+  <tr>
+    <td><strong>Frequency</strong></td>
+    <td><code>Daily</code>, <code>Weekly</code>, <code>Bi-Monthly</code>, <code>Monthly</code></td>
+    <td></td>
+  </tr>
+  <tr>
+    <td><strong>Deposit</strong></td>
+    <td>Security/savings deposit per payment</td>
+    <td>Auto-calculated: 1% of principal × number of payments</td>
+  </tr>
+  <tr>
+    <td><strong>Insurance</strong></td>
+    <td>Insurance fee per payment</td>
+    <td>Auto-calculated from insurance table; &#8369;10 × payments for weekly loans</td>
+  </tr>
+  <tr>
+    <td><strong>Savings Per Payment</strong></td>
+    <td>Additional savings collected per installment</td>
+    <td></td>
+  </tr>
+  <tr>
+    <td><strong>Processing Fee</strong></td>
+    <td>One-time processing fee</td>
+    <td>Auto-calculated from loan type preset rate × principal</td>
+  </tr>
+  <tr>
+    <td><strong>Collection Fee</strong></td>
+    <td>Collection fee</td>
+    <td></td>
+  </tr>
+  <tr>
+    <td><strong>Notarial Fee</strong></td>
+    <td>Notarization fee (if applicable)</td>
+    <td>Auto-calculated from loan type preset</td>
+  </tr>
+  <tr>
+    <td><strong>Release Date</strong></td>
+    <td>Loan disbursement date</td>
+    <td>Required; defaults to today</td>
+  </tr>
+</table>
+<p><strong>Step 4: Review Loan Calculation</strong></p>
+<p>A <strong>Calculation Basis Card</strong> appears showing:</p>
+<ul>
+  <li>Total Amount (Principal + Total Interest)</li>
+  <li>Total Interest</li>
+  <li>Installment Amount per payment</li>
+  <li>Number of payments</li>
+  <li>Maturity Date</li>
+</ul>
+<p>The calculation updates live as you change any parameter.</p>
+<p><strong>Step 5: Handle Reloan (if applicable)</strong></p>
+<p>If this borrower has an existing active loan:</p>
+<ul>
+  <li>A <strong>Reloan Alert</strong> appears showing the active loan's outstanding balance.</li>
+  <li>The <strong>Net Amount Released</strong> = New Principal − Outstanding Balance of previous loan.</li>
+  <li>Tap <strong>Confirm Reloan</strong> to acknowledge. The previous loan balance will be deducted from the new loan release amount.</li>
+</ul>
+<p><strong>Step 6: Audit Check</strong></p>
+<p>Before saving, the system runs an <strong>Audit Check</strong> that flags:</p>
+<ul>
+  <li>Duplicate loan types for the same borrower</li>
+  <li>Unusual parameter combinations</li>
+  <li>Critical issues that could cause calculation errors</li>
+</ul>
+<p>If critical issues are found, a report is shown. Tap <strong>Proceed Anyway</strong> (for non-critical) or fix the flagged issues first.</p>
+<p><strong>Step 7: Save the Loan</strong></p>
+<ol>
+  <li>Tap <strong>Save Loan</strong> (or <strong>Submit for Approval</strong>).</li>
+  <li>The loan is saved with status <code>pending</code> and queued for Admin approval.</li>
+  <li>Upon Admin approval, the status changes to <code>active</code> and payment schedules are automatically generated.</li>
+</ol>
+<h3>6.3 Viewing Loan Applications</h3>
+<p>From the <strong>Loan Applications</strong> sub-section, the encoder can view:</p>
+<ul>
+  <li>All loans they have created</li>
+  <li>Current status of each loan (<code>pending</code>, <code>active</code>, <code>closed</code>, <code>defaulted</code>)</li>
+  <li>Filter and search by borrower or date</li>
+</ul>
+<h3>6.4 Viewing All Loans</h3>
+<p>The <strong>Loans</strong> sub-section shows all loans in the system accessible to the encoder.</p>
+<hr />
+<h2>7. ROLE: PAYMENT ENCODER</h2>
+<h3>7.1 Payment Encoder Dashboard Overview</h3>
+<p>The Payment Encoder records <strong>manual payments</strong> against active loans. This role is typically used in-office when borrowers pay in person or via bank transfer.</p>
+<h3>7.2 Recording a Payment — Step by Step</h3>
+<p><strong>Step 1: Select Borrower</strong></p>
+<ol>
+  <li>Tap <strong>Select Borrower</strong>.</li>
+  <li>Search and select the borrower from the modal.</li>
+  <li>The system loads all <strong>active loans</strong> for that borrower.</li>
+</ol>
+<blockquote><strong>Access Control:</strong> If the user is a collector role posting via this screen, the system verifies that the selected borrower is assigned to their collector account. Access is denied if the borrower is not their assignment.</blockquote>
+<p><strong>Step 2: Select Loan</strong></p>
+<ol>
+  <li>From the list of active loans, tap the correct loan (identified by loan number and installment amount).</li>
+  <li>The <strong>Amount</strong> field auto-fills with the loan's standard installment amount.</li>
+</ol>
+<p><strong>Step 3: Enter Payment Details</strong></p>
+<table border="1" style="border-collapse: collapse; width: 100%;">
+  <tr>
+    <th>Field</th>
+    <th>Description</th>
+  </tr>
+  <tr>
+    <td><strong>Amount</strong></td>
+    <td>Payment amount in &#8369;. Default = installment amount. Can be edited for partial or excess payments.</td>
+  </tr>
+  <tr>
+    <td><strong>Payment Date</strong></td>
+    <td>Date the payment was made. Defaults to today.</td>
+  </tr>
+  <tr>
+    <td><strong>Receipt Number</strong></td>
+    <td>Auto-generated receipt number. Can be overridden.</td>
+  </tr>
+  <tr>
+    <td><strong>Current Salary</strong></td>
+    <td>Optional. If the borrower's current salary is entered, the system calculates any Excess Cash Receipt.</td>
+  </tr>
+  <tr>
+    <td><strong>Notes</strong></td>
+    <td>Optional remarks.</td>
+  </tr>
+</table>
+<p><strong>Step 4: Excess Cash Receipt Calculation</strong></p>
+<p>If <code>Current Salary</code> is entered and the payment amount exceeds the installment, the system automatically calculates:</p>
+<ul>
+  <li><strong>Excess Cash</strong> = Payment Amount − Installment Amount</li>
+  <li>An excess cash receipt is generated and linked to the payment record.</li>
+</ul>
+<p><strong>Step 5: Save Payment</strong></p>
+<ol>
+  <li>Tap <strong>Save Payment</strong>.</li>
+  <li>A confirmation dialog appears with a summary.</li>
+  <li>Tap <strong>Confirm</strong> to post the payment.</li>
+  <li>The payment is saved locally and synced to the cloud.</li>
+  <li>The form resets with a new auto-generated receipt number.</li>
+</ol>
+<blockquote><strong>Business Rule:</strong> Payments are applied to the earliest unpaid installment in the payment schedule. Overpayments are recorded as excess cash receipts. The payment schedule status updates automatically (<code>pending</code> → <code>paid</code> or <code>partial</code>).</blockquote>
+<hr />
+<h2>8. ROLE: EXPENSES ENCODER</h2>
+<h3>8.1 Expenses Encoder Dashboard Overview</h3>
+<p>The Expenses Encoder records <strong>operational expenses</strong> for the cooperative. The dashboard shows:</p>
+<ul>
+  <li>This month's total expenses</li>
+  <li>Recent expenses list (last 5 records)</li>
+  <li>Expense entry form</li>
+</ul>
+<h3>8.2 Recording an Expense — Step by Step</h3>
+<p><strong>Step 1: Select Category</strong></p>
+<p>Available expense categories:</p>
+<table border="1" style="border-collapse: collapse; width: 100%;">
+  <tr>
+    <th>Category</th>
+    <th>Icon</th>
+  </tr>
+  <tr>
+    <td>Transportation</td>
+    <td>🚗</td>
+  </tr>
+  <tr>
+    <td>Office Supplies</td>
+    <td>📦</td>
+  </tr>
+  <tr>
+    <td>Rent/Utilities</td>
+    <td>🏠</td>
+  </tr>
+  <tr>
+    <td>Marketing</td>
+    <td>📢</td>
+  </tr>
+  <tr>
+    <td>Taxes/Fees</td>
+    <td>🏛</td>
+  </tr>
+  <tr>
+    <td>Other</td>
+    <td>⋯</td>
+  </tr>
+</table>
+<blockquote><strong>Note:</strong> Custom categories can be created by the Admin in Settings → Expense Categories. Only active categories appear in the selector.</blockquote>
+<p><strong>Step 2: Set Frequency (Optional)</strong></p>
+<table border="1" style="border-collapse: collapse; width: 100%;">
+  <tr>
+    <th>Frequency</th>
+    <th>Meaning</th>
+  </tr>
+  <tr>
+    <td><code>none</code></td>
+    <td>One-time expense</td>
+  </tr>
+  <tr>
+    <td><code>daily</code></td>
+    <td>Recurring daily expense</td>
+  </tr>
+  <tr>
+    <td><code>weekly</code></td>
+    <td>Recurring weekly expense</td>
+  </tr>
+</table>
+<p><strong>Step 3: Enter Expense Details</strong></p>
+<table border="1" style="border-collapse: collapse; width: 100%;">
+  <tr>
+    <th>Field</th>
+    <th>Description</th>
+  </tr>
+  <tr>
+    <td><strong>Amount</strong></td>
+    <td>Expense amount in &#8369; (must be &gt; 0)</td>
+  </tr>
+  <tr>
+    <td><strong>Payee</strong></td>
+    <td>Name of vendor/supplier (optional)</td>
+  </tr>
+  <tr>
+    <td><strong>TIN</strong></td>
+    <td>Supplier's Tax Identification Number (optional)</td>
+  </tr>
+  <tr>
+    <td><strong>Invoice Number</strong></td>
+    <td>Invoice or OR number (optional)</td>
+  </tr>
+  <tr>
+    <td><strong>VAT Amount</strong></td>
+    <td>Applicable VAT in &#8369; (optional)</td>
+  </tr>
+  <tr>
+    <td><strong>Description</strong></td>
+    <td>Free-text details about the expense</td>
+  </tr>
+</table>
+<p><strong>Step 4: Save Expense</strong></p>
+<ol>
+  <li>Tap <strong>Save</strong>.</li>
+  <li>The expense is recorded and immediately appears in the Recent Expenses list.</li>
+  <li>The monthly total updates automatically.</li>
+</ol>
+<h3>8.3 Expense Categories Management</h3>
+<p>From the <strong>Categories</strong> sub-screen:</p>
+<ol>
+  <li>View all active and inactive expense categories.</li>
+  <li>Add new custom categories by entering a category name.</li>
+  <li>Deactivate categories that are no longer needed.</li>
+</ol>
+<h3>8.4 Receipts</h3>
+<p>From the <strong>Receipts</strong> sub-screen:</p>
+<ol>
+  <li>View a list of all recorded expense receipts.</li>
+  <li>Tap a receipt to view its full details.</li>
+</ol>
+<hr />
+<h2>9. ROLE: BORROWER</h2>
+<h3>9.1 Borrower Portal Dashboard Overview</h3>
+<p>The Borrower Portal gives <strong>registered borrowers</strong> a self-service view of their own account. The dashboard shows:</p>
+<ul>
+  <li><strong>Total Outstanding Balance</strong> (all active loans combined)</li>
+  <li><strong>Active Loans Count</strong></li>
+  <li><strong>Next Installment Amount</strong></li>
+  <li><strong>Payment Countdown</strong>: Days until next payment due (orange alert if ≤ 3 days)</li>
+</ul>
+<h3>9.2 Quick Actions</h3>
+<table border="1" style="border-collapse: collapse; width: 100%;">
+  <tr>
+    <th>Button</th>
+    <th>Action</th>
+  </tr>
+  <tr>
+    <td><strong>My Loans</strong></td>
+    <td>View all loans (active, paid, defaulted)</td>
+  </tr>
+  <tr>
+    <td><strong>My Transactions</strong></td>
+    <td>View full payment history</td>
+  </tr>
+  <tr>
+    <td><strong>My Documents</strong></td>
+    <td>View uploaded loan documents</td>
+  </tr>
+  <tr>
+    <td><strong>My Profile</strong></td>
+    <td>View and manage personal profile</td>
+  </tr>
+</table>
+<h3>9.3 Viewing Loans</h3>
+<p>From <strong>My Loans</strong>:</p>
+<ol>
+  <li>All loans are listed with their status badge.</li>
+  <li>Tap a loan to see:</li>
+</ol>
+<ul>
+  <li>Loan number and type</li>
+  <li>Principal, interest rate, term</li>
+  <li>Total amount, installment amount</li>
+  <li>Release date and maturity date</li>
+  <li>Payment schedule (each installment with status: <code>pending</code>, <code>paid</code>, <code>partial</code>, <code>late</code>)</li>
+</ul>
+<h3>9.4 Viewing Transactions</h3>
+<p>From <strong>My Transactions</strong>:</p>
+<ol>
+  <li>All payment records are listed in reverse chronological order.</li>
+  <li>Each record shows: payment date, amount paid, receipt number, and collector.</li>
+</ol>
+<h3>9.5 Viewing Documents</h3>
+<p>From <strong>My Documents</strong>:</p>
+<ol>
+  <li>View loan-related documents submitted or uploaded by the office.</li>
+</ol>
+<h3>9.6 Managing Profile</h3>
+<p>From <strong>My Profile</strong>:</p>
+<ol>
+  <li>View personal information on file: full name, address, phone number, date of birth, gender.</li>
+  <li>Contact the office to update personal information (borrowers cannot edit directly).</li>
+</ol>
+<hr />
+<h2>10. BUSINESS RULES REFERENCE</h2>
+<h3>10.1 Membership Rules</h3>
+<p>#### Pre-Membership Education Seminar (PMES)</p>
+<p><strong>Rule:</strong> Before any person can apply for membership, they must complete the prescribed PMES.</p>
+<p><strong>Process:</strong></p>
+<ol>
+  <li>Applicant attends the scheduled PMES session.</li>
+  <li>Applicant fills up the Participant's Profile form during PMES.</li>
+  <li>PMES completion certificate is issued.</li>
+  <li>Applicant proceeds to membership application.</li>
+</ol>
+<p>#### Regular Membership Application</p>
+<p><strong>Rule:</strong> Regular membership is open to applicants who have completed PMES.</p>
+<p><strong>Step-by-Step Process:</strong></p>
+<ol>
+  <li>Applicant submits a completed <strong>Membership Application Form</strong>.</li>
+  <li>Applicant pays the <strong>non-refundable membership fee of &#8369;200.00</strong>.</li>
+  <li>The Education and Training Committee (ETC) reviews and recommends the application.</li>
+  <li>The <strong>Board of Directors (BOD) approves</strong> the membership application.</li>
+  <li>Upon approval, the new member must:</li>
+</ol>
+<ul>
+  <li>Pay a minimum <strong>paid-up capital of &#8369;500.00</strong> (equivalent to 5 shares at &#8369;100 per share).</li>
+  <li><strong>Subscribe to at least 20 shares</strong> = &#8369;2,000.00 in total share capital commitment.</li>
+</ul>
+<p>#### Ownership Meetings &amp; General Assembly</p>
+<table border="1" style="border-collapse: collapse; width: 100%;">
+  <tr>
+    <th>Meeting Type</th>
+    <th>Schedule</th>
+    <th>Purpose</th>
+  </tr>
+  <tr>
+    <td><strong>Ownership Meeting</strong></td>
+    <td>At least once a year (June or July)</td>
+    <td>Update members on financial operations, activities, issues</td>
+  </tr>
+  <tr>
+    <td><strong>Annual General Assembly (AGA)</strong></td>
+    <td>Second Saturday of March</td>
+    <td>Elect officers, adopt reports, approve plans &amp; budget, amend bylaws</td>
+  </tr>
+  <tr>
+    <td><strong>Special General Assembly</strong></td>
+    <td>As needed</td>
+    <td>Urgent amendments or critical matters requiring general membership approval</td>
+  </tr>
+  <tr>
+    <td><strong>Officers Meeting</strong></td>
+    <td>At least twice a year</td>
+    <td>Reporting and operational updates for BOD, committees, staff, employees</td>
+  </tr>
+</table>
+<h3>10.2 Loan Business Rules</h3>
+<p>#### General Principles</p>
+<ol>
+  <li><strong>Quality and Volume</strong> are management policy priorities.</li>
+  <li><strong>All loans are goal and purpose-oriented</strong> — the borrower must declare the purpose of the loan.</li>
+  <li><strong>All loan applicants must undergo Credit Investigation (CI)</strong> and are subject to BOD/Credit Committee approval.</li>
+  <li><strong>A member can renew their loan only upon full payment</strong> of the previous loan.</li>
+  <li><strong>All loan applications are evaluated and approved by the Credit Committee.</strong></li>
+</ol>
+<p>#### Loan by Assignment</p>
+<p>When a borrower has savings deposits, interest on share capital, dividends, patronage refunds, or collectibles/benefits that can secure the loan:</p>
+<ul>
+  <li>These are assigned as collateral to the extent of the loanable amount.</li>
+  <li><strong>In case of delinquency:</strong> The assigned savings deposits, dividends, patronage refunds, and benefits are <strong>automatically held</strong> (not available for withdrawal) and <strong>applied as payment</strong> to the outstanding installment due.</li>
+</ul>
+<h3>10.3 Loan Products — Detailed Rules</h3>
+<p>#### A. Petty Cash Loan</p>
+<table border="1" style="border-collapse: collapse; width: 100%;">
+  <tr>
+    <th>Rule</th>
+    <th>Value</th>
+  </tr>
+  <tr>
+    <td><strong>Eligibility</strong></td>
+    <td>Regular members with share capital of at least 10 shares (&#8369;1,000.00)</td>
+  </tr>
+  <tr>
+    <td><strong>Maximum Loan Amount</strong></td>
+    <td>75% of the member's own share capital</td>
+  </tr>
+  <tr>
+    <td><strong>Additional via Co-Maker</strong></td>
+    <td>Additional 75% of co-member's share capital</td>
+  </tr>
+  <tr>
+    <td><strong>Interest Rate</strong></td>
+    <td>0% (zero interest)</td>
+  </tr>
+  <tr>
+    <td><strong>Service Charge</strong></td>
+    <td>2% of principal</td>
+  </tr>
+  <tr>
+    <td><strong>Term</strong></td>
+    <td>1 month only</td>
+  </tr>
+  <tr>
+    <td><strong>Penalty for Past Due</strong></td>
+    <td>3% per month of remaining balance</td>
+  </tr>
+  <tr>
+    <td><strong>Renewal</strong></td>
+    <td>Renewable upon full payment</td>
+  </tr>
+  <tr>
+    <td><strong>Processing Fee in App</strong></td>
+    <td>2% of principal (auto-calculated)</td>
+  </tr>
+</table>
+<p><strong>Step-by-Step: Petty Cash Loan Processing</strong></p>
+<ol>
+  <li>Verify borrower is a regular member with ≥ 10 shares (&#8369;1,000).</li>
+  <li>Calculate loanable amount: <code>Loanable = Share Capital × 0.75</code>.</li>
+  <li>If co-maker is added: <code>Additional = Co-Maker's Share Capital × 0.75</code>.</li>
+  <li>Create loan in app: Select <strong>Petty Cash Loan</strong> type.</li>
+  <li>Enter principal (max = 75% of share capital).</li>
+  <li>App auto-sets: 0% interest, 2% service charge, 1-month term, monthly frequency.</li>
+  <li>Submit for Credit Committee approval.</li>
+</ol>
+<hr />
+<p>#### B. Livelihood / Microfinance Loan</p>
+<table border="1" style="border-collapse: collapse; width: 100%;">
+  <tr>
+    <th>Rule</th>
+    <th>Value</th>
+  </tr>
+  <tr>
+    <td><strong>Eligibility</strong></td>
+    <td>Self-employed members</td>
+  </tr>
+  <tr>
+    <td><strong>Maximum Loan Amount</strong></td>
+    <td>&#8369;5,000.00 (based on CI)</td>
+  </tr>
+  <tr>
+    <td><strong>Interest Rate</strong></td>
+    <td>2% per month</td>
+  </tr>
+  <tr>
+    <td><strong>Service Charge</strong></td>
+    <td>2% of principal</td>
+  </tr>
+  <tr>
+    <td><strong>Term</strong></td>
+    <td>2 months</td>
+  </tr>
+  <tr>
+    <td><strong>Payment Mode</strong></td>
+    <td>Daily (based on source of income) or as agreed</td>
+  </tr>
+  <tr>
+    <td><strong>Penalty for Past Due</strong></td>
+    <td>3% per month of remaining balance</td>
+  </tr>
+  <tr>
+    <td><strong>Processing Fee in App</strong></td>
+    <td>2% of principal</td>
+  </tr>
+</table>
+<p><strong>Step-by-Step: Livelihood Loan Processing</strong></p>
+<ol>
+  <li>Verify applicant is a self-employed regular member.</li>
+  <li>Conduct Credit Investigation (CI) to determine loanable amount (max &#8369;5,000).</li>
+  <li>Obtain BOD/Credit Committee approval.</li>
+  <li>Create loan in app: Select <strong>Livelihood Loan</strong> type.</li>
+  <li>Enter principal (max &#8369;5,000).</li>
+  <li>App auto-sets: 2% monthly interest, 2% service charge, 2-month term.</li>
+  <li>Set frequency to <strong>daily</strong> or as agreed based on borrower's income source.</li>
+</ol>
+<hr />
+<p>#### C. Salary Loan</p>
+<table border="1" style="border-collapse: collapse; width: 100%;">
+  <tr>
+    <th>Rule</th>
+    <th>Value</th>
+  </tr>
+  <tr>
+    <td><strong>Eligibility</strong></td>
+    <td>Employed members only</td>
+  </tr>
+  <tr>
+    <td><strong>Maximum Loan Amount</strong></td>
+    <td>&#8369;5,000.00 (based on CI)</td>
+  </tr>
+  <tr>
+    <td><strong>Interest Rate</strong></td>
+    <td>2% per month</td>
+  </tr>
+  <tr>
+    <td><strong>Service Charge</strong></td>
+    <td>2% of principal</td>
+  </tr>
+  <tr>
+    <td><strong>Term</strong></td>
+    <td>2 months</td>
+  </tr>
+  <tr>
+    <td><strong>Payment Mode</strong></td>
+    <td>Every payday</td>
+  </tr>
+  <tr>
+    <td><strong>Penalty for Past Due</strong></td>
+    <td>3% per month of remaining balance</td>
+  </tr>
+  <tr>
+    <td><strong>Processing Fee in App</strong></td>
+    <td>2% of principal</td>
+  </tr>
+</table>
+<p><strong>Step-by-Step: Salary Loan Processing</strong></p>
+<ol>
+  <li>Verify applicant is an employed regular member.</li>
+  <li>Conduct CI; confirm employment status and salary schedule.</li>
+  <li>Determine loanable amount based on CI (max &#8369;5,000).</li>
+  <li>Obtain Credit Committee approval.</li>
+  <li>Create loan in app: Select <strong>Salary Loan</strong> type.</li>
+  <li>Enter principal (max &#8369;5,000).</li>
+  <li>App auto-sets: 2% monthly interest, 2% service charge, 2-month term, monthly frequency.</li>
+  <li>Set first payment date to align with borrower's payday schedule.</li>
+</ol>
+<hr />
+<p>#### D. Emergency Loan</p>
+<table border="1" style="border-collapse: collapse; width: 100%;">
+  <tr>
+    <th>Rule</th>
+    <th>Value</th>
+  </tr>
+  <tr>
+    <td><strong>Eligibility</strong></td>
+    <td>Members with urgent needs (hospitalization, calamity)</td>
+  </tr>
+  <tr>
+    <td><strong>Maximum Loan Amount</strong></td>
+    <td>&#8369;5,000.00 (based on CI)</td>
+  </tr>
+  <tr>
+    <td><strong>Collateral Requirement</strong></td>
+    <td>Must present collateral worth <strong>at least twice</strong> the loan amount</td>
+  </tr>
+  <tr>
+    <td><strong>Interest Rate</strong></td>
+    <td>0% (zero interest)</td>
+  </tr>
+  <tr>
+    <td><strong>Service Charge</strong></td>
+    <td>2% of principal</td>
+  </tr>
+  <tr>
+    <td><strong>Term</strong></td>
+    <td>1 month</td>
+  </tr>
+  <tr>
+    <td><strong>Penalty for Past Due</strong></td>
+    <td>3% per month of remaining balance</td>
+  </tr>
+  <tr>
+    <td><strong>Processing Fee in App</strong></td>
+    <td>2% of principal</td>
+  </tr>
+</table>
+<p><strong>Step-by-Step: Emergency Loan Processing</strong></p>
+<ol>
+  <li>Verify member's emergency situation (hospitalization receipt, calamity certificate, etc.).</li>
+  <li>Assess collateral — must have a value ≥ 2× the loan amount.</li>
+  <li>Conduct CI; determine loanable amount (max &#8369;5,000).</li>
+  <li>Obtain Credit Committee approval.</li>
+  <li>Create loan in app: Select <strong>Emergency Loan</strong> type.</li>
+  <li>Enter principal (max &#8369;5,000).</li>
+  <li>App auto-sets: 0% interest, 2% service charge, 1-month term, monthly frequency.</li>
+  <li>Record collateral details in the borrower's file case.</li>
+</ol>
+<hr />
+<p>#### E. Standard Micro Loan</p>
+<table border="1" style="border-collapse: collapse; width: 100%;">
+  <tr>
+    <th>Rule</th>
+    <th>Value</th>
+  </tr>
+  <tr>
+    <td><strong>Default Rate</strong></td>
+    <td>20% flat (configurable by Admin)</td>
+  </tr>
+  <tr>
+    <td><strong>Default Term</strong></td>
+    <td>20 weeks</td>
+  </tr>
+  <tr>
+    <td><strong>Default Frequency</strong></td>
+    <td>Weekly</td>
+  </tr>
+  <tr>
+    <td><strong>Interest Type</strong></td>
+    <td>Flat (configurable to Diminishing)</td>
+  </tr>
+  <tr>
+    <td><strong>Deposit</strong></td>
+    <td>1% of principal per payment (auto-calculated)</td>
+  </tr>
+  <tr>
+    <td><strong>Insurance</strong></td>
+    <td>&#8369;10 per payment for weekly loans (auto-calculated from insurance table)</td>
+  </tr>
+</table>
+<hr />
+<h3>10.4 Penalty Rules</h3>
+<p><strong>Rule:</strong> A penalty of <strong>3% per month</strong> of the remaining balance is charged when a loan becomes past due.</p>
+<p><strong>Application in the App:</strong></p>
+<ul>
+  <li>The system flags schedules as <code>late</code> when the due date has passed without full payment.</li>
+  <li>Penalty records are created under <code>loan_penalties</code> and added to the borrower's total outstanding balance.</li>
+  <li>Penalties are included in the <strong>Outstanding</strong> KPI displayed on the Admin Dashboard.</li>
+  <li>The <strong>PAR (Portfolio at Risk)</strong> calculation includes principals where overdue days &gt; 30.</li>
+</ul>
+<h3>10.5 Savings / Time Deposit Rules</h3>
+<table border="1" style="border-collapse: collapse; width: 100%;">
+  <tr>
+    <th>Rule</th>
+    <th>Value</th>
+  </tr>
+  <tr>
+    <td><strong>Minimum Maintaining Balance</strong></td>
+    <td>&#8369;100.00</td>
+  </tr>
+  <tr>
+    <td><strong>Interest Rate</strong></td>
+    <td>4% per annum</td>
+  </tr>
+  <tr>
+    <td><strong>Interest Computation</strong></td>
+    <td>Quarterly, on average monthly balance</td>
+  </tr>
+  <tr>
+    <td><strong>Cut-Off Date</strong></td>
+    <td>10th of each month</td>
+  </tr>
+  <tr>
+    <td><strong>Deposit Form</strong></td>
+    <td>Prescribed deposit slip (duly accomplished)</td>
+  </tr>
+  <tr>
+    <td><strong>Withdrawal Form</strong></td>
+    <td>Prescribed withdrawal slip, verified by posting clerk</td>
+  </tr>
+  <tr>
+    <td><strong>Withdrawal Approval</strong></td>
+    <td>Must be approved by Manager / Chairman / Vice Chairman or authorized representative</td>
+  </tr>
+  <tr>
+    <td><strong>Withdrawal Restriction</strong></td>
+    <td>Cannot withdraw savings if borrower has <strong>past due loans</strong> — savings automatically held and applied to outstanding installments</td>
+  </tr>
+</table>
+<h3>10.6 Financial Management Rules</h3>
+<p>#### Cash Disbursements</p>
+<ul>
+  <li>Checks must be signed by the <strong>Coop Chairperson</strong> as primary signatory and the <strong>Treasurer</strong> as co-signatory.</li>
+  <li>In the Chairperson's absence, the <strong>Vice-Chairperson</strong> assumes.</li>
+  <li>Only <strong>two signatures</strong> required on checks.</li>
+  <li>Anyone signing must review all supporting documents.</li>
+  <li><strong>No individual may sign a check payable to themselves.</strong></li>
+</ul>
+<p>#### Cash Receipts</p>
+<ul>
+  <li>All cash received must use <strong>pre-numbered receipts (OR)</strong>.</li>
+  <li>The Treasurer prepares a <strong>Monthly Statement of Cash Receipts and Disbursements</strong>.</li>
+  <li>The Bookkeeper prepares <strong>quarterly financial statements</strong>:</li>
+  <li>Statement of Financial Operation</li>
+  <li>Statement of Financial Condition</li>
+  <li>Statement of Cash Flows</li>
+  <li>Statement of Changes in Equity</li>
+</ul>
+<p>#### Internal Controls Checklist</p>
+<ol>
+  <li><strong>Pre-numbered receipts</strong> for all cash transactions.</li>
+  <li><strong>Checklist / log system</strong> for tracking.</li>
+  <li><strong>Progress reports</strong> for each activity.</li>
+  <li><strong>Monthly Cash Balance Reconciliation</strong>.</li>
+  <li><strong>Clear chain of command</strong> for authorization.</li>
+  <li><strong>Authorized signature required</strong> on all transactions.</li>
+  <li><strong>Periodic inspection</strong> of all executed transactions.</li>
+  <li><strong>Separation of duties</strong>: Approving, processing, recording, reviewing, and custody must be separated.</li>
+  <li>The <strong>Cooperative Cashier must NOT post payments to accounts</strong> (separation of duties).</li>
+  <li><strong>Physical control</strong>: Safes, locked doors/drawers/filing cabinets for cash and blank checks.</li>
+  <li><strong>Blank checks and checkbooks</strong> must be locked and controlled.</li>
+  <li>Computer data secured with passwords; financial data in locked cabinets.</li>
+</ol>
+<h3>10.7 Statutory Reserves &amp; Distribution Rules</h3>
+<table border="1" style="border-collapse: collapse; width: 100%;">
+  <tr>
+    <th>Fund</th>
+    <th>Allocation</th>
+    <th>Usage</th>
+  </tr>
+  <tr>
+    <td><strong>Net Surplus for Distribution to Members</strong></td>
+    <td>70% of net income</td>
+    <td>Split 70% to Interest on Share Capital and 30% to Patronage Refund</td>
+  </tr>
+  <tr>
+    <td><strong>General Reserve Fund</strong></td>
+    <td>10% of net income</td>
+    <td>100% deposited to bank</td>
+  </tr>
+  <tr>
+    <td><strong>Optional Fund</strong></td>
+    <td>7% of net income</td>
+    <td>Land, building, computerization, promotional activities</td>
+  </tr>
+  <tr>
+    <td><strong>Community Development Fund</strong></td>
+    <td>3% of net income</td>
+    <td>Community projects, outreach programs, solicitation donations</td>
+  </tr>
+  <tr>
+    <td><strong>CETF (Education &amp; Training)</strong></td>
+    <td>10% of net income</td>
+    <td>Mandatory trainings, seminars, coop publications, Coop Month celebration</td>
+  </tr>
+</table>
+<p><strong>Sharing in Net Surplus:</strong></p>
+<table>
+  <tr>
+    <th>Distribution</th>
+    <th>Allocation</th>
+  </tr>
+  <tr>
+    <td><strong>Interest on Share Capital</strong></td>
+    <td>70% of net surplus for distribution</td>
+  </tr>
+  <tr>
+    <td><strong>Patronage Refund</strong></td>
+    <td>30% of net surplus for distribution</td>
+  </tr>
+</table>
+<p><strong>Patronage Refund Rule:</strong></p>
+<p>Members who fail to attend the General Assembly (GA) without a valid reason communicated in advance (and approved by the Board) forfeit their patronage refund — it is <strong>plowed back to their Capital Build-Up (CBU)</strong> account.</p>
+<h3>10.8 Borrowing / Financial Assistance Rules</h3>
+<ol>
+  <li>All major borrowings must be from <strong>the source of least cost</strong>.</li>
+  <li>Must comply with <strong>previous loan agreements and commitments</strong>.</li>
+  <li><strong>Borrowings may not exceed the loan limit</strong> set by Board Resolution.</li>
+  <li>The Board, in conjunction with the Manager, reviews the loan limit resolution <strong>annually</strong>.</li>
+  <li>The Manager may request a Board approval to increase the limit if needed.</li>
+</ol>
+<h3>10.9 Donation Policy</h3>
+<ol>
+  <li>Donations may be made for charitable organizations and community goodwill.</li>
+  <li>All donations must be supported by a <strong>BOD Resolution</strong> stating the necessity and allocated amount.</li>
+  <li>Donations shall be in the form of <strong>check or in-kind</strong>, in the name of the beneficiary.</li>
+  <li>The beneficiary must <strong>duly acknowledge</strong> the donation with proper documentation.</li>
+  <li><strong>Donations must not exceed &#8369;10,000.00 per year.</strong></li>
+</ol>
+<h3>10.10 Loan Renewal Business Rules</h3>
+<ol>
+  <li>A borrower may apply for a <strong>new loan (reloan)</strong> only after <strong>full payment</strong> of the previous loan.</li>
+  <li>If a reloan is being processed while a balance remains, the outstanding balance of the previous loan is <strong>deducted from the new loan's net release</strong>.</li>
+  <li>In the app, the reloan flag is automatically set when an existing active loan is detected for the selected borrower.</li>
+  <li><strong>Net Amount Released</strong> = New Principal − Previous Loan Outstanding Balance.</li>
+</ol>
+<h3>10.11 Human Resource Rules</h3>
+<p>#### Hiring Policy</p>
+<ul>
+  <li>Employees are selected based on <strong>competence, ability, intellect, and capacity for leadership</strong>.</li>
+  <li>Management administers the hiring policy including tracking employment inquiries, applications, initial interviews, and rejections.</li>
+</ul>
+<p>#### Termination / Dismissal</p>
+<ul>
+  <li><strong>Gross negligence</strong> is grounds for termination.</li>
+  <li>The terminated employee must understand the reasons, communicated calmly with respect maintained.</li>
+  <li>Terminations comply with the <strong>Labor Law of the Philippines</strong>.</li>
+</ul>
+<p>#### Staff Development</p>
+<ul>
+  <li>The BOD Vice-Chairman (as Ex-officio Chairman of the ETC) prepares a <strong>staff development plan</strong> for officers and staff, subject to BOD approval.</li>
+</ul>
+<p>#### Compensation &amp; Benefits</p>
+<ul>
+  <li>The BOD determines compensation/benefits for coop employees.</li>
+  <li>BOD members attending meetings may only reimburse <strong>transportation to/from the meeting venue</strong>; meals and snacks during BOD meetings are provided by the coop.</li>
+  <li>The BOD determines honorarium amounts for officers, committee members, and employees.</li>
+  <li>Employees receive <strong>year-end bonuses</strong>, subject to availability of funds.</li>
+</ul>
+<p>#### Performance Appraisal</p>
+<ul>
+  <li>Formal appraisals are conducted <strong>at least annually</strong>.</li>
+  <li>Based on position descriptions and performance standards.</li>
+  <li>Each officer and employee participates in the appraisal.</li>
+  <li>Honorarium/compensation adjustments are recommended based on appraisal results.</li>
+  <li>All adjustments must be <strong>approved by Manager/BOD</strong> before becoming effective.</li>
+  <li>Areas of unsatisfactory performance are reviewed with the Board; remedial actions are recorded in Board minutes.</li>
+</ul>
+<hr />
+<h2>11. FINANCIAL FORMULAS &amp; KPI DEFINITIONS</h2>
+<h3>11.1 Loan Calculation Formulas</h3>
+<p>#### Flat Interest (Standard)</p>
+<pre><code>Total Interest = Principal × (Rate% / 100) × Term (in months)
+Total Amount = Principal + Total Interest
+Installment = Total Amount / Number of Payments
+</code></pre>
+<p><strong>Example:</strong></p>
+<ul>
+  <li>Principal: &#8369;10,000</li>
+  <li>Rate: 20% flat</li>
+  <li>Term: 20 weeks (≈ 5 months)</li>
+  <li>Total Interest: &#8369;10,000 × 20% = &#8369;2,000</li>
+  <li>Total Amount: &#8369;12,000</li>
+  <li>Installment: &#8369;12,000 / 20 = <strong>&#8369;600 per week</strong></li>
+</ul>
+<p>#### Diminishing Interest</p>
+<pre><code>Monthly Rate = Annual Rate / 12
+Installment = (Principal × Monthly Rate) / (1 − (1 + Monthly Rate)^−N)
+Each period's interest decreases as the principal is paid down.
+</code></pre>
+<h3>11.2 Service Charge Calculation</h3>
+<pre><code>Service Charge = Principal × 2%
+</code></pre>
+<h3>11.3 Penalty Calculation</h3>
+<pre><code>Monthly Penalty = Remaining Balance × 3%
+Daily Equivalent = Monthly Penalty / 30
+</code></pre>
+<h3>11.4 KPI Definitions</h3>
+<p>#### Portfolio at Risk (PAR &gt; 30)</p>
+<pre><code>PAR&gt;30 = Sum of Outstanding Principal (loans with &gt;30 days overdue)
+         ÷ Total Gross Loan Portfolio (GLP)
+         × 100
+</code></pre>
+<p><strong>Target:</strong> Below 5% is generally acceptable for microfinance institutions.</p>
+<p>#### Operational Self-Sufficiency (OSS)</p>
+<pre><code>OSS = Total Financial Revenue
+      ÷ (Financial Expense + Loan Loss Provision + Operating Expense)
+      × 100
+</code></pre>
+<p><strong>Target:</strong> OSS &gt; 100% means the cooperative covers all costs from operations.</p>
+<p>#### Collection Efficiency (Collector)</p>
+<pre><code>Efficiency = Total Collected Today ÷ Total Target Today × 100%
+</code></pre>
+<p>#### Cash on Hand</p>
+<pre><code>Cash on Hand = All Cash Receipts (payments + approved remittances)
+             − All Cash Disbursements (loans released + expenses + payroll)
+</code></pre>
+<p>#### Weekly Target</p>
+<pre><code>Weekly Target = Sum of all installment_amount for loans 
+                with due dates within the current Mon–Sun week
+</code></pre>
+<h3>11.5 Savings Interest Calculation</h3>
+<pre><code>Annual Rate = 4%
+Quarterly Rate = 4% / 4 = 1%
+Quarterly Interest = Average Monthly Balance × 1%
+Monthly Average = Sum of daily balances ÷ Days in Month
+Cut-off: 10th of each month
+</code></pre>
+<h3>11.6 Deposit Calculation (per Loan)</h3>
+<p>For <strong>weekly-term loans</strong>:</p>
+<pre><code>Deposit per Payment = Principal × 1% × Number of Payments
+</code></pre>
+<p>For <strong>monthly-term loans</strong>:</p>
+<pre><code>Deposit = Principal × 1%
+</code></pre>
+<h3>11.7 Insurance Calculation (per Loan)</h3>
+<p>For <strong>weekly-term loans</strong>:</p>
+<pre><code>Insurance = ₱10 × Number of Payments
+</code></pre>
+<p>For <strong>monthly-term loans or other frequencies</strong>:</p>
+<pre><code>Insurance = ₱0 (no auto-insurance; set manually if applicable)
+</code></pre>
+<p>Insurance for institutional products is looked up from the official <strong>APR 2026 Insurance Table</strong> based on principal and term.</p>
+<hr />
+<h2>12. OFFLINE-FIRST OPERATIONS</h2>
+<h3>12.1 What Happens When You Go Offline</h3>
+<p>The app is designed to work <strong>fully offline</strong>. When internet connectivity is lost:</p>
+<ol>
+  <li>The <strong>Offline Banner</strong> appears at the top of the screen (red indicator).</li>
+  <li>All operations (recording payments, creating loans, adding borrowers) continue to work normally.</li>
+  <li>All changes are saved to the <strong>local SQLite database</strong> on your device.</li>
+  <li>Data is queued for synchronization when connectivity returns.</li>
+</ol>
+<h3>12.2 What Happens When You Come Back Online</h3>
+<ol>
+  <li>The <strong>Sync Status Indicator</strong> changes to 🟡 Syncing.</li>
+  <li>The app automatically runs a bidirectional sync:</li>
+</ol>
+<ul>
+  <li><strong>Pull</strong>: Downloads any new changes from the server (other users' updates).</li>
+  <li><strong>Push</strong>: Uploads your local changes to the server.</li>
+</ul>
+<ol>
+  <li>The indicator changes to 🟢 Synced when complete.</li>
+</ol>
+<h3>12.3 Pending Changes Count</h3>
+<p>A count of local unsynchronized records is displayed in the sync indicator. You can also manually trigger a sync from the <strong>Sync Center</strong> screen (accessible via the sync icon).</p>
+<h3>12.4 Data Safety Guarantees</h3>
+<ul>
+  <li><strong>No data is lost</strong> when going offline mid-entry. The local database persists all writes.</li>
+  <li>If the app crashes, unsaved form data may be lost — always tap <strong>Save</strong> before navigating away.</li>
+  <li>If the app is uninstalled, local data is deleted. The cloud backup remains intact and will be downloaded on next login.</li>
+</ul>
+<h3>12.5 Conflict Resolution</h3>
+<p>If the same record is edited by two users simultaneously (one online, one offline):</p>
+<ul>
+  <li>The <strong>last-write-wins</strong> rule applies.</li>
+  <li>The most recent timestamp wins during sync.</li>
+  <li>The Admin can review the <strong>Audit Report</strong> to detect and resolve conflicts.</li>
+</ul>
+<hr />
+<h2>13. DATA SYNC &amp; CLOUD BACKUP</h2>
+<h3>13.1 Sync Architecture</h3>
+<p>The app uses <strong>WatermelonDB</strong> as the local offline database, which syncs with <strong>Supabase</strong> (PostgreSQL) as the cloud backend.</p>
+<h3>13.2 Manual Sync</h3>
+<p>To manually trigger a sync:</p>
+<ol>
+  <li>Tap the <strong>Sync Status Indicator</strong> badge on any dashboard.</li>
+  <li>The Sync Center screen opens, showing sync progress, last sync time, and pending change count.</li>
+  <li>Tap <strong>Sync Now</strong> to force a sync.</li>
+</ol>
+<h3>13.3 Automatic Sync</h3>
+<p>The app triggers automatic sync:</p>
+<ul>
+  <li>When the app returns from background to foreground.</li>
+  <li>When internet connectivity is detected after being offline.</li>
+  <li>On a periodic background interval (when the device supports it).</li>
+</ul>
+<h3>13.4 Data Security</h3>
+<ul>
+  <li><strong>Borrower PII</strong> (address, phone number) is <strong>AES-encrypted</strong> on the device before being stored locally.</li>
+  <li>All data transmitted to/from Supabase uses <strong>HTTPS encryption</strong>.</li>
+  <li><strong>Row-Level Security (RLS)</strong> policies on Supabase ensure that:</li>
+  <li>Collectors only see their assigned borrowers.</li>
+  <li>Each role only sees data they are authorized to access.</li>
+  <li>Admins have full access.</li>
+</ul>
+<hr />
+<h2>14. GLOSSARY</h2>
+<table border="1" style="border-collapse: collapse; width: 100%;">
+  <tr>
+    <th>Term</th>
+    <th>Definition</th>
+  </tr>
+  <tr>
+    <td><strong>AGA</strong></td>
+    <td>Annual General Assembly</td>
+  </tr>
+  <tr>
+    <td><strong>BOD</strong></td>
+    <td>Board of Directors</td>
+  </tr>
+  <tr>
+    <td><strong>CBU</strong></td>
+    <td>Capital Build-Up — the savings fund built up from member deposits</td>
+  </tr>
+  <tr>
+    <td><strong>CETF</strong></td>
+    <td>Cooperative Education and Training Fund</td>
+  </tr>
+  <tr>
+    <td><strong>CI</strong></td>
+    <td>Credit Investigation</td>
+  </tr>
+  <tr>
+    <td><strong>Collection Sheet</strong></td>
+    <td>Daily list of borrowers with payments due, used by field collectors</td>
+  </tr>
+  <tr>
+    <td><strong>Credit Committee</strong></td>
+    <td>Committee responsible for reviewing and approving loan applications</td>
+  </tr>
+  <tr>
+    <td><strong>Daily Log</strong></td>
+    <td>End-of-day summary report submitted by collectors</td>
+  </tr>
+  <tr>
+    <td><strong>Diminishing Interest</strong></td>
+    <td>Interest computed on the declining principal balance each period</td>
+  </tr>
+  <tr>
+    <td><strong>Excess Cash Receipt</strong></td>
+    <td>Payment received in excess of the scheduled installment</td>
+  </tr>
+  <tr>
+    <td><strong>Flat Interest</strong></td>
+    <td>Interest computed on the original principal for the full loan term</td>
+  </tr>
+  <tr>
+    <td><strong>GLP</strong></td>
+    <td>Gross Loan Portfolio — total outstanding principal balance of all active loans</td>
+  </tr>
+  <tr>
+    <td><strong>Installment</strong></td>
+    <td>One periodic payment of a loan (principal + interest portion)</td>
+  </tr>
+  <tr>
+    <td><strong>Maturity Date</strong></td>
+    <td>Date on which the final loan installment is due</td>
+  </tr>
+  <tr>
+    <td><strong>Net Release</strong></td>
+    <td>Actual cash handed to the borrower (Principal − Outstanding Previous Balance for reloans)</td>
+  </tr>
+  <tr>
+    <td><strong>Offline-First</strong></td>
+    <td>Architecture where the app works without internet; syncs when connectivity is available</td>
+  </tr>
+  <tr>
+    <td><strong>OR</strong></td>
+    <td>Official Receipt</td>
+  </tr>
+  <tr>
+    <td><strong>OSS</strong></td>
+    <td>Operational Self-Sufficiency</td>
+  </tr>
+  <tr>
+    <td><strong>PAR</strong></td>
+    <td>Portfolio at Risk — proportion of the loan portfolio that is at risk of default</td>
+  </tr>
+  <tr>
+    <td><strong>Past Due</strong></td>
+    <td>A payment that has not been made by its due date</td>
+  </tr>
+  <tr>
+    <td><strong>Patronage Refund</strong></td>
+    <td>Portion of the cooperative's surplus distributed to members based on their transactions</td>
+  </tr>
+  <tr>
+    <td><strong>PMES</strong></td>
+    <td>Pre-Membership Education Seminar</td>
+  </tr>
+  <tr>
+    <td><strong>Principal</strong></td>
+    <td>The original loan amount disbursed to the borrower, excluding interest</td>
+  </tr>
+  <tr>
+    <td><strong>Reloan</strong></td>
+    <td>A new loan issued to a borrower who already has (or previously had) an active loan</td>
+  </tr>
+  <tr>
+    <td><strong>Remittance</strong></td>
+    <td>Transfer of collected cash from a collector to the cooperative office</td>
+  </tr>
+  <tr>
+    <td><strong>RLS</strong></td>
+    <td>Row-Level Security — database access control by user role</td>
+  </tr>
+  <tr>
+    <td><strong>SCSCC</strong></td>
+    <td>POS Cursor-CCF Savings and Credit Cooperative</td>
+  </tr>
+  <tr>
+    <td><strong>Service Charge</strong></td>
+    <td>A fee charged on the loan principal (2% for SCSCC cooperative loans)</td>
+  </tr>
+  <tr>
+    <td><strong>Share Capital</strong></td>
+    <td>Ownership units in the cooperative purchased by members (&#8369;100/share)</td>
+  </tr>
+  <tr>
+    <td><strong>SOA</strong></td>
+    <td>Statement of Account</td>
+  </tr>
+  <tr>
+    <td><strong>Sunlight Mode</strong></td>
+    <td>High-contrast UI setting for outdoor field use</td>
+  </tr>
+  <tr>
+    <td><strong>Sync</strong></td>
+    <td>The process of bidirectionally updating local device data with the cloud server</td>
+  </tr>
+  <tr>
+    <td><strong>WatermelonDB</strong></td>
+    <td>Offline-first SQLite database library used by the app for local data storage</td>
+  </tr>
+</table>
+<hr />
+<p>*End of System User Manual*</p>
+<p>*POS Cursor-CCF Savings and Credit Cooperative — Infinity Finance LMS*</p>
+<p>*Document Version 1.0 — July 2026*</p>
+</body>
+</html>

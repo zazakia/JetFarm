@@ -1,0 +1,1217 @@
+{
+  "generatedAt": "2026-04-21T00:15:05.059Z",
+  "sections": {
+    "paidBalances": [
+      {
+        "id": "dee78a62-7146-407b-b378-b3b8fd3d8692",
+        "loan_number": "LN-20260328-1318",
+        "borrower_name": "Marilu B. Bande",
+        "loan_total": "12600.00",
+        "paid": "2850.00",
+        "balance": "9750.00",
+        "suggested_action": "likely_imported_history_manual_review",
+        "rationale": "Paid status remains with positive balance; accounting policy required before mutation."
+      },
+      {
+        "id": "a4cae74f-2382-4fef-a85e-57dfe931818b",
+        "loan_number": "LN-20260328-8374",
+        "borrower_name": "Lorina Cagabhion Malayan",
+        "loan_total": "6200.00",
+        "paid": "0.00",
+        "balance": "6200.00",
+        "suggested_action": "manual_review_reopen_or_history_exception",
+        "rationale": "Paid status remains with positive balance; accounting policy required before mutation."
+      },
+      {
+        "id": "6ccc76bc-f80b-48aa-bdec-da351c1eccd7",
+        "loan_number": "LN-20260328-4019",
+        "borrower_name": "Gleceria J. Teves",
+        "loan_total": "6200.00",
+        "paid": "1525.00",
+        "balance": "4675.00",
+        "suggested_action": "likely_imported_history_manual_review",
+        "rationale": "Paid status remains with positive balance; accounting policy required before mutation."
+      },
+      {
+        "id": "a7b6c244-8242-4ddd-9558-e6b33cb1b57b",
+        "loan_number": "LN-20260328-5099",
+        "borrower_name": "Florenda N. Cimene",
+        "loan_total": "12400.00",
+        "paid": "9277.00",
+        "balance": "3123.00",
+        "suggested_action": "likely_imported_history_manual_review",
+        "rationale": "Paid status remains with positive balance; accounting policy required before mutation."
+      },
+      {
+        "id": "090aca9f-da08-45ed-aaa2-487bd52dcf7a",
+        "loan_number": "LN-20260328-4864",
+        "borrower_name": "Alfredo P. Cayanong",
+        "loan_total": "12400.00",
+        "paid": "9300.00",
+        "balance": "3100.00",
+        "suggested_action": "likely_imported_history_manual_review",
+        "rationale": "Paid status remains with positive balance; accounting policy required before mutation."
+      },
+      {
+        "id": "f907485b-0f75-44e2-aadc-1be0810aaf03",
+        "loan_number": "LN-20260328-6086",
+        "borrower_name": "Rosanna T. Germano",
+        "loan_total": "18600.00",
+        "paid": "15520.00",
+        "balance": "3080.00",
+        "suggested_action": "likely_imported_history_manual_review",
+        "rationale": "Paid status remains with positive balance; accounting policy required before mutation."
+      },
+      {
+        "id": "4b3c41f2-c17c-4b75-9cb7-4af0e5d221e7",
+        "loan_number": "LN-20260328-7761",
+        "borrower_name": "Stephanie G. Cuan",
+        "loan_total": "17360.00",
+        "paid": "14528.00",
+        "balance": "2832.00",
+        "suggested_action": "likely_imported_history_manual_review",
+        "rationale": "Paid status remains with positive balance; accounting policy required before mutation."
+      },
+      {
+        "id": "69218e39-6fc7-4210-9e3b-e8b0d19ad697",
+        "loan_number": "LN-20260328-0304",
+        "borrower_name": "Rosanna T. Germano",
+        "loan_total": "12400.00",
+        "paid": "9587.00",
+        "balance": "2813.00",
+        "suggested_action": "likely_imported_history_manual_review",
+        "rationale": "Paid status remains with positive balance; accounting policy required before mutation."
+      },
+      {
+        "id": "0f7e3b00-074d-48df-9e4f-4506d8b848fd",
+        "loan_number": "LN-20260328-5125",
+        "borrower_name": "Socorro H. Cuan",
+        "loan_total": "8680.00",
+        "paid": "6076.00",
+        "balance": "2604.00",
+        "suggested_action": "likely_imported_history_manual_review",
+        "rationale": "Paid status remains with positive balance; accounting policy required before mutation."
+      },
+      {
+        "id": "bf049bfb-0f16-494a-a9e3-f2dd08ae49de",
+        "loan_number": "LN-20260328-1606",
+        "borrower_name": "Carolina L. Misperos",
+        "loan_total": "12400.00",
+        "paid": "9800.00",
+        "balance": "2600.00",
+        "suggested_action": "likely_imported_history_manual_review",
+        "rationale": "Paid status remains with positive balance; accounting policy required before mutation."
+      },
+      {
+        "id": "ae1d2448-5abc-46ee-9332-0fe78ef8a04d",
+        "loan_number": "LN-20260328-0556",
+        "borrower_name": "Stephanie G. Cuan",
+        "loan_total": "14880.00",
+        "paid": "12459.00",
+        "balance": "2421.00",
+        "suggested_action": "likely_imported_history_manual_review",
+        "rationale": "Paid status remains with positive balance; accounting policy required before mutation."
+      },
+      {
+        "id": "ab21ac86-69ee-45b5-8ee8-d8ab24152ac3",
+        "loan_number": "LN-20260328-4223",
+        "borrower_name": "Florenda N. Cimene",
+        "loan_total": "14880.00",
+        "paid": "12541.00",
+        "balance": "2339.00",
+        "suggested_action": "likely_imported_history_manual_review",
+        "rationale": "Paid status remains with positive balance; accounting policy required before mutation."
+      },
+      {
+        "id": "b713dfc6-27be-4dfb-9159-5049e0becfda",
+        "loan_number": "LN-20260328-6767",
+        "borrower_name": "Maria Lourdes D. Patricio",
+        "loan_total": "24800.00",
+        "paid": "22510.00",
+        "balance": "2290.00",
+        "suggested_action": "likely_imported_history_manual_review",
+        "rationale": "Paid status remains with positive balance; accounting policy required before mutation."
+      },
+      {
+        "id": "ade2a4f6-18b0-4648-92c4-861638088a5e",
+        "loan_number": "LN-20260328-7447",
+        "borrower_name": "Socorro H. Cuan",
+        "loan_total": "12400.00",
+        "paid": "10180.00",
+        "balance": "2220.00",
+        "suggested_action": "likely_imported_history_manual_review",
+        "rationale": "Paid status remains with positive balance; accounting policy required before mutation."
+      },
+      {
+        "id": "9675ae33-9f75-40a1-bd60-476cbc278786",
+        "loan_number": "LN-20260328-6643",
+        "borrower_name": "Ma. Liza Librea",
+        "loan_total": "9920.00",
+        "paid": "7702.00",
+        "balance": "2218.00",
+        "suggested_action": "likely_imported_history_manual_review",
+        "rationale": "Paid status remains with positive balance; accounting policy required before mutation."
+      },
+      {
+        "id": "ebb5dad0-c023-47e6-9ccf-86e9014de59f",
+        "loan_number": "LN-20260328-8399",
+        "borrower_name": "Leonora P. Trigosa",
+        "loan_total": "9920.00",
+        "paid": "7722.00",
+        "balance": "2198.00",
+        "suggested_action": "likely_imported_history_manual_review",
+        "rationale": "Paid status remains with positive balance; accounting policy required before mutation."
+      },
+      {
+        "id": "513c0aad-9a31-4168-86f0-be89f18e619c",
+        "loan_number": "LN-20260328-1311",
+        "borrower_name": "Emma J. Dela Pena",
+        "loan_total": "8680.00",
+        "paid": "6519.00",
+        "balance": "2161.00",
+        "suggested_action": "likely_imported_history_manual_review",
+        "rationale": "Paid status remains with positive balance; accounting policy required before mutation."
+      },
+      {
+        "id": "78df4ee6-4b95-4bfe-b943-749f394d8c4c",
+        "loan_number": "LN-20260328-6683",
+        "borrower_name": "Emma J. Dela Pena",
+        "loan_total": "12400.00",
+        "paid": "10330.00",
+        "balance": "2070.00",
+        "suggested_action": "likely_imported_history_manual_review",
+        "rationale": "Paid status remains with positive balance; accounting policy required before mutation."
+      },
+      {
+        "id": "561665ad-a519-45e4-8053-9dad62fb1686",
+        "loan_number": "LN-20260328-2414",
+        "borrower_name": "Maria Camila Lahoylahoy",
+        "loan_total": "6200.00",
+        "paid": "4185.00",
+        "balance": "2015.00",
+        "suggested_action": "likely_imported_history_manual_review",
+        "rationale": "Paid status remains with positive balance; accounting policy required before mutation."
+      },
+      {
+        "id": "2f38b209-aeb9-4c4c-b838-96ef3d7d4ed9",
+        "loan_number": "LN-20260328-9231",
+        "borrower_name": "Arcelene B. Castro",
+        "loan_total": "6200.00",
+        "paid": "4185.00",
+        "balance": "2015.00",
+        "suggested_action": "likely_imported_history_manual_review",
+        "rationale": "Paid status remains with positive balance; accounting policy required before mutation."
+      },
+      {
+        "id": "9f486553-b722-4456-ab00-897c0c734518",
+        "loan_number": "LN-20260328-3785",
+        "borrower_name": "Maria Lourdes D. Patricio",
+        "loan_total": "17360.00",
+        "paid": "15360.00",
+        "balance": "2000.00",
+        "suggested_action": "likely_imported_history_manual_review",
+        "rationale": "Paid status remains with positive balance; accounting policy required before mutation."
+      },
+      {
+        "id": "d4945291-7343-450d-b199-892e8fddf8ac",
+        "loan_number": "LN-20260328-5515",
+        "borrower_name": "Cristita Cagabhion",
+        "loan_total": "8680.00",
+        "paid": "6684.00",
+        "balance": "1996.00",
+        "suggested_action": "likely_imported_history_manual_review",
+        "rationale": "Paid status remains with positive balance; accounting policy required before mutation."
+      },
+      {
+        "id": "29e35ee5-d94c-476d-9557-d16019421b88",
+        "loan_number": "LN-20260328-0729",
+        "borrower_name": "Irma C. Marquez",
+        "loan_total": "8680.00",
+        "paid": "6723.00",
+        "balance": "1957.00",
+        "suggested_action": "likely_imported_history_manual_review",
+        "rationale": "Paid status remains with positive balance; accounting policy required before mutation."
+      },
+      {
+        "id": "1ea90e46-dd92-4e38-8b46-82c189dbe77d",
+        "loan_number": "LN-20260328-9533",
+        "borrower_name": "Lucita C. Cagabhion",
+        "loan_total": "11160.00",
+        "paid": "9220.00",
+        "balance": "1940.00",
+        "suggested_action": "likely_imported_history_manual_review",
+        "rationale": "Paid status remains with positive balance; accounting policy required before mutation."
+      },
+      {
+        "id": "b09984c1-5f8b-4188-a3bb-8925e2e3e77c",
+        "loan_number": "LN-20260328-7217",
+        "borrower_name": "Florenda N. Cimene",
+        "loan_total": "12400.00",
+        "paid": "10490.00",
+        "balance": "1910.00",
+        "suggested_action": "likely_imported_history_manual_review",
+        "rationale": "Paid status remains with positive balance; accounting policy required before mutation."
+      },
+      {
+        "id": "282fd30e-2ac1-4120-92c9-cf7f1c7d4fef",
+        "loan_number": "LN-20260328-4268",
+        "borrower_name": "Helen B. Bacalso",
+        "loan_total": "18600.00",
+        "paid": "16700.00",
+        "balance": "1900.00",
+        "suggested_action": "likely_imported_history_manual_review",
+        "rationale": "Paid status remains with positive balance; accounting policy required before mutation."
+      },
+      {
+        "id": "f2b3827f-dafa-4d66-9f86-570bd231f76c",
+        "loan_number": "LN-20260328-4893",
+        "borrower_name": "Veneranda L.Gutierrez",
+        "loan_total": "8680.00",
+        "paid": "6814.00",
+        "balance": "1866.00",
+        "suggested_action": "likely_imported_history_manual_review",
+        "rationale": "Paid status remains with positive balance; accounting policy required before mutation."
+      },
+      {
+        "id": "e184f8ba-9d0f-40f3-9f99-a70572adeabb",
+        "loan_number": "LN-20260328-1259",
+        "borrower_name": "Leonora P. Trigosa",
+        "loan_total": "12400.00",
+        "paid": "10540.00",
+        "balance": "1860.00",
+        "suggested_action": "likely_imported_history_manual_review",
+        "rationale": "Paid status remains with positive balance; accounting policy required before mutation."
+      },
+      {
+        "id": "ec545b3b-dc9b-48df-a27e-77e3b0782f53",
+        "loan_number": "LN-20260328-9462",
+        "borrower_name": "Susan B. Guevarra",
+        "loan_total": "11160.00",
+        "paid": "9300.00",
+        "balance": "1860.00",
+        "suggested_action": "likely_imported_history_manual_review",
+        "rationale": "Paid status remains with positive balance; accounting policy required before mutation."
+      },
+      {
+        "id": "4ebaa8ad-1955-4d5c-90b3-40b8cee6bcd0",
+        "loan_number": "LN-20260328-0738",
+        "borrower_name": "Rosanna T. Germano",
+        "loan_total": "21080.00",
+        "paid": "19229.00",
+        "balance": "1851.00",
+        "suggested_action": "likely_imported_history_manual_review",
+        "rationale": "Paid status remains with positive balance; accounting policy required before mutation."
+      },
+      {
+        "id": "59375f0b-80e5-475e-9a12-519485db4bb2",
+        "loan_number": "LN-20260328-6601",
+        "borrower_name": "Margarita B. Cayanong",
+        "loan_total": "18600.00",
+        "paid": "16775.00",
+        "balance": "1825.00",
+        "suggested_action": "likely_imported_history_manual_review",
+        "rationale": "Paid status remains with positive balance; accounting policy required before mutation."
+      },
+      {
+        "id": "2f0cefce-f3b9-43af-a9d3-21bac641afe3",
+        "loan_number": "LN-20260328-8786",
+        "borrower_name": "Elizabeth A. Giyao",
+        "loan_total": "6200.00",
+        "paid": "4410.00",
+        "balance": "1790.00",
+        "suggested_action": "likely_imported_history_manual_review",
+        "rationale": "Paid status remains with positive balance; accounting policy required before mutation."
+      },
+      {
+        "id": "1eb1489f-8e48-4b01-a188-ad07b18d7555",
+        "loan_number": "LN-20260328-0568",
+        "borrower_name": "Susan B. Guevarra",
+        "loan_total": "8680.00",
+        "paid": "6950.00",
+        "balance": "1730.00",
+        "suggested_action": "likely_imported_history_manual_review",
+        "rationale": "Paid status remains with positive balance; accounting policy required before mutation."
+      },
+      {
+        "id": "e4c1d6e7-932c-4171-819e-a72f129b9771",
+        "loan_number": "LN-20260328-1776",
+        "borrower_name": "Susan B. Guevarra",
+        "loan_total": "11160.00",
+        "paid": "9440.00",
+        "balance": "1720.00",
+        "suggested_action": "likely_imported_history_manual_review",
+        "rationale": "Paid status remains with positive balance; accounting policy required before mutation."
+      },
+      {
+        "id": "dbd60e98-9cbd-48de-a0fb-63fe8a003602",
+        "loan_number": "LN-20260328-4214",
+        "borrower_name": "Jemaima L. Gonzales",
+        "loan_total": "12400.00",
+        "paid": "10690.00",
+        "balance": "1710.00",
+        "suggested_action": "likely_imported_history_manual_review",
+        "rationale": "Paid status remains with positive balance; accounting policy required before mutation."
+      },
+      {
+        "id": "cfe3259e-a61c-43d5-bbf9-364e1b5d9f61",
+        "loan_number": "LN-20260328-4152",
+        "borrower_name": "Jessica P. Mague",
+        "loan_total": "6200.00",
+        "paid": "4495.00",
+        "balance": "1705.00",
+        "suggested_action": "likely_imported_history_manual_review",
+        "rationale": "Paid status remains with positive balance; accounting policy required before mutation."
+      },
+      {
+        "id": "30356a8f-e799-4704-b44f-727e8c902c83",
+        "loan_number": "LN-20260328-3475",
+        "borrower_name": "Marivic R. Penalosa",
+        "loan_total": "6200.00",
+        "paid": "4495.00",
+        "balance": "1705.00",
+        "suggested_action": "likely_imported_history_manual_review",
+        "rationale": "Paid status remains with positive balance; accounting policy required before mutation."
+      },
+      {
+        "id": "c44b8028-b310-4caa-97fc-d73c9a0c66de",
+        "loan_number": "LN-20260328-1529",
+        "borrower_name": "Warlito R. Decio",
+        "loan_total": "6200.00",
+        "paid": "4495.00",
+        "balance": "1705.00",
+        "suggested_action": "likely_imported_history_manual_review",
+        "rationale": "Paid status remains with positive balance; accounting policy required before mutation."
+      },
+      {
+        "id": "6d296e45-ae7e-43a4-b280-362248545509",
+        "loan_number": "LN-20260328-3863",
+        "borrower_name": "Helen Omega",
+        "loan_total": "6200.00",
+        "paid": "4495.00",
+        "balance": "1705.00",
+        "suggested_action": "likely_imported_history_manual_review",
+        "rationale": "Paid status remains with positive balance; accounting policy required before mutation."
+      },
+      {
+        "id": "6c1fdcc3-f529-40be-b072-5a07368ab169",
+        "loan_number": "LN-20260328-3010",
+        "borrower_name": "Socorro H. Cuan",
+        "loan_total": "6200.00",
+        "paid": "4495.00",
+        "balance": "1705.00",
+        "suggested_action": "likely_imported_history_manual_review",
+        "rationale": "Paid status remains with positive balance; accounting policy required before mutation."
+      },
+      {
+        "id": "f1da30b4-5448-4375-ac3d-ca62f3289d5e",
+        "loan_number": "LN-20260328-2341",
+        "borrower_name": "Rosanna T. Germano",
+        "loan_total": "6200.00",
+        "paid": "4495.00",
+        "balance": "1705.00",
+        "suggested_action": "likely_imported_history_manual_review",
+        "rationale": "Paid status remains with positive balance; accounting policy required before mutation."
+      },
+      {
+        "id": "f533dbd3-a18b-4dd6-ac10-4795498f8603",
+        "loan_number": "LN-20260328-2388",
+        "borrower_name": "Celerina R. Decio",
+        "loan_total": "6200.00",
+        "paid": "4495.00",
+        "balance": "1705.00",
+        "suggested_action": "likely_imported_history_manual_review",
+        "rationale": "Paid status remains with positive balance; accounting policy required before mutation."
+      },
+      {
+        "id": "a7034052-f942-4ac9-9b7f-1dabc3fe7ef1",
+        "loan_number": "LN-20260328-1056",
+        "borrower_name": "Geralien Benitez",
+        "loan_total": "6200.00",
+        "paid": "4495.00",
+        "balance": "1705.00",
+        "suggested_action": "likely_imported_history_manual_review",
+        "rationale": "Paid status remains with positive balance; accounting policy required before mutation."
+      },
+      {
+        "id": "75c2d7e9-f83c-4af2-8fe5-da2753cfa951",
+        "loan_number": "LN-20260328-1082",
+        "borrower_name": "Rachel W. Dalanon",
+        "loan_total": "6200.00",
+        "paid": "4495.00",
+        "balance": "1705.00",
+        "suggested_action": "likely_imported_history_manual_review",
+        "rationale": "Paid status remains with positive balance; accounting policy required before mutation."
+      },
+      {
+        "id": "6eca9488-6774-48c1-9800-f165e8994a6e",
+        "loan_number": "LN-20260328-3480",
+        "borrower_name": "Florenda N. Cimene",
+        "loan_total": "6200.00",
+        "paid": "4495.00",
+        "balance": "1705.00",
+        "suggested_action": "likely_imported_history_manual_review",
+        "rationale": "Paid status remains with positive balance; accounting policy required before mutation."
+      },
+      {
+        "id": "889cd52d-5e7d-476c-baa8-a7ffe4f1b0a0",
+        "loan_number": "LN-20260328-5355",
+        "borrower_name": "Emma B. Lajara",
+        "loan_total": "8680.00",
+        "paid": "6990.00",
+        "balance": "1690.00",
+        "suggested_action": "likely_imported_history_manual_review",
+        "rationale": "Paid status remains with positive balance; accounting policy required before mutation."
+      },
+      {
+        "id": "38a62852-8335-4171-8da4-c36eedaedc3f",
+        "loan_number": "LN-20260328-8955",
+        "borrower_name": "Vangie Domanillo",
+        "loan_total": "8680.00",
+        "paid": "7005.00",
+        "balance": "1675.00",
+        "suggested_action": "likely_imported_history_manual_review",
+        "rationale": "Paid status remains with positive balance; accounting policy required before mutation."
+      },
+      {
+        "id": "3e309688-71de-490e-8f05-6930ec2057fb",
+        "loan_number": "LN-20260328-7750",
+        "borrower_name": "Gina O. Navarro",
+        "loan_total": "6200.00",
+        "paid": "4530.00",
+        "balance": "1670.00",
+        "suggested_action": "likely_imported_history_manual_review",
+        "rationale": "Paid status remains with positive balance; accounting policy required before mutation."
+      },
+      {
+        "id": "261ca314-a6e0-4f51-b547-5733b1c0f66a",
+        "loan_number": "LN-20260328-3380",
+        "borrower_name": "Veneranda L.Gutierrez",
+        "loan_total": "6200.00",
+        "paid": "4530.00",
+        "balance": "1670.00",
+        "suggested_action": "likely_imported_history_manual_review",
+        "rationale": "Paid status remains with positive balance; accounting policy required before mutation."
+      },
+      {
+        "id": "57d538b9-298a-4a90-9ae8-d5a788668bd3",
+        "loan_number": "LN-20260328-5619",
+        "borrower_name": "Amelita Caamic",
+        "loan_total": "12400.00",
+        "paid": "10750.00",
+        "balance": "1650.00",
+        "suggested_action": "likely_imported_history_manual_review",
+        "rationale": "Paid status remains with positive balance; accounting policy required before mutation."
+      }
+    ],
+    "overpaid": [
+      {
+        "id": "89a5ae64-8ed0-4775-a63a-155e40c018ee",
+        "loan_number": "LN-20260417-1482",
+        "borrower_name": "Carolina L. Misperos",
+        "status": "paid",
+        "loan_total": "15080.00",
+        "paid": "45240.00",
+        "overpaid": "30160.00",
+        "suggested_action": "manual_review_duplicate_or_credit_or_refund",
+        "rationale": "Overpayments should not be auto-corrected without deciding whether to refund, credit, or remove duplicates."
+      },
+      {
+        "id": "6d822d22-123a-4e11-a24e-bcd4847e0fe3",
+        "loan_number": "LN-20260328-2360",
+        "borrower_name": "Jean M. Sanchez",
+        "status": "paid",
+        "loan_total": "6200.00",
+        "paid": "6355.00",
+        "overpaid": "155.00",
+        "suggested_action": "manual_review_minor_overpayment",
+        "rationale": "Overpayments should not be auto-corrected without deciding whether to refund, credit, or remove duplicates."
+      }
+    ],
+    "duplicateActive": [
+      {
+        "borrower_id": "94d708bc-4cae-4a1b-950d-b5d56ca6b61d",
+        "borrower_name": "Dennis Lunzaga",
+        "active_count": 4,
+        "active_loans": "LN-20260328-8887, LN-20260417-130954-121024, LN-20260418-002350-341883, LN-20260420-201048-543779",
+        "suggested_action": "manual_review_choose_authoritative_active_loan",
+        "rationale": "Multiple active loans require business decision about which loan should remain active."
+      },
+      {
+        "borrower_id": "80b57c8e-fb27-4ea4-a303-473f3412c3c6",
+        "borrower_name": "Lorina Cagabhion Malayan",
+        "active_count": 3,
+        "active_loans": "LN-20260328-0362, LN-20260328-2478, 083b4173-8e8d-4b66-b77c-77c478a740d2",
+        "suggested_action": "manual_review_choose_authoritative_active_loan",
+        "rationale": "Multiple active loans require business decision about which loan should remain active."
+      },
+      {
+        "borrower_id": "8d53e40e-9ff6-4931-8777-c741683292df",
+        "borrower_name": "Genara A. Cantiga",
+        "active_count": 2,
+        "active_loans": "LN-20260328-6059, LN-20260417-9567",
+        "suggested_action": "manual_review_choose_authoritative_active_loan",
+        "rationale": "Multiple active loans require business decision about which loan should remain active."
+      }
+    ],
+    "scheduleTotals": [
+      {
+        "id": "f5d3afbc-1132-4dd2-a7b5-fbfad3829848",
+        "loan_number": "LN-20260420-181915-415719",
+        "borrower_name": "Carolina L. Misperos",
+        "status": "active",
+        "loan_total": "19267.00",
+        "schedule_total": "38534.00",
+        "difference": "19267.00",
+        "schedule_count": 46,
+        "suggested_action": "manual_review_duplicate_or_doubled_schedule_set",
+        "rationale": "Schedule totals do not match stored loan totals; automatic repair could corrupt historical repayment plans."
+      },
+      {
+        "id": "083b4173-8e8d-4b66-b77c-77c478a740d2",
+        "loan_number": "",
+        "borrower_name": "Lorina Cagabhion Malayan",
+        "status": "active",
+        "loan_total": "11360.00",
+        "schedule_total": "0.00",
+        "difference": "-11360.00",
+        "schedule_count": 0,
+        "suggested_action": "manual_review_generate_or_restore_schedules",
+        "rationale": "Schedule totals do not match stored loan totals; automatic repair could corrupt historical repayment plans."
+      },
+      {
+        "id": "b77bf664-9eca-4832-8441-6c89a8b8250a",
+        "loan_number": "LN-20260417-9567",
+        "borrower_name": "Genara A. Cantiga",
+        "status": "active",
+        "loan_total": "6400.00",
+        "schedule_total": "12800.00",
+        "difference": "6400.00",
+        "schedule_count": 80,
+        "suggested_action": "manual_review_duplicate_or_doubled_schedule_set",
+        "rationale": "Schedule totals do not match stored loan totals; automatic repair could corrupt historical repayment plans."
+      },
+      {
+        "id": "738aeb65-02d2-451a-af15-f87ab116ac19",
+        "loan_number": "LN-20260328-9164",
+        "borrower_name": "Fe B. Garbe",
+        "status": "active",
+        "loan_total": "6400.00",
+        "schedule_total": "12600.00",
+        "difference": "6200.00",
+        "schedule_count": 40,
+        "suggested_action": "manual_review_duplicate_or_doubled_schedule_set",
+        "rationale": "Schedule totals do not match stored loan totals; automatic repair could corrupt historical repayment plans."
+      },
+      {
+        "id": "6ccc76bc-f80b-48aa-bdec-da351c1eccd7",
+        "loan_number": "LN-20260328-4019",
+        "borrower_name": "Gleceria J. Teves",
+        "status": "paid",
+        "loan_total": "6200.00",
+        "schedule_total": "0.00",
+        "difference": "-6200.00",
+        "schedule_count": 0,
+        "suggested_action": "manual_review_generate_or_restore_schedules",
+        "rationale": "Schedule totals do not match stored loan totals; automatic repair could corrupt historical repayment plans."
+      },
+      {
+        "id": "a4cae74f-2382-4fef-a85e-57dfe931818b",
+        "loan_number": "LN-20260328-8374",
+        "borrower_name": "Lorina Cagabhion Malayan",
+        "status": "paid",
+        "loan_total": "6200.00",
+        "schedule_total": "0.00",
+        "difference": "-6200.00",
+        "schedule_count": 0,
+        "suggested_action": "manual_review_generate_or_restore_schedules",
+        "rationale": "Schedule totals do not match stored loan totals; automatic repair could corrupt historical repayment plans."
+      },
+      {
+        "id": "46f28298-19fa-4ef7-bb53-aeb19a1a2019",
+        "loan_number": "LN-20260328-5304",
+        "borrower_name": "Geraliz B. Bucao",
+        "status": "active",
+        "loan_total": "31000.00",
+        "schedule_total": "31200.00",
+        "difference": "200.00",
+        "schedule_count": 40,
+        "suggested_action": "manual_review_recompute_schedule_amounts",
+        "rationale": "Schedule totals do not match stored loan totals; automatic repair could corrupt historical repayment plans."
+      }
+    ],
+    "savingsOvercredits": [
+      {
+        "loan_id": "80c012cb-8f4a-48be-8ac3-0a48dc512a57",
+        "loan_number": "LN-20260420-185234-628551",
+        "borrower_name": "aaaaaaaaaa",
+        "loan_deposit_amount": "200.00",
+        "auto_deposit_total": "1200.00",
+        "overcredit": "1000.00",
+        "suggested_action": "manual_review_reverse_excess_auto_deposits",
+        "rationale": "Existing auto-deposit history predates the fix and should be reviewed before reversing savings entries."
+      },
+      {
+        "loan_id": "4789d8cf-7950-4578-ae08-751a6b84bf65",
+        "loan_number": "LN-20260421-010440-860105",
+        "borrower_name": "Bryan Boyd Baldozanso",
+        "loan_deposit_amount": "200.00",
+        "auto_deposit_total": "400.00",
+        "overcredit": "200.00",
+        "suggested_action": "manual_review_reverse_excess_auto_deposits",
+        "rationale": "Existing auto-deposit history predates the fix and should be reviewed before reversing savings entries."
+      }
+    ],
+    "unresolvedScheduleLinks": [
+      {
+        "payment_id": "8dcd9c04-3b49-42d8-97fd-d04839ace257",
+        "loan_id": "80c012cb-8f4a-48be-8ac3-0a48dc512a57",
+        "loan_number": "LN-20260420-185234-628551",
+        "borrower_name": "aaaaaaaaaa",
+        "amount": "700.00",
+        "payment_date": "2026-04-21T16:00:00.000Z",
+        "receipt_number": null,
+        "suggested_action": "manual_review_spans_multiple_schedules_or_missing_schedule_context",
+        "rationale": "These payments remained unlinked after safe FIFO backfill because they likely span multiple schedules or lack enough context."
+      },
+      {
+        "payment_id": "ccd1c584-610b-45c1-9c52-fec4bc6df2c4",
+        "loan_id": "fd871ed6-5e7a-4a98-abf2-e0e00d159bd8",
+        "loan_number": "LN-20260420-175922-638334",
+        "borrower_name": "Bryan Boyd Baldozanso",
+        "amount": "60400.00",
+        "payment_date": "2026-04-20T17:05:46.394Z",
+        "receipt_number": null,
+        "suggested_action": "manual_review_spans_multiple_schedules_or_missing_schedule_context",
+        "rationale": "These payments remained unlinked after safe FIFO backfill because they likely span multiple schedules or lack enough context."
+      },
+      {
+        "payment_id": "c08b2741-2013-4b00-b9f7-f08c597acc9f",
+        "loan_id": "4789d8cf-7950-4578-ae08-751a6b84bf65",
+        "loan_number": "LN-20260421-010440-860105",
+        "borrower_name": "Bryan Boyd Baldozanso",
+        "amount": "2110.00",
+        "payment_date": "2026-04-20T16:00:00.000Z",
+        "receipt_number": null,
+        "suggested_action": "manual_review_spans_multiple_schedules_or_missing_schedule_context",
+        "rationale": "These payments remained unlinked after safe FIFO backfill because they likely span multiple schedules or lack enough context."
+      },
+      {
+        "payment_id": "fec5b44b-53bb-4e41-96b1-2f5b985aae06",
+        "loan_id": "6f854696-0b6e-4d73-8ff3-9cf95cda812c",
+        "loan_number": "LN-20260418-112516-182133",
+        "borrower_name": "Dennis Lunzaga",
+        "amount": "5055.83",
+        "payment_date": "2026-04-20T12:10:48.907Z",
+        "receipt_number": null,
+        "suggested_action": "manual_review_spans_multiple_schedules_or_missing_schedule_context",
+        "rationale": "These payments remained unlinked after safe FIFO backfill because they likely span multiple schedules or lack enough context."
+      },
+      {
+        "payment_id": "93d7ca61-05cc-4f79-a57c-a1bcd358bbe3",
+        "loan_id": "89a5ae64-8ed0-4775-a63a-155e40c018ee",
+        "loan_number": "LN-20260417-1482",
+        "borrower_name": "Carolina L. Misperos",
+        "amount": "15080.00",
+        "payment_date": "2026-04-20T11:19:55.568Z",
+        "receipt_number": null,
+        "suggested_action": "manual_review_spans_multiple_schedules_or_missing_schedule_context",
+        "rationale": "These payments remained unlinked after safe FIFO backfill because they likely span multiple schedules or lack enough context."
+      },
+      {
+        "payment_id": "61c136c6-5180-4c56-b064-7fca1185c9c0",
+        "loan_id": "89a5ae64-8ed0-4775-a63a-155e40c018ee",
+        "loan_number": "LN-20260417-1482",
+        "borrower_name": "Carolina L. Misperos",
+        "amount": "15080.00",
+        "payment_date": "2026-04-20T11:19:17.071Z",
+        "receipt_number": null,
+        "suggested_action": "manual_review_spans_multiple_schedules_or_missing_schedule_context",
+        "rationale": "These payments remained unlinked after safe FIFO backfill because they likely span multiple schedules or lack enough context."
+      },
+      {
+        "payment_id": "4ec9b58a-8551-4339-ada3-9c1541d4fc9b",
+        "loan_id": "89a5ae64-8ed0-4775-a63a-155e40c018ee",
+        "loan_number": "LN-20260417-1482",
+        "borrower_name": "Carolina L. Misperos",
+        "amount": "15080.00",
+        "payment_date": "2026-04-20T10:19:15.014Z",
+        "receipt_number": null,
+        "suggested_action": "manual_review_spans_multiple_schedules_or_missing_schedule_context",
+        "rationale": "These payments remained unlinked after safe FIFO backfill because they likely span multiple schedules or lack enough context."
+      },
+      {
+        "payment_id": "91963aa0-0d81-44f0-be74-e1820112ca01",
+        "loan_id": "9f720413-b0e8-45f8-b583-e39cb348bce0",
+        "loan_number": "LN-20260328-5495",
+        "borrower_name": "Bryan Boyd Baldozanso",
+        "amount": "3950.00",
+        "payment_date": "2026-04-20T09:59:22.699Z",
+        "receipt_number": null,
+        "suggested_action": "manual_review_spans_multiple_schedules_or_missing_schedule_context",
+        "rationale": "These payments remained unlinked after safe FIFO backfill because they likely span multiple schedules or lack enough context."
+      },
+      {
+        "payment_id": "5e484e01-ce6a-40ae-91ce-eee4bfa0e3b0",
+        "loan_id": "57c93253-e079-4964-8f99-ba9635f2295b",
+        "loan_number": "LN-20260328-4465",
+        "borrower_name": "Irene J. Cabintoy",
+        "amount": "160.00",
+        "payment_date": "2026-04-18T07:33:34.438Z",
+        "receipt_number": "OR-20260418-153316-277690",
+        "suggested_action": "manual_review_spans_multiple_schedules_or_missing_schedule_context",
+        "rationale": "These payments remained unlinked after safe FIFO backfill because they likely span multiple schedules or lack enough context."
+      },
+      {
+        "payment_id": "309afe22-d2e4-4971-bb98-63ccd3a35b0c",
+        "loan_id": "57c93253-e079-4964-8f99-ba9635f2295b",
+        "loan_number": "LN-20260328-4465",
+        "borrower_name": "Irene J. Cabintoy",
+        "amount": "160.00",
+        "payment_date": "2026-04-18T07:33:16.066Z",
+        "receipt_number": "OR-20260418-153258-981875",
+        "suggested_action": "manual_review_spans_multiple_schedules_or_missing_schedule_context",
+        "rationale": "These payments remained unlinked after safe FIFO backfill because they likely span multiple schedules or lack enough context."
+      },
+      {
+        "payment_id": "f1d79cd7-2647-4b86-b61c-380e3bf43cba",
+        "loan_id": "57c93253-e079-4964-8f99-ba9635f2295b",
+        "loan_number": "LN-20260328-4465",
+        "borrower_name": "Irene J. Cabintoy",
+        "amount": "160.00",
+        "payment_date": "2026-04-18T07:32:58.302Z",
+        "receipt_number": "OR-20260418-153225-560988",
+        "suggested_action": "manual_review_spans_multiple_schedules_or_missing_schedule_context",
+        "rationale": "These payments remained unlinked after safe FIFO backfill because they likely span multiple schedules or lack enough context."
+      },
+      {
+        "payment_id": "a569e5b6-d22c-4adc-a502-6407c8aa4194",
+        "loan_id": "57c93253-e079-4964-8f99-ba9635f2295b",
+        "loan_number": "LN-20260328-4465",
+        "borrower_name": "Irene J. Cabintoy",
+        "amount": "160.00",
+        "payment_date": "2026-04-18T07:31:42.890Z",
+        "receipt_number": "OR-20260418-153127-718541",
+        "suggested_action": "manual_review_spans_multiple_schedules_or_missing_schedule_context",
+        "rationale": "These payments remained unlinked after safe FIFO backfill because they likely span multiple schedules or lack enough context."
+      },
+      {
+        "payment_id": "39dd47d7-e8c4-4349-8649-514be329a48f",
+        "loan_id": "57c93253-e079-4964-8f99-ba9635f2295b",
+        "loan_number": "LN-20260328-4465",
+        "borrower_name": "Irene J. Cabintoy",
+        "amount": "160.00",
+        "payment_date": "2026-04-18T07:31:27.555Z",
+        "receipt_number": "OR-20260418-153110-243561",
+        "suggested_action": "manual_review_spans_multiple_schedules_or_missing_schedule_context",
+        "rationale": "These payments remained unlinked after safe FIFO backfill because they likely span multiple schedules or lack enough context."
+      },
+      {
+        "payment_id": "8c86d0d0-f27a-4b67-a657-dcf6c295ece6",
+        "loan_id": "57c93253-e079-4964-8f99-ba9635f2295b",
+        "loan_number": "LN-20260328-4465",
+        "borrower_name": "Irene J. Cabintoy",
+        "amount": "160.00",
+        "payment_date": "2026-04-18T07:31:10.601Z",
+        "receipt_number": "OR-20260418-153054-736418",
+        "suggested_action": "manual_review_spans_multiple_schedules_or_missing_schedule_context",
+        "rationale": "These payments remained unlinked after safe FIFO backfill because they likely span multiple schedules or lack enough context."
+      },
+      {
+        "payment_id": "77b08755-1483-42f9-84e3-33e7ff6316e5",
+        "loan_id": "f5eadabc-a712-41ea-9984-b0033c8ed106",
+        "loan_number": "LN-20260328-6056",
+        "borrower_name": "Rowena Misperos",
+        "amount": "6582.00",
+        "payment_date": "2026-04-18T03:51:05.715Z",
+        "receipt_number": null,
+        "suggested_action": "manual_review_spans_multiple_schedules_or_missing_schedule_context",
+        "rationale": "These payments remained unlinked after safe FIFO backfill because they likely span multiple schedules or lack enough context."
+      },
+      {
+        "payment_id": "97fbdd5d-2066-4641-8b55-03b55f04b0c4",
+        "loan_id": "2d1b7164-8622-47e8-8d5f-85937b4edebe",
+        "loan_number": "LN-20260417-130819-013242",
+        "borrower_name": "Dennis Lunzaga",
+        "amount": "2215.00",
+        "payment_date": "2026-04-18T03:25:16.173Z",
+        "receipt_number": null,
+        "suggested_action": "manual_review_spans_multiple_schedules_or_missing_schedule_context",
+        "rationale": "These payments remained unlinked after safe FIFO backfill because they likely span multiple schedules or lack enough context."
+      },
+      {
+        "payment_id": "3ca13e00-f30e-4ce4-9f92-1f0704547b46",
+        "loan_id": "84b8fbfb-11f6-4d26-a1d3-da075f73da80",
+        "loan_number": "LN-20260328-0404",
+        "borrower_name": "Marielle R. Decio",
+        "amount": "200.00",
+        "payment_date": "2026-04-10T11:32:38.556Z",
+        "receipt_number": null,
+        "suggested_action": "manual_review_spans_multiple_schedules_or_missing_schedule_context",
+        "rationale": "These payments remained unlinked after safe FIFO backfill because they likely span multiple schedules or lack enough context."
+      },
+      {
+        "payment_id": "82a867ed-b27d-47d5-8c5a-f795c67c35d6",
+        "loan_id": "44c1d695-5781-4fe8-9b0b-bd1c706d7991",
+        "loan_number": "LN-20260328-0723",
+        "borrower_name": "Lorena G. Capacao",
+        "amount": "250.00",
+        "payment_date": "2026-03-20T15:59:17.000Z",
+        "receipt_number": null,
+        "suggested_action": "manual_review_spans_multiple_schedules_or_missing_schedule_context",
+        "rationale": "These payments remained unlinked after safe FIFO backfill because they likely span multiple schedules or lack enough context."
+      },
+      {
+        "payment_id": "04d662ef-67c4-4629-9b29-07b8cc796af9",
+        "loan_id": "738aeb65-02d2-451a-af15-f87ab116ac19",
+        "loan_number": "LN-20260328-9164",
+        "borrower_name": "Fe B. Garbe",
+        "amount": "160.00",
+        "payment_date": "2026-03-20T15:59:17.000Z",
+        "receipt_number": null,
+        "suggested_action": "manual_review_spans_multiple_schedules_or_missing_schedule_context",
+        "rationale": "These payments remained unlinked after safe FIFO backfill because they likely span multiple schedules or lack enough context."
+      },
+      {
+        "payment_id": "f0c70fee-47b4-47b7-9297-13d19d7c2503",
+        "loan_id": "0bcf7534-1f34-43c3-8c59-3bbcc9637151",
+        "loan_number": "LN-20260328-6059",
+        "borrower_name": "Genara A. Cantiga",
+        "amount": "160.00",
+        "payment_date": "2026-03-20T15:59:17.000Z",
+        "receipt_number": null,
+        "suggested_action": "manual_review_spans_multiple_schedules_or_missing_schedule_context",
+        "rationale": "These payments remained unlinked after safe FIFO backfill because they likely span multiple schedules or lack enough context."
+      },
+      {
+        "payment_id": "82fca34b-baea-43ab-9b72-e2c7c0040385",
+        "loan_id": "dd03acaa-f046-40df-8605-ef11bfff55a4",
+        "loan_number": "LN-20260328-3617",
+        "borrower_name": "Maria Milagros Concon",
+        "amount": "285.00",
+        "payment_date": "2026-03-20T15:59:17.000Z",
+        "receipt_number": null,
+        "suggested_action": "manual_review_spans_multiple_schedules_or_missing_schedule_context",
+        "rationale": "These payments remained unlinked after safe FIFO backfill because they likely span multiple schedules or lack enough context."
+      },
+      {
+        "payment_id": "56ab8592-afb6-48c5-964d-fbffdfb2b837",
+        "loan_id": "f99fac32-61f9-4208-b08a-3376ec835a45",
+        "loan_number": "LN-20260328-9960",
+        "borrower_name": "Benjamin C. Beltran",
+        "amount": "310.00",
+        "payment_date": "2026-03-20T15:59:17.000Z",
+        "receipt_number": null,
+        "suggested_action": "manual_review_spans_multiple_schedules_or_missing_schedule_context",
+        "rationale": "These payments remained unlinked after safe FIFO backfill because they likely span multiple schedules or lack enough context."
+      },
+      {
+        "payment_id": "afd4f3e9-e553-486c-b769-be28d27db1d9",
+        "loan_id": "416829ae-f435-4f28-ac7b-478a4970aa4d",
+        "loan_number": "LN-20260328-1410",
+        "borrower_name": "Martin B. Abad",
+        "amount": "320.00",
+        "payment_date": "2026-03-20T15:59:17.000Z",
+        "receipt_number": null,
+        "suggested_action": "manual_review_spans_multiple_schedules_or_missing_schedule_context",
+        "rationale": "These payments remained unlinked after safe FIFO backfill because they likely span multiple schedules or lack enough context."
+      },
+      {
+        "payment_id": "22f3f2b9-7ee7-411d-a593-cb9bf39a9ad7",
+        "loan_id": "4e126430-14b1-45c6-b5c0-06c88f1fca65",
+        "loan_number": "LN-20260328-8466",
+        "borrower_name": "Rebecca T. Luna",
+        "amount": "100.00",
+        "payment_date": "2026-03-20T15:59:17.000Z",
+        "receipt_number": null,
+        "suggested_action": "manual_review_spans_multiple_schedules_or_missing_schedule_context",
+        "rationale": "These payments remained unlinked after safe FIFO backfill because they likely span multiple schedules or lack enough context."
+      },
+      {
+        "payment_id": "9f5feafc-3f1e-4ff7-9483-b0f25f419245",
+        "loan_id": "bbc33016-8103-41e2-9684-530e35be0869",
+        "loan_number": "LN-20260328-5174",
+        "borrower_name": "Agnes Manatad",
+        "amount": "222.00",
+        "payment_date": "2026-03-20T15:59:17.000Z",
+        "receipt_number": null,
+        "suggested_action": "manual_review_spans_multiple_schedules_or_missing_schedule_context",
+        "rationale": "These payments remained unlinked after safe FIFO backfill because they likely span multiple schedules or lack enough context."
+      },
+      {
+        "payment_id": "c0257208-ee2f-49e9-8fea-3058a27e4a87",
+        "loan_id": "5fd4eaf1-cdcf-44b3-8c79-7747e0727435",
+        "loan_number": "LN-20260328-2676",
+        "borrower_name": "Vangie Domanillo",
+        "amount": "250.00",
+        "payment_date": "2026-03-20T15:59:17.000Z",
+        "receipt_number": null,
+        "suggested_action": "manual_review_spans_multiple_schedules_or_missing_schedule_context",
+        "rationale": "These payments remained unlinked after safe FIFO backfill because they likely span multiple schedules or lack enough context."
+      },
+      {
+        "payment_id": "b6ffc68b-bc9e-4d8d-92d2-a9aec6469aee",
+        "loan_id": "149203eb-f363-4de7-b3b0-94217f4bab06",
+        "loan_number": "LN-20260328-0830",
+        "borrower_name": "Geraldine Comendador",
+        "amount": "310.00",
+        "payment_date": "2026-03-20T15:59:17.000Z",
+        "receipt_number": null,
+        "suggested_action": "manual_review_spans_multiple_schedules_or_missing_schedule_context",
+        "rationale": "These payments remained unlinked after safe FIFO backfill because they likely span multiple schedules or lack enough context."
+      },
+      {
+        "payment_id": "cb010c57-b2f4-4c33-b7db-ef5b82a7d999",
+        "loan_id": "29b155bf-256d-4c3f-898e-a215b8a2f0c7",
+        "loan_number": "LN-20260328-5523",
+        "borrower_name": "Napoleon D. Bello",
+        "amount": "320.00",
+        "payment_date": "2026-03-20T15:59:17.000Z",
+        "receipt_number": null,
+        "suggested_action": "manual_review_spans_multiple_schedules_or_missing_schedule_context",
+        "rationale": "These payments remained unlinked after safe FIFO backfill because they likely span multiple schedules or lack enough context."
+      },
+      {
+        "payment_id": "02f7ecf4-3f23-440b-a59c-f7caa9e7c0bf",
+        "loan_id": "93488ebb-1d3f-4aae-ab11-ec243709fb61",
+        "loan_number": "LN-20260328-4041",
+        "borrower_name": "Mae Anne Castañares",
+        "amount": "250.00",
+        "payment_date": "2026-03-20T15:59:17.000Z",
+        "receipt_number": null,
+        "suggested_action": "manual_review_spans_multiple_schedules_or_missing_schedule_context",
+        "rationale": "These payments remained unlinked after safe FIFO backfill because they likely span multiple schedules or lack enough context."
+      },
+      {
+        "payment_id": "32534e84-68ca-43f4-82e7-2a711fad519a",
+        "loan_id": "5919121c-eec2-4da4-b30d-f42b485d772c",
+        "loan_number": "LN-20260328-6697",
+        "borrower_name": "Flair B. Piamonte",
+        "amount": "160.00",
+        "payment_date": "2026-03-20T15:59:17.000Z",
+        "receipt_number": null,
+        "suggested_action": "manual_review_spans_multiple_schedules_or_missing_schedule_context",
+        "rationale": "These payments remained unlinked after safe FIFO backfill because they likely span multiple schedules or lack enough context."
+      },
+      {
+        "payment_id": "162382b5-68e5-4c92-a3c8-bd29c76be972",
+        "loan_id": "26c265d2-d0bb-47ac-9e15-0a59a4fc4423",
+        "loan_number": "LN-20260328-9239",
+        "borrower_name": "Stephanie G. Cuan",
+        "amount": "527.00",
+        "payment_date": "2026-03-20T15:59:17.000Z",
+        "receipt_number": null,
+        "suggested_action": "manual_review_spans_multiple_schedules_or_missing_schedule_context",
+        "rationale": "These payments remained unlinked after safe FIFO backfill because they likely span multiple schedules or lack enough context."
+      },
+      {
+        "payment_id": "e1deb9bb-7550-4908-8033-d4d993d4c836",
+        "loan_id": "9699e254-d220-4152-a585-ea72c694dd4a",
+        "loan_number": "LN-20260328-7400",
+        "borrower_name": "Rachel W. Dalanon",
+        "amount": "220.00",
+        "payment_date": "2026-03-20T15:59:17.000Z",
+        "receipt_number": null,
+        "suggested_action": "manual_review_spans_multiple_schedules_or_missing_schedule_context",
+        "rationale": "These payments remained unlinked after safe FIFO backfill because they likely span multiple schedules or lack enough context."
+      },
+      {
+        "payment_id": "e485cde0-1823-4a3f-912f-3c02e8bd6513",
+        "loan_id": "73b91dab-0df6-42bb-b4eb-7b03bbaa1960",
+        "loan_number": "LN-20260328-4504",
+        "borrower_name": "Mary Grace S. Matres",
+        "amount": "220.00",
+        "payment_date": "2026-03-20T15:59:17.000Z",
+        "receipt_number": null,
+        "suggested_action": "manual_review_spans_multiple_schedules_or_missing_schedule_context",
+        "rationale": "These payments remained unlinked after safe FIFO backfill because they likely span multiple schedules or lack enough context."
+      },
+      {
+        "payment_id": "c930627e-1820-48e0-96e2-ce6725c9ca8f",
+        "loan_id": "17a4d992-c8a6-4626-90a5-7197cf55b7b2",
+        "loan_number": "LN-20260328-9266",
+        "borrower_name": "Bernardo T. Romano",
+        "amount": "220.00",
+        "payment_date": "2026-03-20T15:59:17.000Z",
+        "receipt_number": null,
+        "suggested_action": "manual_review_spans_multiple_schedules_or_missing_schedule_context",
+        "rationale": "These payments remained unlinked after safe FIFO backfill because they likely span multiple schedules or lack enough context."
+      },
+      {
+        "payment_id": "b2d78dbf-4806-4c35-aac4-0a35e74b83ce",
+        "loan_id": "0800c0e8-fb67-418f-a847-1fc17f030481",
+        "loan_number": "LN-20260328-5502",
+        "borrower_name": "Maria Lourdes D. Patricio",
+        "amount": "1000.00",
+        "payment_date": "2026-03-20T15:59:17.000Z",
+        "receipt_number": null,
+        "suggested_action": "manual_review_spans_multiple_schedules_or_missing_schedule_context",
+        "rationale": "These payments remained unlinked after safe FIFO backfill because they likely span multiple schedules or lack enough context."
+      },
+      {
+        "payment_id": "6f128acd-7efe-49a0-a979-cc9c16b8c81b",
+        "loan_id": "83d936f5-393e-4ad6-9d1a-49a97b97206a",
+        "loan_number": "LN-20260328-1793",
+        "borrower_name": "Marcelina A. Pantas",
+        "amount": "215.00",
+        "payment_date": "2026-03-20T15:59:17.000Z",
+        "receipt_number": null,
+        "suggested_action": "manual_review_spans_multiple_schedules_or_missing_schedule_context",
+        "rationale": "These payments remained unlinked after safe FIFO backfill because they likely span multiple schedules or lack enough context."
+      },
+      {
+        "payment_id": "37a4adcc-6012-4ebb-9735-52cfa8b31224",
+        "loan_id": "6cfb7186-b790-4352-b9ba-f6d83f4d2a7a",
+        "loan_number": "LN-20260328-6349",
+        "borrower_name": "Dionesia Rosal",
+        "amount": "222.00",
+        "payment_date": "2026-03-20T15:59:17.000Z",
+        "receipt_number": null,
+        "suggested_action": "manual_review_spans_multiple_schedules_or_missing_schedule_context",
+        "rationale": "These payments remained unlinked after safe FIFO backfill because they likely span multiple schedules or lack enough context."
+      },
+      {
+        "payment_id": "35f196bd-7449-4018-ac8c-55e35bc4ebea",
+        "loan_id": "a4f981ec-b198-42fb-874b-28672461decf",
+        "loan_number": "LN-20260328-5064",
+        "borrower_name": "Romeo G. Cernol Jr.",
+        "amount": "500.00",
+        "payment_date": "2026-03-20T15:59:17.000Z",
+        "receipt_number": null,
+        "suggested_action": "manual_review_spans_multiple_schedules_or_missing_schedule_context",
+        "rationale": "These payments remained unlinked after safe FIFO backfill because they likely span multiple schedules or lack enough context."
+      },
+      {
+        "payment_id": "3c660e3b-a9e4-4e41-942e-226d1e5b5a07",
+        "loan_id": "e29a4ab8-29d2-4fbf-9162-164e284d2c4d",
+        "loan_number": "LN-20260328-1036",
+        "borrower_name": "Margarita B. Cayanong",
+        "amount": "500.00",
+        "payment_date": "2026-03-20T15:59:17.000Z",
+        "receipt_number": null,
+        "suggested_action": "manual_review_spans_multiple_schedules_or_missing_schedule_context",
+        "rationale": "These payments remained unlinked after safe FIFO backfill because they likely span multiple schedules or lack enough context."
+      },
+      {
+        "payment_id": "ae602d87-1289-49d8-944a-d7e78b8bdd54",
+        "loan_id": "8e1c5e40-d3e3-4cfd-8a03-1c67fc740a91",
+        "loan_number": "LN-20260328-7806",
+        "borrower_name": "Gleen C.Concon",
+        "amount": "400.00",
+        "payment_date": "2026-03-20T15:59:17.000Z",
+        "receipt_number": null,
+        "suggested_action": "manual_review_spans_multiple_schedules_or_missing_schedule_context",
+        "rationale": "These payments remained unlinked after safe FIFO backfill because they likely span multiple schedules or lack enough context."
+      },
+      {
+        "payment_id": "5f1740c8-4031-496f-98de-d2f1fa287ab0",
+        "loan_id": "5098521c-825c-47bb-b159-fd69fc1a9270",
+        "loan_number": "LN-20260328-5052",
+        "borrower_name": "Marical Junio",
+        "amount": "253.00",
+        "payment_date": "2026-03-20T15:59:17.000Z",
+        "receipt_number": null,
+        "suggested_action": "manual_review_spans_multiple_schedules_or_missing_schedule_context",
+        "rationale": "These payments remained unlinked after safe FIFO backfill because they likely span multiple schedules or lack enough context."
+      },
+      {
+        "payment_id": "05142c06-5234-4371-939f-89d489953a59",
+        "loan_id": "2c25b114-03c9-404a-bed9-367239363589",
+        "loan_number": "LN-20260328-1390",
+        "borrower_name": "Nelia L. Miole",
+        "amount": "550.00",
+        "payment_date": "2026-03-20T15:59:17.000Z",
+        "receipt_number": null,
+        "suggested_action": "manual_review_spans_multiple_schedules_or_missing_schedule_context",
+        "rationale": "These payments remained unlinked after safe FIFO backfill because they likely span multiple schedules or lack enough context."
+      },
+      {
+        "payment_id": "0e224197-f6d4-4b77-8cb6-73b3c536806c",
+        "loan_id": "e477c18f-a130-41af-bb26-0ff55ca06909",
+        "loan_number": "LN-20260328-7295",
+        "borrower_name": "Haidee P. Gulane",
+        "amount": "253.00",
+        "payment_date": "2026-03-20T15:59:17.000Z",
+        "receipt_number": null,
+        "suggested_action": "manual_review_spans_multiple_schedules_or_missing_schedule_context",
+        "rationale": "These payments remained unlinked after safe FIFO backfill because they likely span multiple schedules or lack enough context."
+      },
+      {
+        "payment_id": "77d77044-6815-4f66-b856-ac1ab6b16d20",
+        "loan_id": "95c79497-d39a-4215-83f9-9f458c07d041",
+        "loan_number": "LN-20260328-3226",
+        "borrower_name": "Aida Rosetase",
+        "amount": "315.00",
+        "payment_date": "2026-03-20T15:59:17.000Z",
+        "receipt_number": null,
+        "suggested_action": "manual_review_spans_multiple_schedules_or_missing_schedule_context",
+        "rationale": "These payments remained unlinked after safe FIFO backfill because they likely span multiple schedules or lack enough context."
+      },
+      {
+        "payment_id": "28584e63-5a81-4224-b21e-cb64faae0c3c",
+        "loan_id": "7367eb64-b82a-47db-8240-2dca2be7817f",
+        "loan_number": "LN-20260328-5462",
+        "borrower_name": "Astrid B.Gorre",
+        "amount": "300.00",
+        "payment_date": "2026-03-20T15:59:17.000Z",
+        "receipt_number": null,
+        "suggested_action": "manual_review_spans_multiple_schedules_or_missing_schedule_context",
+        "rationale": "These payments remained unlinked after safe FIFO backfill because they likely span multiple schedules or lack enough context."
+      },
+      {
+        "payment_id": "cea54332-f794-45fe-8996-e5d94536417c",
+        "loan_id": "854bb0c9-976f-41dd-b028-a85323713f7c",
+        "loan_number": "LN-20260328-1475",
+        "borrower_name": "Vennis M. Cagabhion",
+        "amount": "270.00",
+        "payment_date": "2026-03-20T15:59:17.000Z",
+        "receipt_number": null,
+        "suggested_action": "manual_review_spans_multiple_schedules_or_missing_schedule_context",
+        "rationale": "These payments remained unlinked after safe FIFO backfill because they likely span multiple schedules or lack enough context."
+      },
+      {
+        "payment_id": "ebf25873-eecf-4f25-a0f8-708339d81549",
+        "loan_id": "020b8432-f206-4ab4-bc59-f3658a934a5a",
+        "loan_number": "LN-20260328-0775",
+        "borrower_name": "Susan B. Guevarra",
+        "amount": "320.00",
+        "payment_date": "2026-03-20T15:59:17.000Z",
+        "receipt_number": null,
+        "suggested_action": "manual_review_spans_multiple_schedules_or_missing_schedule_context",
+        "rationale": "These payments remained unlinked after safe FIFO backfill because they likely span multiple schedules or lack enough context."
+      },
+      {
+        "payment_id": "27082f06-a9c4-4d3d-be4d-c326988c8a69",
+        "loan_id": "0e5cfcf7-b660-45f7-8d1b-bac63b318c9b",
+        "loan_number": "LN-20260328-8887",
+        "borrower_name": "Dennis Lunzaga",
+        "amount": "500.00",
+        "payment_date": "2026-03-20T15:59:17.000Z",
+        "receipt_number": null,
+        "suggested_action": "manual_review_spans_multiple_schedules_or_missing_schedule_context",
+        "rationale": "These payments remained unlinked after safe FIFO backfill because they likely span multiple schedules or lack enough context."
+      },
+      {
+        "payment_id": "d75f7680-a882-407c-82c5-d4ecc7bdf973",
+        "loan_id": "7b81081a-546a-47df-9a70-a56bd55556a1",
+        "loan_number": "LN-20260328-9132",
+        "borrower_name": "Fely Solis",
+        "amount": "759.00",
+        "payment_date": "2026-03-20T15:59:17.000Z",
+        "receipt_number": null,
+        "suggested_action": "manual_review_spans_multiple_schedules_or_missing_schedule_context",
+        "rationale": "These payments remained unlinked after safe FIFO backfill because they likely span multiple schedules or lack enough context."
+      },
+      {
+        "payment_id": "d01553f1-026b-4e9f-9f6c-6bf2227118e8",
+        "loan_id": "e815489b-dbdf-4013-9b93-e6c99bc9fe00",
+        "loan_number": "LN-20260328-9731",
+        "borrower_name": "Armando F. Mondejar",
+        "amount": "300.00",
+        "payment_date": "2026-03-20T15:59:17.000Z",
+        "receipt_number": null,
+        "suggested_action": "manual_review_spans_multiple_schedules_or_missing_schedule_context",
+        "rationale": "These payments remained unlinked after safe FIFO backfill because they likely span multiple schedules or lack enough context."
+      }
+    ]
+  }
+}

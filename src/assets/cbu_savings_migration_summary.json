@@ -1,0 +1,712 @@
+{
+  "summary": {
+    "totalCbuMembers": 99,
+    "totalCbuAmount": 454836.15269999986,
+    "totalSavingsMembers": 47,
+    "totalSavingsAmount": 179132.62429999997,
+    "accountingEntries": [
+      {
+        "account": "Shared Capital (CBU)",
+        "type": "CREDIT",
+        "amount": 454836.15269999986
+      },
+      {
+        "account": "Savings Deposits",
+        "type": "CREDIT",
+        "amount": 179132.62429999997
+      },
+      {
+        "account": "Cash on Hand (COH)",
+        "type": "DEBIT",
+        "amount": 633968.7769999998
+      }
+    ]
+  },
+  "cbuRecords": [
+    {
+      "name": "Allen L. Gubalane",
+      "accountNo": "AN-16-0001",
+      "cbuAmount": 2182.65
+    },
+    {
+      "name": "April A. Hubahib",
+      "accountNo": "AN-16-0002",
+      "cbuAmount": 1300
+    },
+    {
+      "name": "Arnold C. Gonzales",
+      "accountNo": "AN-16-0003",
+      "cbuAmount": 2267.3399999999997
+    },
+    {
+      "name": "Elina Empimo",
+      "accountNo": "AN-16-0004",
+      "cbuAmount": 750
+    },
+    {
+      "name": "Crisencia R. Ruiz",
+      "accountNo": "AN-16-0005",
+      "cbuAmount": 7061.03
+    },
+    {
+      "name": "Dennis M. Tolibao",
+      "accountNo": "AN-16-0006",
+      "cbuAmount": 150
+    },
+    {
+      "name": "Dexter B. Jumao-as",
+      "accountNo": "AN-16-0007",
+      "cbuAmount": 7500.71
+    },
+    {
+      "name": "Dorotea Jumao-as",
+      "accountNo": "AN-16-0008",
+      "cbuAmount": 8165.13
+    },
+    {
+      "name": "Edgardo P. Nodalo",
+      "accountNo": "AN-16-0009",
+      "cbuAmount": 2059.6400000000003
+    },
+    {
+      "name": "Eloisa E. Williams",
+      "accountNo": "AN-16-0010",
+      "cbuAmount": 2888.1
+    },
+    {
+      "name": "Emmanuel C. Orellano",
+      "accountNo": "AN-16-0011",
+      "cbuAmount": 700
+    },
+    {
+      "name": "Emmanuel S. Quilantang",
+      "accountNo": "AN-16-0012",
+      "cbuAmount": 2120.79
+    },
+    {
+      "name": "Erlinda E. Quilantang",
+      "accountNo": "AN-16-0013",
+      "cbuAmount": 2162.62
+    },
+    {
+      "name": "Eunicelle S. Samson",
+      "accountNo": "AN-16-0014",
+      "cbuAmount": 5665.56
+    },
+    {
+      "name": "Genelyn N. Ymas",
+      "accountNo": "AN-16-0015",
+      "cbuAmount": 150
+    },
+    {
+      "name": "Junel A. Pagay",
+      "accountNo": "AN-16-0016",
+      "cbuAmount": 1200
+    },
+    {
+      "name": "Limuel P. Omega",
+      "accountNo": "AN-16-0017",
+      "cbuAmount": 200
+    },
+    {
+      "name": "Ma. Ella P. Solano",
+      "accountNo": "AN-16-0018",
+      "cbuAmount": 2465.9500000000003
+    },
+    {
+      "name": "Maria Genia C. Seguido",
+      "accountNo": "AN-16-0019",
+      "cbuAmount": 7173.27
+    },
+    {
+      "name": "Mario G. Bañez Jr.",
+      "accountNo": "AN-16-0020",
+      "cbuAmount": 1300
+    },
+    {
+      "name": "Marissa B. Ligutan",
+      "accountNo": "AN-16-0021",
+      "cbuAmount": 750
+    },
+    {
+      "name": "Maristela A. Mandras",
+      "accountNo": "AN-16-0022",
+      "cbuAmount": 1200
+    },
+    {
+      "name": "Mark Gil M. Catingub",
+      "accountNo": "AN-16-0023",
+      "cbuAmount": 100
+    },
+    {
+      "name": "Mary Grace C. Perol",
+      "accountNo": "AN-16-0024",
+      "cbuAmount": 2047.15
+    },
+    {
+      "name": "Maricris Montemor",
+      "accountNo": "AN-16-0025",
+      "cbuAmount": 600
+    },
+    {
+      "name": "Analyn Cabahug",
+      "accountNo": "AN-16-0026",
+      "cbuAmount": 2939.77
+    },
+    {
+      "name": "Nenita S. Fay",
+      "accountNo": "AN-16-0027",
+      "cbuAmount": 2160.25
+    },
+    {
+      "name": "Paul C. Espinosa",
+      "accountNo": "AN-16-0028",
+      "cbuAmount": 2718.7
+    },
+    {
+      "name": "Raffy C. Banghet",
+      "accountNo": "AN-16-0029",
+      "cbuAmount": 2059.6400000000003
+    },
+    {
+      "name": "Rexie N. Costan",
+      "accountNo": "AN-16-0030",
+      "cbuAmount": 2139.88
+    },
+    {
+      "name": "Ricardo G. Amarille",
+      "accountNo": "AN-16-0031",
+      "cbuAmount": 2689.7
+    },
+    {
+      "name": "Rodina A. Alvarado",
+      "accountNo": "AN-16-0032",
+      "cbuAmount": 2624.6
+    },
+    {
+      "name": "Rolando C. Miaga",
+      "accountNo": "AN-16-0033",
+      "cbuAmount": 1100
+    },
+    {
+      "name": "Ronald P. Arcillas",
+      "accountNo": "AN-16-0034",
+      "cbuAmount": 1000
+    },
+    {
+      "name": "Victoriana A. Entero",
+      "accountNo": "AN-16-0035",
+      "cbuAmount": 935.84
+    },
+    {
+      "name": "Jaime A. Cayetano Jr.",
+      "accountNo": "AN-17-0036",
+      "cbuAmount": 300
+    },
+    {
+      "name": "Archie G. Bañez",
+      "accountNo": "AN-17-0037",
+      "cbuAmount": 650
+    },
+    {
+      "name": "Ronan O. Sacay",
+      "accountNo": "AN-17-0038",
+      "cbuAmount": 350
+    },
+    {
+      "name": "Edwin P. Caliwan",
+      "accountNo": "AN-17-0039",
+      "cbuAmount": 150
+    },
+    {
+      "name": "Cort Wensley J.  Balao",
+      "accountNo": "AN-17-0040",
+      "cbuAmount": 2844.96575
+    },
+    {
+      "name": "PURISIMO C. ABRENILLO",
+      "accountNo": "AN-17-0041",
+      "cbuAmount": 1450.54
+    },
+    {
+      "name": "Marina S. Caparoso",
+      "accountNo": "AN-17-0042",
+      "cbuAmount": 7061.03
+    },
+    {
+      "name": "Merian C. Jumao-as",
+      "accountNo": "AN-17-0043",
+      "cbuAmount": 7093.33
+    },
+    {
+      "name": "Christopher D. Bioco",
+      "accountNo": "AN-17-0044",
+      "cbuAmount": 2059.6400000000003
+    },
+    {
+      "name": "Rahbie B. Jumao-as",
+      "accountNo": "AN-17-0045",
+      "cbuAmount": 3465.2300000000005
+    },
+    {
+      "name": "Shalou J. Balao",
+      "accountNo": "AN-17-0046",
+      "cbuAmount": 7173.27
+    },
+    {
+      "name": "Brice Vincent M. Jumao-as",
+      "accountNo": "AN-17-0047",
+      "cbuAmount": 550
+    },
+    {
+      "name": "Agustin D. Bioco Jr.",
+      "accountNo": "AN-17-0048",
+      "cbuAmount": 800
+    },
+    {
+      "name": "Jenelyn F. Jimenea",
+      "accountNo": "AN-17-0049",
+      "cbuAmount": 5624.79
+    },
+    {
+      "name": "Elvin P. Manriquez",
+      "accountNo": "AN-18-0050",
+      "cbuAmount": 200
+    },
+    {
+      "name": "Adelaida C. Manriquez",
+      "accountNo": "AN-18-0051",
+      "cbuAmount": 200
+    },
+    {
+      "name": "Everth O. Acaso Jr.",
+      "accountNo": "AN-18-0052",
+      "cbuAmount": 1550
+    },
+    {
+      "name": "Isidro C. Lusanta Jr.",
+      "accountNo": "AN-18-0053",
+      "cbuAmount": 2037.97
+    },
+    {
+      "name": "CHECKY P. PEREZ",
+      "accountNo": "AN-18-0054",
+      "cbuAmount": 2020
+    },
+    {
+      "name": "Brett Colin J.  Balao",
+      "accountNo": "AN-18-0055",
+      "cbuAmount": 2812.1906
+    },
+    {
+      "name": "Hazel Q. Bulacan",
+      "accountNo": "AN-18-0056",
+      "cbuAmount": 2263.96
+    },
+    {
+      "name": "Lloyd B. Bulacan",
+      "accountNo": "AN-18-0057",
+      "cbuAmount": 2162.62
+    },
+    {
+      "name": "Junlyn J. Aquino",
+      "accountNo": "AN-18-0058",
+      "cbuAmount": 2511.8
+    },
+    {
+      "name": "Concepcion B. Cruz",
+      "accountNo": "AN-18-0059",
+      "cbuAmount": 7061.03
+    },
+    {
+      "name": "Leonardo B. Cruz",
+      "accountNo": "AN-18-0060",
+      "cbuAmount": 2582.58
+    },
+    {
+      "name": "Annalyn B. Cruz",
+      "accountNo": "AN-18-0061",
+      "cbuAmount": 2497.3199999999997
+    },
+    {
+      "name": "ROWENA B. TELLIDUA",
+      "accountNo": "AN-18-0062",
+      "cbuAmount": 4600
+    },
+    {
+      "name": "Milben Rex P. Balao",
+      "accountNo": "AN-18-0063",
+      "cbuAmount": 4800.86
+    },
+    {
+      "name": "Ramil  Mirafuentes",
+      "accountNo": "AN-18-0064",
+      "cbuAmount": 100
+    },
+    {
+      "name": "Diosita J.  Aquino",
+      "accountNo": "AN-18-0065",
+      "cbuAmount": 2766.55
+    },
+    {
+      "name": "Perpetuo  O.  Gaelo",
+      "accountNo": "AN-18-0066",
+      "cbuAmount": 7331.71
+    },
+    {
+      "name": "Marcial Raul S.  Almacin",
+      "accountNo": "AN-18-0067",
+      "cbuAmount": 2304.75
+    },
+    {
+      "name": "Alma P.  Bola",
+      "accountNo": "AN-18-0068",
+      "cbuAmount": 220
+    },
+    {
+      "name": "Joventino C. Larrosa",
+      "accountNo": "AN-18-0069",
+      "cbuAmount": 100
+    },
+    {
+      "name": "Kristine Joy  Lusanta",
+      "accountNo": "AN-19-0070",
+      "cbuAmount": 100
+    },
+    {
+      "name": "Milagros M.  Villamor",
+      "accountNo": "AN-19-0071",
+      "cbuAmount": 420
+    },
+    {
+      "name": "Salvador B.  Villamor",
+      "accountNo": "AN-19-0072",
+      "cbuAmount": 340
+    },
+    {
+      "name": "Ranilfa L.  Amarille",
+      "accountNo": "AN-19-0073",
+      "cbuAmount": 480
+    },
+    {
+      "name": "Rustom  Montes",
+      "accountNo": "AN-19-0074",
+      "cbuAmount": 520
+    },
+    {
+      "name": "Patricio Loyd  Tellidua",
+      "accountNo": "AN-19-0075",
+      "cbuAmount": 7561.03
+    },
+    {
+      "name": "Ariel  Romero",
+      "accountNo": "AN-20-0076",
+      "cbuAmount": 200
+    },
+    {
+      "name": "Edmundo  Abrenillo",
+      "accountNo": "AN-20-0077",
+      "cbuAmount": 340
+    },
+    {
+      "name": "Richard S.  Arar",
+      "accountNo": "AN-20-0078",
+      "cbuAmount": 100
+    },
+    {
+      "name": "Tirso L.  Cayanong",
+      "accountNo": "AN-20-0079",
+      "cbuAmount": 461.82
+    },
+    {
+      "name": "Marie Angelie C. Mabag",
+      "accountNo": "AN-20-0080",
+      "cbuAmount": 100
+    },
+    {
+      "name": "Jociel C.  Esmero",
+      "accountNo": "AN-20-0081",
+      "cbuAmount": 220
+    },
+    {
+      "name": "Ronelle  C. Canete",
+      "accountNo": "AN-20-0082",
+      "cbuAmount": 2444.0200000000004
+    },
+    {
+      "name": "POSCURSOR",
+      "accountNo": "AN-20-0083",
+      "cbuAmount": 7061.03
+    },
+    {
+      "name": "Jan Ros  Y.  Cormanes",
+      "accountNo": "AN-20-0084",
+      "cbuAmount": 100
+    },
+    {
+      "name": "Bhrian Kelly D.  Barquez",
+      "accountNo": "AN-20-0085",
+      "cbuAmount": 100
+    },
+    {
+      "name": "Sabiniano  D. Caparoso",
+      "accountNo": "AN-20-0086",
+      "cbuAmount": 7061.03
+    },
+    {
+      "name": "Marino B.  Esoto",
+      "accountNo": "AN-20-0087",
+      "cbuAmount": 7188.62
+    },
+    {
+      "name": "Restituto  L. Jumao-as",
+      "accountNo": "AN-20-0088",
+      "cbuAmount": 3668.34
+    },
+    {
+      "name": "POSCURSOR",
+      "accountNo": "AN-20-0089",
+      "cbuAmount": 2802.21
+    },
+    {
+      "name": "POSCURSOR",
+      "accountNo": "AN-21-0090",
+      "cbuAmount": 1600
+    },
+    {
+      "name": "Raquel  C. Pabilan",
+      "accountNo": "AN-21-0091",
+      "cbuAmount": 2000
+    },
+    {
+      "name": "Antonio  S. Perez Jr.",
+      "accountNo": "AN-21-0092",
+      "cbuAmount": 5003.41
+    },
+    {
+      "name": "Marben  Caparoso",
+      "accountNo": "AN-21-0093",
+      "cbuAmount": 100
+    },
+    {
+      "name": "Marlon C. Tampus",
+      "accountNo": "AN-21-0094",
+      "cbuAmount": 2219.19
+    },
+    {
+      "name": "Teresita  A.  Lozada",
+      "accountNo": "AN-21-0095",
+      "cbuAmount": 250
+    },
+    {
+      "name": "Mark Dave  Negad",
+      "accountNo": "AN-21-0096",
+      "cbuAmount": 2269.62
+    },
+    {
+      "name": "NOLI H.  CAPAHI",
+      "accountNo": "AN-21-0097",
+      "cbuAmount": 383.3
+    },
+    {
+      "name": "POSCURSOR",
+      "accountNo": "AN-21-0098",
+      "cbuAmount": 100
+    },
+    {
+      "name": "TOTAL",
+      "accountNo": "",
+      "cbuAmount": 227418.07634999996
+    }
+  ],
+  "savingsRecords": [
+    {
+      "name": "Allen L. Gubalane",
+      "savingsAmount": 497.299
+    },
+    {
+      "name": "April A. Hubahib",
+      "savingsAmount": 1514.1676
+    },
+    {
+      "name": "Crisencia R. Ruiz",
+      "savingsAmount": 4767.244
+    },
+    {
+      "name": "Dexter B. Jumao-as",
+      "savingsAmount": 33563.4462
+    },
+    {
+      "name": "Dorotea B. Jumao-as",
+      "savingsAmount": 13402.122200000002
+    },
+    {
+      "name": "Emmanuel S. Quilantang",
+      "savingsAmount": 1308.9728
+    },
+    {
+      "name": "Erlinda E. Quilantang",
+      "savingsAmount": 1396.8362
+    },
+    {
+      "name": "Maria Genia C. Seguido",
+      "savingsAmount": 8158.5014
+    },
+    {
+      "name": "Nenita S. Fay",
+      "savingsAmount": 698.8156
+    },
+    {
+      "name": "Raffy C. Banghet",
+      "savingsAmount": 451.083
+    },
+    {
+      "name": "Marina S. Caparoso",
+      "savingsAmount": 956.5758
+    },
+    {
+      "name": "Merian C. Jumao-as",
+      "savingsAmount": 4041.1122
+    },
+    {
+      "name": "Rahbie B. Jumao-as",
+      "savingsAmount": 382.9568
+    },
+    {
+      "name": "Shalou J. Balao",
+      "savingsAmount": 6669.4368
+    },
+    {
+      "name": "Everth O. Acaso Jr.",
+      "savingsAmount": 74.12580000000001
+    },
+    {
+      "name": "Hazel Q. Bulacan",
+      "savingsAmount": 439.02020000000005
+    },
+    {
+      "name": "Concepcion B. Cruz",
+      "savingsAmount": 5867.5346
+    },
+    {
+      "name": "Leonardo B. Cruz",
+      "savingsAmount": 1951.1102
+    },
+    {
+      "name": "Annalyn B. Cruz",
+      "savingsAmount": 657.2848
+    },
+    {
+      "name": "Milben Rex P. Balao",
+      "savingsAmount": 1019.9108
+    },
+    {
+      "name": "Victoriana  Entero",
+      "savingsAmount": 8640.3992
+    },
+    {
+      "name": "Diosita J. Aquino",
+      "savingsAmount": 143.9904
+    },
+    {
+      "name": "Perpetuo O. Gaelo",
+      "savingsAmount": 11690.157000000001
+    },
+    {
+      "name": "Eloisa  E. Williams",
+      "savingsAmount": 519.1774
+    },
+    {
+      "name": "Paul Espinosa",
+      "savingsAmount": 134.0158
+    },
+    {
+      "name": "Joventino  Larrosa",
+      "savingsAmount": 3333.5198
+    },
+    {
+      "name": "Jociel Esmero",
+      "savingsAmount": 1098.6794
+    },
+    {
+      "name": "Alma  Bola",
+      "savingsAmount": 1943.2556
+    },
+    {
+      "name": "Sabiniano  Caparoso",
+      "savingsAmount": 4396.1168
+    },
+    {
+      "name": "Euniecelle S. Samson",
+      "savingsAmount": 1319.2866
+    },
+    {
+      "name": "Patricio Lloyd  U. Tellidua",
+      "savingsAmount": 5993.953600000001
+    },
+    {
+      "name": "Tirso L.Cayanong",
+      "savingsAmount": 49.0674
+    },
+    {
+      "name": "Marlon C. Tampos",
+      "savingsAmount": 183.1256
+    },
+    {
+      "name": "Rowena Tellidua",
+      "savingsAmount": 532.65
+    },
+    {
+      "name": "Demian Sabin C.  Jumao-as",
+      "savingsAmount": 8785.1104
+    },
+    {
+      "name": "Izy Kaizer J.  Balao",
+      "savingsAmount": 5976.7392
+    },
+    {
+      "name": "Alec Finlay J.  Balao",
+      "savingsAmount": 5701.5256
+    },
+    {
+      "name": "Casy Marie D.  Cruz",
+      "savingsAmount": 841.693
+    },
+    {
+      "name": "Serg Mateo M.  Villamor",
+      "savingsAmount": 1363.30265
+    },
+    {
+      "name": "Yvo Rafiel  Samson",
+      "savingsAmount": 2550.466
+    },
+    {
+      "name": "Rica M.  Cruz",
+      "savingsAmount": 200
+    },
+    {
+      "name": "Georgette Ann  Cabahug",
+      "savingsAmount": 50
+    },
+    {
+      "name": "Luna Mikaela C.  Apay",
+      "savingsAmount": 50
+    },
+    {
+      "name": "Mikko Angelo C.  Apay",
+      "savingsAmount": 50
+    },
+    {
+      "name": "Marissa  alvarado",
+      "savingsAmount": 50
+    },
+    {
+      "name": "Krissel  Alvarado",
+      "savingsAmount": 50
+    },
+    {
+      "name": "TOTAL",
+      "savingsAmount": 25668.83685
+    }
+  ]
+}

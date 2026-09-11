@@ -1,0 +1,91 @@
+<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+<head>
+<meta charset="utf-8">
+<title>Infinity Finance - Application Roadmap</title>
+<style>
+  body { font-family: 'Calibri', 'Arial', sans-serif; line-height: 1.6; color: #333; }
+  h1 { color: #1A237E; text-align: center; border-bottom: 2px solid #1A237E; padding-bottom: 5px; }
+  h2 { color: #1A237E; border-bottom: 1px solid #ddd; padding-bottom: 3px; margin-top: 25px;}
+  h3 { color: #333; margin-top: 15px; border-left: 4px solid #1A237E; padding-left: 10px; }
+  table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+  th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+  th { background-color: #f4f6f8; font-weight: bold; }
+  .phase-header { background-color: #E8EAF6; font-weight: bold; }
+  .bullet-list { margin-bottom: 20px; }
+  .status-tag { font-weight: bold; color: #1A237E; }
+</style>
+</head>
+<body>
+
+<h1>🛣 PROJECT ROADMAP: INFINITY FINANCE (LOANBRICK)</h1>
+<p style="text-align:center;"><em>Strategic phases for system deployment, optimization, and scaling.</em></p>
+
+<h2>📅 Phase 1: Production Onboarding & Migration</h2>
+<p><strong>Focus:</strong> Data Accuracy & Live Transaction Baseline | <strong>Timeline:</strong> Week 1 (Immediate)</p>
+<ul class="bullet-list">
+    <li><strong>Weekly Borrower Migration:</strong> Bulk import of all active weekly borrower profiles with encrypted PII and onboarding of current loan balances.</li>
+    <li><strong>Financial Reconciliation:</strong> Validation of migrated portfolio totals and verification of PAR (Portfolio At Risk) accuracy.</li>
+    <li><strong>Field Staff Training:</strong> Collector walkthroughs for offline sync and remittance workflows.</li>
+</ul>
+
+<h2>📊 Phase 2: Advanced Reporting & Analytics</h2>
+<p><strong>Focus:</strong> Evaluation Tools & Operational Insights | <strong>Timeline:</strong> Week 2 - 3</p>
+<ul class="bullet-list">
+    <li><strong>Borrower Renewal Evaluation:</strong> New reporting module to analyze repayment history and provide "Approved/Rejected" recommendations.</li>
+    <li><strong>Financial Cash Flow Reporting:</strong> Dynamic Cash Flow statement tracking operational inflows vs. lending outflows.</li>
+    <li><strong>Printing & Documentation:</strong> Bulk generation of <strong>Loan Vouchers</strong> for new and renewed loans.</li>
+</ul>
+
+<h2>📲 Phase 3: Engagement & Scaling</h2>
+<p><strong>Focus:</strong> Automated Communication & Multi-Branch Support | <strong>Timeline:</strong> Month 1 - 2</p>
+<ul class="bullet-list">
+    <li><strong>SMS Gateway Integration:</strong> Automated payment reminders and instant digital receipts for borrowers via SMS.</li>
+    <li><strong>Multi-Branch Architecture:</strong> Hierarchical setup to support multiple branch locations and centralized head-office reporting.</li>
+    <li><strong>Live Collector Tracking (GPS):</strong> Real-time map view of collector locations and route optimization.</li>
+</ul>
+
+<h2>🛡 Phase 4: Long-term Optimization</h2>
+<p><strong>Focus:</strong> Governance & AI Insights | <strong>Timeline:</strong> Month 3+</p>
+<ul class="bullet-list">
+    <li><strong>Comprehensive Audit Logs:</strong> Immutable history of all data transactions for regulatory compliance and internal audit.</li>
+    <li><strong>Credit Scoring Engine:</strong> Behavioral credit scoring based on observed repayment patterns over time.</li>
+    <li><strong>Automated Savings Dividends:</strong> Systematic calculation of interest for borrower capital savings accounts.</li>
+</ul>
+
+<br><br>
+
+<h2>📈 Roadmap Status Summary</h2>
+<table>
+    <thead>
+        <tr>
+            <th>Phase</th>
+            <th>Primary Milestone</th>
+            <th>Target Status</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><strong>Phase 1</strong></td>
+            <td>Weekly Borrower Migration</td>
+            <td class="status-tag">🚀 STARTING</td>
+        </tr>
+        <tr>
+            <td><strong>Phase 2</strong></td>
+            <td>Cash Flow & Renewal Reports</td>
+            <td class="status-tag">🛠 PLANNED</td>
+        </tr>
+        <tr>
+            <td><strong>Phase 3</strong></td>
+            <td>SMS & GPS Tracking</td>
+            <td class="status-tag">⏳ FUTURE</td>
+        </tr>
+        <tr>
+            <td><strong>Phase 4</strong></td>
+            <td>Audit Logs & AI Scoring</td>
+            <td class="status-tag">⏳ FUTURE</td>
+        </tr>
+    </tbody>
+</table>
+
+</body>
+</html>

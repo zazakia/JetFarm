@@ -1,0 +1,22 @@
+diff --git a/node_modules/react-native-chart-kit/dist/AbstractChart.js b/node_modules/react-native-chart-kit/dist/AbstractChart.js
+index bb8b4cb..a5e98fd 100644
+--- a/node_modules/react-native-chart-kit/dist/AbstractChart.js
++++ b/node_modules/react-native-chart-kit/dist/AbstractChart.js
+@@ -113,7 +113,7 @@ var AbstractChart = /** @class */ (function (_super) {
+                     : height * verticalLabelsHeightPercentage -
+                         (basePosition / count) * i +
+                         paddingTop;
+-                return (<Text rotation={horizontalLabelRotation} origin={x + ", " + y} key={Math.random()} x={x} textAnchor="end" y={y} {..._this.getPropsForLabels()} {..._this.getPropsForHorizontalLabels()}>
++                return (<Text rotation={horizontalLabelRotation} {...(horizontalLabelRotation !== 0 ? { origin: x + ", " + y } : {})} key={Math.random()} x={x} textAnchor="end" y={y} {..._this.getPropsForLabels()} {..._this.getPropsForHorizontalLabels()}>
+           {yLabel}
+         </Text>);
+             });
+@@ -138,7 +138,7 @@ var AbstractChart = /** @class */ (function (_super) {
+                     paddingTop +
+                     fontSize * 2 +
+                     xLabelsOffset;
+-                return (<Text origin={x + ", " + y} rotation={verticalLabelRotation} key={Math.random()} x={x} y={y} textAnchor={verticalLabelRotation === 0 ? "middle" : "start"} {..._this.getPropsForLabels()} {..._this.getPropsForVerticalLabels()}>
++                return (<Text {...(verticalLabelRotation !== 0 ? { origin: x + ", " + y } : {})} rotation={verticalLabelRotation} key={Math.random()} x={x} y={y} textAnchor={verticalLabelRotation === 0 ? "middle" : "start"} {..._this.getPropsForLabels()} {..._this.getPropsForVerticalLabels()}>
+           {"" + formatXLabel(label) + xAxisLabel}
+         </Text>);
+             });

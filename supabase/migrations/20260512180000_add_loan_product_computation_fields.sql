@@ -1,0 +1,14 @@
+ALTER TABLE public.app_loans
+    ADD COLUMN IF NOT EXISTS loan_type TEXT,
+    ADD COLUMN IF NOT EXISTS processing_fee NUMERIC,
+    ADD COLUMN IF NOT EXISTS collection_fee NUMERIC,
+    ADD COLUMN IF NOT EXISTS notarial_fee NUMERIC,
+    ADD COLUMN IF NOT EXISTS rod_fee NUMERIC,
+    ADD COLUMN IF NOT EXISTS lto_fee NUMERIC,
+    ADD COLUMN IF NOT EXISTS udi_rebatable_fee NUMERIC,
+    ADD COLUMN IF NOT EXISTS vat_on_interest NUMERIC,
+    ADD COLUMN IF NOT EXISTS vat_on_charges NUMERIC,
+    ADD COLUMN IF NOT EXISTS dst_fee NUMERIC,
+    ADD COLUMN IF NOT EXISTS rebate_amount NUMERIC,
+    ADD COLUMN IF NOT EXISTS savings_per_payment NUMERIC;
+

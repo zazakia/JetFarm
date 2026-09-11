@@ -1,0 +1,21 @@
+{
+  "generatedAt": "2026-06-19T09:48:45.600Z",
+  "targetUrl": "https://YOUR_SUPABASE_PROJECT.supabase.co",
+  "mode": "dry-run",
+  "beforeCounts": {
+    "borrowers": 297,
+    "loans": 370,
+    "payments": 489,
+    "schedules": 7400,
+    "savings": 0
+  },
+  "candidates": [],
+  "candidateSummary": {
+    "borrowers": 0,
+    "loans": 0,
+    "payments": 0,
+    "schedules": 0,
+    "savings": 0
+  },
+  "deleted": null
+}

@@ -1,0 +1,41 @@
+{
+    "cli": {
+        "appVersionSource": "remote"
+    },
+    "build": {
+        "development": {
+            "developmentClient": true,
+            "distribution": "internal",
+            "android": {
+                "buildType": "apk"
+            }
+        },
+        "canary": {
+            "channel": "canary",
+            "distribution": "internal",
+            "android": {
+                "buildType": "apk"
+            }
+        },
+        "early-adopter": {
+            "channel": "early-adopter",
+            "distribution": "internal",
+            "android": {
+                "buildType": "apk"
+            }
+        },
+        "preview": {
+            "channel": "preview",
+            "distribution": "internal",
+            "android": {
+                "buildType": "apk"
+            }
+        },
+        "production": {
+            "channel": "production",
+            "android": {
+                "buildType": "apk"
+            }
+        }
+    }
+}

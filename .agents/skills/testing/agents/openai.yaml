@@ -1,0 +1,4 @@
+interface:
+  display_name: "POSCursor Testing"
+  short_description: "Jest + WatermelonDB unit/integration patterns"
+  default_prompt: "Use $testing to write or fix POSCursor Jest tests with createTestDatabase, mocks, and TDD."

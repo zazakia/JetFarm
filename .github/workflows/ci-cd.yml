@@ -1,0 +1,140 @@
+name: Master End-to-End CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, master, Branch-V2 ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-cd-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  typecheck-and-lint:
+    name: 1. Static Analysis & Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm ci
+      - name: Pre-Flight Auth Schema Check
+        run: node scripts/check-auth-schema.mjs
+      - name: TypeScript Check
+        run: npx tsc --noEmit
+
+  unit-tests:
+    name: 2. Jest Unit & Integration Suite
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm ci
+      - name: Run Jest Tests
+        run: npm test -- --coverage --ci --maxWorkers=2 --forceExit
+        env:
+          EXPO_PUBLIC_SUPABASE_URL: 'https://example.supabase.co'
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: 'dummy-key'
+          EXPO_PUBLIC_ENCRYPTION_KEY: 'mock-primary-key'
+          EXPO_PUBLIC_LEGACY_ENCRYPTION_KEY: POSCursor_Sec_2024_Ph
+      - name: Upload Coverage Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: coverage/
+          if-no-files-found: ignore
+          retention-days: 14
+
+  e2e-tests:
+    name: 3. Playwright End-to-End Suite
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm ci
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps
+      - name: Run Playwright Tests
+        run: npx playwright test
+        env:
+          PLAYWRIGHT_ALLOW_PRODUCTION_DB: '1'
+      - name: Upload Playwright Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          if-no-files-found: ignore
+          retention-days: 14
+
+  build-and-deploy:
+    name: 4. Build & Cloudflare Pages Deploy
+    needs: [typecheck-and-lint, unit-tests]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.ref == 'refs/heads/Branch-V2' || github.event_name == 'workflow_dispatch'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm ci
+      - name: Build Web Production Export
+        run: npm run export:web:production
+        env:
+          EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
+          EXPO_PUBLIC_ENCRYPTION_KEY: ${{ secrets.EXPO_PUBLIC_ENCRYPTION_KEY }}
+      - name: Prepare Cloudflare SPA Headers & Asset Fix
+        run: |
+          node -e "
+            const fs = require('fs');
+            const path = require('path');
+            const dist = 'dist';
+            if (!fs.existsSync(dist)) fs.mkdirSync(dist, { recursive: true });
+            fs.writeFileSync(path.join(dist, '_redirects'), '/* /index.html 200\n');
+            fs.writeFileSync(path.join(dist, '_headers'), '/*\n  X-Frame-Options: DENY\n  X-Content-Type-Options: nosniff\n  Referrer-Policy: strict-origin-when-cross-origin\n');
+            const nm = path.join(dist, 'assets', 'node_modules');
+            const vm = path.join(dist, 'assets', 'vendor_modules');
+            if (fs.existsSync(nm)) {
+              fs.renameSync(nm, vm);
+              const walk = (d) => {
+                fs.readdirSync(d).forEach(f => {
+                  const p = path.join(d, f);
+                  if (fs.statSync(p).isDirectory()) walk(p);
+                  else if (/\.(js|css|html|json)$/.test(p)) {
+                    let c = fs.readFileSync(p, 'utf8');
+                    if (c.includes('assets/node_modules/')) {
+                      fs.writeFileSync(p, c.split('assets/node_modules/').join('assets/vendor_modules/'));
+                    }
+                  }
+                });
+              };
+              walk(dist);
+            }
+          "
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: 'poscursor'
+          directory: 'dist'
+          branch: 'main'

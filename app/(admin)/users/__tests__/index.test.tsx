@@ -1,0 +1,74 @@
+import React from 'react';
+import { render, waitFor } from '@testing-library/react-native';
+import UsersListScreen from '../index';
+import { database } from '../../../../src/database';
+import { ROLES } from '../../../../src/constants/roles';
+
+jest.mock('expo-router', () => ({
+    useRouter: () => ({ push: jest.fn() }),
+    useFocusEffect: (cb: any) => cb(),
+}));
+
+jest.mock('../../../../src/database', () => ({
+    database: {
+        collections: {
+            get: jest.fn(),
+        },
+    },
+}));
+
+jest.mock('../../../../src/services/SyncService', () => ({
+    SyncService: {
+        checkAndSync: jest.fn().mockResolvedValue({}),
+    },
+}));
+
+describe('UsersListScreen', () => {
+    beforeEach(() => {
+        jest.clearAllMocks();
+
+        (database.collections.get as jest.Mock).mockImplementation((tableName: string) => {
+            if (tableName === 'business_units') {
+                return {
+                    query: jest.fn().mockReturnValue({
+                        fetch: jest.fn().mockResolvedValue([
+                            { id: 'branch-bagacay', name: 'Bagacay (Benchmark)' },
+                        ]),
+                    }),
+                };
+            }
+            if (tableName === 'user_profiles') {
+                return {
+                    query: jest.fn().mockReturnValue({
+                        fetch: jest.fn().mockResolvedValue([
+                            {
+                                id: 'usr-cashier-1',
+                                fullName: 'Juana Cashier',
+                                email: 'juana@poscursor.com',
+                                role: ROLES.branch_cashier,
+                                isActive: true,
+                                branchId: 'branch-bagacay',
+                            },
+                        ]),
+                    }),
+                };
+            }
+            return {
+                query: jest.fn().mockReturnValue({
+                    fetch: jest.fn().mockResolvedValue([]),
+                }),
+            };
+        });
+    });
+
+    it('renders user list with branch cashier role and branch badge', async () => {
+        const { findByText } = render(<UsersListScreen />);
+
+        await waitFor(async () => {
+            expect(await findByText('Juana Cashier')).toBeTruthy();
+            expect(await findByText('juana@poscursor.com')).toBeTruthy();
+            expect(await findByText('Branch Cashier')).toBeTruthy();
+            expect(await findByText('Bagacay (Benchmark)')).toBeTruthy();
+        });
+    });
+});

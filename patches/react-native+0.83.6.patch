@@ -1,0 +1,313 @@
+diff --git a/node_modules/react-native/src/private/webapis/dom/events/Event.js b/node_modules/react-native/src/private/webapis/dom/events/Event.js
+index 6f61673..22be8f2 100644
+--- a/node_modules/react-native/src/private/webapis/dom/events/Event.js
++++ b/node_modules/react-native/src/private/webapis/dom/events/Event.js
+@@ -17,7 +17,7 @@
+ 
+ import type EventTarget from './EventTarget';
+ 
+-import {setPlatformObject} from '../../webidl/PlatformObjects';
++import { setPlatformObject } from '../../webidl/PlatformObjects';
+ import {
+   COMPOSED_PATH_KEY,
+   CURRENT_TARGET_KEY,
+@@ -38,148 +38,148 @@ import {
+ } from './internals/EventInternals';
+ 
+ export interface EventInit {
+-  +bubbles?: boolean;
+-  +cancelable?: boolean;
+-  +composed?: boolean;
++  +bubbles ?: boolean;
+++cancelable ?: boolean;
+++composed ?: boolean;
+ }
+ 
+ export default class Event {
+   static +NONE: 0;
+-  static +CAPTURING_PHASE: 1;
+-  static +AT_TARGET: 2;
+-  static +BUBBLING_PHASE: 3;
+-
+-  +NONE: 0;
+-  +CAPTURING_PHASE: 1;
+-  +AT_TARGET: 2;
+-  +BUBBLING_PHASE: 3;
+-
+-  _bubbles: boolean;
+-  _cancelable: boolean;
+-  _composed: boolean;
+-  _type: string;
+-
+-  _defaultPrevented: boolean = false;
+-  _timeStamp: number = performance.now();
+-
+-  // $FlowExpectedError[unsupported-syntax]
+-  [COMPOSED_PATH_KEY]: boolean = [];
+-
+-  // $FlowExpectedError[unsupported-syntax]
+-  [CURRENT_TARGET_KEY]: EventTarget | null = null;
+-
+-  // $FlowExpectedError[unsupported-syntax]
+-  [EVENT_PHASE_KEY]: boolean = Event.NONE;
+-
+-  // $FlowExpectedError[unsupported-syntax]
+-  [IN_PASSIVE_LISTENER_FLAG_KEY]: boolean = false;
+-
+-  // $FlowExpectedError[unsupported-syntax]
+-  [IS_TRUSTED_KEY]: boolean = false;
+-
+-  // $FlowExpectedError[unsupported-syntax]
+-  [STOP_IMMEDIATE_PROPAGATION_FLAG_KEY]: boolean = false;
+-
+-  // $FlowExpectedError[unsupported-syntax]
+-  [STOP_PROPAGATION_FLAG_KEY]: boolean = false;
+-
+-  // $FlowExpectedError[unsupported-syntax]
+-  [TARGET_KEY]: EventTarget | null = null;
+-
+-  constructor(type: string, options?: ?EventInit) {
+-    if (arguments.length < 1) {
+-      throw new TypeError(
+-        "Failed to construct 'Event': 1 argument required, but only 0 present.",
+-      );
+-    }
+-
+-    const typeOfOptions = typeof options;
+-
+-    if (
+-      options != null &&
+-      typeOfOptions !== 'object' &&
+-      typeOfOptions !== 'function'
+-    ) {
+-      throw new TypeError(
+-        "Failed to construct 'Event': The provided value is not of type 'EventInit'.",
+-      );
+-    }
+-
+-    this._type = String(type);
+-    this._bubbles = Boolean(options?.bubbles);
+-    this._cancelable = Boolean(options?.cancelable);
+-    this._composed = Boolean(options?.composed);
++static + CAPTURING_PHASE: 1;
++static + AT_TARGET: 2;
++static + BUBBLING_PHASE: 3;
++
+++NONE: 0;
+++CAPTURING_PHASE: 1;
+++AT_TARGET: 2;
+++BUBBLING_PHASE: 3;
++
++_bubbles: boolean;
++_cancelable: boolean;
++_composed: boolean;
++_type: string;
++
++_defaultPrevented: boolean = false;
++_timeStamp: number = performance.now();
++
++// $FlowExpectedError[unsupported-syntax]
++[COMPOSED_PATH_KEY]: boolean = [];
++
++// $FlowExpectedError[unsupported-syntax]
++[CURRENT_TARGET_KEY]: EventTarget | null = null;
++
++// $FlowExpectedError[unsupported-syntax]
++[EVENT_PHASE_KEY]: boolean = Event.NONE;
++
++// $FlowExpectedError[unsupported-syntax]
++[IN_PASSIVE_LISTENER_FLAG_KEY]: boolean = false;
++
++// $FlowExpectedError[unsupported-syntax]
++[IS_TRUSTED_KEY]: boolean = false;
++
++// $FlowExpectedError[unsupported-syntax]
++[STOP_IMMEDIATE_PROPAGATION_FLAG_KEY]: boolean = false;
++
++// $FlowExpectedError[unsupported-syntax]
++[STOP_PROPAGATION_FLAG_KEY]: boolean = false;
++
++// $FlowExpectedError[unsupported-syntax]
++[TARGET_KEY]: EventTarget | null = null;
++
++constructor(type: string, options ?: ? EventInit) {
++  if (arguments.length < 1) {
++    throw new TypeError(
++      "Failed to construct 'Event': 1 argument required, but only 0 present.",
++    );
+   }
+ 
+-  get bubbles(): boolean {
+-    return this._bubbles;
++  const typeOfOptions = typeof options;
++
++  if (
++    options != null &&
++    typeOfOptions !== 'object' &&
++    typeOfOptions !== 'function'
++  ) {
++    throw new TypeError(
++      "Failed to construct 'Event': The provided value is not of type 'EventInit'.",
++    );
+   }
+ 
++  this._type = String(type);
++  this._bubbles = Boolean(options?.bubbles);
++  this._cancelable = Boolean(options?.cancelable);
++  this._composed = Boolean(options?.composed);
++}
++
++  get bubbles(): boolean {
++  return this._bubbles;
++}
++
+   get cancelable(): boolean {
+-    return this._cancelable;
+-  }
++  return this._cancelable;
++}
+ 
+   get composed(): boolean {
+-    return this._composed;
+-  }
++  return this._composed;
++}
+ 
+   get currentTarget(): EventTarget | null {
+-    return getCurrentTarget(this);
+-  }
++  return getCurrentTarget(this);
++}
+ 
+   get defaultPrevented(): boolean {
+-    return this._defaultPrevented;
+-  }
++  return this._defaultPrevented;
++}
+ 
+   get eventPhase(): EventPhase {
+-    return getEventPhase(this);
+-  }
++  return getEventPhase(this);
++}
+ 
+   get isTrusted(): boolean {
+-    return getIsTrusted(this);
+-  }
++  return getIsTrusted(this);
++}
+ 
+   get target(): EventTarget | null {
+-    return getTarget(this);
+-  }
++  return getTarget(this);
++}
+ 
+   get timeStamp(): number {
+-    return this._timeStamp;
+-  }
++  return this._timeStamp;
++}
+ 
+   get type(): string {
+-    return this._type;
+-  }
++  return this._type;
++}
+ 
+-  composedPath(): $ReadOnlyArray<EventTarget> {
+-    return getComposedPath(this).slice();
+-  }
++composedPath(): $ReadOnlyArray < EventTarget > {
++  return getComposedPath(this).slice();
++}
+ 
+-  preventDefault(): void {
+-    if (!this._cancelable) {
+-      return;
+-    }
+-
+-    if (getInPassiveListenerFlag(this)) {
+-      console.error(
+-        new Error(
+-          'Unable to preventDefault inside passive event listener invocation.',
+-        ),
+-      );
+-      return;
+-    }
+-
+-    this._defaultPrevented = true;
++preventDefault(): void {
++  if(!this._cancelable) {
++  return;
++}
++
++if (getInPassiveListenerFlag(this)) {
++  console.error(
++    new Error(
++      'Unable to preventDefault inside passive event listener invocation.',
++    ),
++  );
++  return;
++}
++
++this._defaultPrevented = true;
+   }
+ 
+-  stopImmediatePropagation(): void {
+-    setStopPropagationFlag(this, true);
++stopImmediatePropagation(): void {
++  setStopPropagationFlag(this, true);
+     setStopImmediatePropagationFlag(this, true);
+-  }
++}
+ 
+-  stopPropagation(): void {
+-    setStopPropagationFlag(this, true);
+-  }
++stopPropagation(): void {
++  setStopPropagationFlag(this, true);
++}
+ }
+ 
+ // $FlowExpectedError[cannot-write]
+@@ -191,7 +191,8 @@ Object.defineProperty(Event, 'NONE', {
+ // $FlowExpectedError[cannot-write]
+ Object.defineProperty(Event.prototype, 'NONE', {
+   enumerable: true,
+-  value: 0,
++  get() { return 0; },
++  set() { },
+ });
+ 
+ // $FlowExpectedError[cannot-write]
+@@ -203,7 +204,8 @@ Object.defineProperty(Event, 'CAPTURING_PHASE', {
+ // $FlowExpectedError[cannot-write]
+ Object.defineProperty(Event.prototype, 'CAPTURING_PHASE', {
+   enumerable: true,
+-  value: 1,
++  get() { return 1; },
++  set() { },
+ });
+ 
+ // $FlowExpectedError[cannot-write]
+@@ -215,7 +217,8 @@ Object.defineProperty(Event, 'AT_TARGET', {
+ // $FlowExpectedError[cannot-write]
+ Object.defineProperty(Event.prototype, 'AT_TARGET', {
+   enumerable: true,
+-  value: 2,
++  get() { return 2; },
++  set() { },
+ });
+ 
+ // $FlowExpectedError[cannot-write]
+@@ -227,7 +230,8 @@ Object.defineProperty(Event, 'BUBBLING_PHASE', {
+ // $FlowExpectedError[cannot-write]
+ Object.defineProperty(Event.prototype, 'BUBBLING_PHASE', {
+   enumerable: true,
+-  value: 3,
++  get() { return 3; },
++  set() { },
+ });
+ 
+ export type EventPhase =

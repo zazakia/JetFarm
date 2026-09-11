@@ -1,0 +1,374 @@
+{
+  "generatedAt": "2026-04-20T20:00:37.026Z",
+  "apply": false,
+  "modes": [
+    "overpayments",
+    "paid-balances",
+    "schedule-totals"
+  ],
+  "proposalsByMode": {
+    "overpayments": [
+      {
+        "mode": "overpayments",
+        "action": "manual_review_overpayment",
+        "id": "89a5ae64-8ed0-4775-a63a-155e40c018ee",
+        "loan_number": "LN-20260417-1482",
+        "borrower_name": "Carolina L. Misperos",
+        "status": "paid",
+        "loan_total": "15080.00",
+        "paid": "45240.00",
+        "overpaid": "30160.00"
+      },
+      {
+        "mode": "overpayments",
+        "action": "manual_review_overpayment",
+        "id": "6d822d22-123a-4e11-a24e-bcd4847e0fe3",
+        "loan_number": "LN-20260328-2360",
+        "borrower_name": "Jean M. Sanchez",
+        "status": "paid",
+        "loan_total": "6200.00",
+        "paid": "6355.00",
+        "overpaid": "155.00"
+      }
+    ],
+    "paid-balances": [
+      {
+        "mode": "paid-balances",
+        "action": "manual_review_paid_with_balance",
+        "id": "a4cae74f-2382-4fef-a85e-57dfe931818b",
+        "loan_number": "LN-20260328-8374",
+        "borrower_name": "Lorina Cagabhion Malayan",
+        "loan_total": "6200.00",
+        "paid": "0.00",
+        "balance": "6200.00"
+      },
+      {
+        "mode": "paid-balances",
+        "action": "manual_review_paid_with_balance",
+        "id": "6ccc76bc-f80b-48aa-bdec-da351c1eccd7",
+        "loan_number": "LN-20260328-4019",
+        "borrower_name": "Gleceria J. Teves",
+        "loan_total": "6200.00",
+        "paid": "1525.00",
+        "balance": "4675.00"
+      },
+      {
+        "mode": "paid-balances",
+        "action": "manual_review_paid_with_balance",
+        "id": "a7b6c244-8242-4ddd-9558-e6b33cb1b57b",
+        "loan_number": "LN-20260328-5099",
+        "borrower_name": "Florenda N. Cimene",
+        "loan_total": "12400.00",
+        "paid": "9277.00",
+        "balance": "3123.00"
+      },
+      {
+        "mode": "paid-balances",
+        "action": "manual_review_paid_with_balance",
+        "id": "090aca9f-da08-45ed-aaa2-487bd52dcf7a",
+        "loan_number": "LN-20260328-4864",
+        "borrower_name": "Alfredo P. Cayanong",
+        "loan_total": "12400.00",
+        "paid": "9300.00",
+        "balance": "3100.00"
+      },
+      {
+        "mode": "paid-balances",
+        "action": "manual_review_paid_with_balance",
+        "id": "f907485b-0f75-44e2-aadc-1be0810aaf03",
+        "loan_number": "LN-20260328-6086",
+        "borrower_name": "Rosanna T. Germano",
+        "loan_total": "18600.00",
+        "paid": "15520.00",
+        "balance": "3080.00"
+      },
+      {
+        "mode": "paid-balances",
+        "action": "manual_review_paid_with_balance",
+        "id": "4b3c41f2-c17c-4b75-9cb7-4af0e5d221e7",
+        "loan_number": "LN-20260328-7761",
+        "borrower_name": "Stephanie G. Cuan",
+        "loan_total": "17360.00",
+        "paid": "14528.00",
+        "balance": "2832.00"
+      },
+      {
+        "mode": "paid-balances",
+        "action": "manual_review_paid_with_balance",
+        "id": "69218e39-6fc7-4210-9e3b-e8b0d19ad697",
+        "loan_number": "LN-20260328-0304",
+        "borrower_name": "Rosanna T. Germano",
+        "loan_total": "12400.00",
+        "paid": "9587.00",
+        "balance": "2813.00"
+      },
+      {
+        "mode": "paid-balances",
+        "action": "manual_review_paid_with_balance",
+        "id": "0f7e3b00-074d-48df-9e4f-4506d8b848fd",
+        "loan_number": "LN-20260328-5125",
+        "borrower_name": "Socorro H. Cuan",
+        "loan_total": "8680.00",
+        "paid": "6076.00",
+        "balance": "2604.00"
+      },
+      {
+        "mode": "paid-balances",
+        "action": "manual_review_paid_with_balance",
+        "id": "bf049bfb-0f16-494a-a9e3-f2dd08ae49de",
+        "loan_number": "LN-20260328-1606",
+        "borrower_name": "Carolina L. Misperos",
+        "loan_total": "12400.00",
+        "paid": "9800.00",
+        "balance": "2600.00"
+      },
+      {
+        "mode": "paid-balances",
+        "action": "manual_review_paid_with_balance",
+        "id": "ae1d2448-5abc-46ee-9332-0fe78ef8a04d",
+        "loan_number": "LN-20260328-0556",
+        "borrower_name": "Stephanie G. Cuan",
+        "loan_total": "14880.00",
+        "paid": "12459.00",
+        "balance": "2421.00"
+      },
+      {
+        "mode": "paid-balances",
+        "action": "manual_review_paid_with_balance",
+        "id": "ab21ac86-69ee-45b5-8ee8-d8ab24152ac3",
+        "loan_number": "LN-20260328-4223",
+        "borrower_name": "Florenda N. Cimene",
+        "loan_total": "14880.00",
+        "paid": "12541.00",
+        "balance": "2339.00"
+      },
+      {
+        "mode": "paid-balances",
+        "action": "manual_review_paid_with_balance",
+        "id": "b713dfc6-27be-4dfb-9159-5049e0becfda",
+        "loan_number": "LN-20260328-6767",
+        "borrower_name": "Maria Lourdes D. Patricio",
+        "loan_total": "24800.00",
+        "paid": "22510.00",
+        "balance": "2290.00"
+      },
+      {
+        "mode": "paid-balances",
+        "action": "manual_review_paid_with_balance",
+        "id": "ade2a4f6-18b0-4648-92c4-861638088a5e",
+        "loan_number": "LN-20260328-7447",
+        "borrower_name": "Socorro H. Cuan",
+        "loan_total": "12400.00",
+        "paid": "10180.00",
+        "balance": "2220.00"
+      },
+      {
+        "mode": "paid-balances",
+        "action": "manual_review_paid_with_balance",
+        "id": "9675ae33-9f75-40a1-bd60-476cbc278786",
+        "loan_number": "LN-20260328-6643",
+        "borrower_name": "Ma. Liza Librea",
+        "loan_total": "9920.00",
+        "paid": "7702.00",
+        "balance": "2218.00"
+      },
+      {
+        "mode": "paid-balances",
+        "action": "manual_review_paid_with_balance",
+        "id": "ebb5dad0-c023-47e6-9ccf-86e9014de59f",
+        "loan_number": "LN-20260328-8399",
+        "borrower_name": "Leonora P. Trigosa",
+        "loan_total": "9920.00",
+        "paid": "7722.00",
+        "balance": "2198.00"
+      },
+      {
+        "mode": "paid-balances",
+        "action": "manual_review_paid_with_balance",
+        "id": "513c0aad-9a31-4168-86f0-be89f18e619c",
+        "loan_number": "LN-20260328-1311",
+        "borrower_name": "Emma J. Dela Pena",
+        "loan_total": "8680.00",
+        "paid": "6519.00",
+        "balance": "2161.00"
+      },
+      {
+        "mode": "paid-balances",
+        "action": "manual_review_paid_with_balance",
+        "id": "78df4ee6-4b95-4bfe-b943-749f394d8c4c",
+        "loan_number": "LN-20260328-6683",
+        "borrower_name": "Emma J. Dela Pena",
+        "loan_total": "12400.00",
+        "paid": "10330.00",
+        "balance": "2070.00"
+      },
+      {
+        "mode": "paid-balances",
+        "action": "manual_review_paid_with_balance",
+        "id": "561665ad-a519-45e4-8053-9dad62fb1686",
+        "loan_number": "LN-20260328-2414",
+        "borrower_name": "Maria Camila Lahoylahoy",
+        "loan_total": "6200.00",
+        "paid": "4185.00",
+        "balance": "2015.00"
+      },
+      {
+        "mode": "paid-balances",
+        "action": "manual_review_paid_with_balance",
+        "id": "2f38b209-aeb9-4c4c-b838-96ef3d7d4ed9",
+        "loan_number": "LN-20260328-9231",
+        "borrower_name": "Arcelene B. Castro",
+        "loan_total": "6200.00",
+        "paid": "4185.00",
+        "balance": "2015.00"
+      },
+      {
+        "mode": "paid-balances",
+        "action": "manual_review_paid_with_balance",
+        "id": "9f486553-b722-4456-ab00-897c0c734518",
+        "loan_number": "LN-20260328-3785",
+        "borrower_name": "Maria Lourdes D. Patricio",
+        "loan_total": "17360.00",
+        "paid": "15360.00",
+        "balance": "2000.00"
+      },
+      {
+        "mode": "paid-balances",
+        "action": "manual_review_paid_with_balance",
+        "id": "d4945291-7343-450d-b199-892e8fddf8ac",
+        "loan_number": "LN-20260328-5515",
+        "borrower_name": "Cristita Cagabhion",
+        "loan_total": "8680.00",
+        "paid": "6684.00",
+        "balance": "1996.00"
+      },
+      {
+        "mode": "paid-balances",
+        "action": "manual_review_paid_with_balance",
+        "id": "29e35ee5-d94c-476d-9557-d16019421b88",
+        "loan_number": "LN-20260328-0729",
+        "borrower_name": "Irma C. Marquez",
+        "loan_total": "8680.00",
+        "paid": "6723.00",
+        "balance": "1957.00"
+      },
+      {
+        "mode": "paid-balances",
+        "action": "manual_review_paid_with_balance",
+        "id": "1ea90e46-dd92-4e38-8b46-82c189dbe77d",
+        "loan_number": "LN-20260328-9533",
+        "borrower_name": "Lucita C. Cagabhion",
+        "loan_total": "11160.00",
+        "paid": "9220.00",
+        "balance": "1940.00"
+      },
+      {
+        "mode": "paid-balances",
+        "action": "manual_review_paid_with_balance",
+        "id": "b09984c1-5f8b-4188-a3bb-8925e2e3e77c",
+        "loan_number": "LN-20260328-7217",
+        "borrower_name": "Florenda N. Cimene",
+        "loan_total": "12400.00",
+        "paid": "10490.00",
+        "balance": "1910.00"
+      },
+      {
+        "mode": "paid-balances",
+        "action": "manual_review_paid_with_balance",
+        "id": "282fd30e-2ac1-4120-92c9-cf7f1c7d4fef",
+        "loan_number": "LN-20260328-4268",
+        "borrower_name": "Helen B. Bacalso",
+        "loan_total": "18600.00",
+        "paid": "16700.00",
+        "balance": "1900.00"
+      }
+    ],
+    "schedule-totals": [
+      {
+        "mode": "schedule-totals",
+        "action": "manual_review_schedule_total_mismatch",
+        "id": "f5d3afbc-1132-4dd2-a7b5-fbfad3829848",
+        "loan_number": "LN-20260420-181915-415719",
+        "borrower_name": "Carolina L. Misperos",
+        "status": "active",
+        "loan_total": "19267.00",
+        "schedule_total": "38534.00",
+        "difference": "19267.00",
+        "schedule_count": 46
+      },
+      {
+        "mode": "schedule-totals",
+        "action": "manual_review_schedule_total_mismatch",
+        "id": "083b4173-8e8d-4b66-b77c-77c478a740d2",
+        "loan_number": "",
+        "borrower_name": "Lorina Cagabhion Malayan",
+        "status": "active",
+        "loan_total": "11360.00",
+        "schedule_total": "0.00",
+        "difference": "-11360.00",
+        "schedule_count": 0
+      },
+      {
+        "mode": "schedule-totals",
+        "action": "manual_review_schedule_total_mismatch",
+        "id": "b77bf664-9eca-4832-8441-6c89a8b8250a",
+        "loan_number": "LN-20260417-9567",
+        "borrower_name": "Genara A. Cantiga",
+        "status": "active",
+        "loan_total": "6400.00",
+        "schedule_total": "12800.00",
+        "difference": "6400.00",
+        "schedule_count": 80
+      },
+      {
+        "mode": "schedule-totals",
+        "action": "manual_review_schedule_total_mismatch",
+        "id": "738aeb65-02d2-451a-af15-f87ab116ac19",
+        "loan_number": "LN-20260328-9164",
+        "borrower_name": "Fe B. Garbe",
+        "status": "active",
+        "loan_total": "6400.00",
+        "schedule_total": "12600.00",
+        "difference": "6200.00",
+        "schedule_count": 40
+      },
+      {
+        "mode": "schedule-totals",
+        "action": "manual_review_schedule_total_mismatch",
+        "id": "6ccc76bc-f80b-48aa-bdec-da351c1eccd7",
+        "loan_number": "LN-20260328-4019",
+        "borrower_name": "Gleceria J. Teves",
+        "status": "paid",
+        "loan_total": "6200.00",
+        "schedule_total": "0.00",
+        "difference": "-6200.00",
+        "schedule_count": 0
+      },
+      {
+        "mode": "schedule-totals",
+        "action": "manual_review_schedule_total_mismatch",
+        "id": "a4cae74f-2382-4fef-a85e-57dfe931818b",
+        "loan_number": "LN-20260328-8374",
+        "borrower_name": "Lorina Cagabhion Malayan",
+        "status": "paid",
+        "loan_total": "6200.00",
+        "schedule_total": "0.00",
+        "difference": "-6200.00",
+        "schedule_count": 0
+      },
+      {
+        "mode": "schedule-totals",
+        "action": "manual_review_schedule_total_mismatch",
+        "id": "46f28298-19fa-4ef7-bb53-aeb19a1a2019",
+        "loan_number": "LN-20260328-5304",
+        "borrower_name": "Geraliz B. Bucao",
+        "status": "active",
+        "loan_total": "31000.00",
+        "schedule_total": "31200.00",
+        "difference": "200.00",
+        "schedule_count": 40
+      }
+    ]
+  },
+  "skippedByMode": {}
+}

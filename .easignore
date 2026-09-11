@@ -1,0 +1,19 @@
+# EAS Build Ignore
+
+node_modules/
+.expo/
+.next/
+dist/
+build/
+android/build/
+android/.gradle/
+ios/build/
+*.apk
+*.aab
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.svg
+*.mp4
+*.webm

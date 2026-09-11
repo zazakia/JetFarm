@@ -1,0 +1,46 @@
+{
+  "generated_from": "docs/reconciliation/manual-review-action-pack-2026-04-21T00-15-05-059Z.json",
+  "instructions": "Copy rows from the manual-review action pack into this file, one action object per approved row. Then run the apply-approved-review-actions script in --dry-run first.",
+  "actions": [
+    {
+      "id": "example-1",
+      "action": "reopen_loan_to_active",
+      "loan_id": "replace-with-loan-id",
+      "approved_by": "reviewer-name",
+      "reason": "Why this paid loan should be reopened"
+    },
+    {
+      "id": "example-2",
+      "action": "set_schedule_status",
+      "schedule_id": "replace-with-schedule-id",
+      "status": "paid",
+      "approved_by": "reviewer-name",
+      "reason": "Why this schedule status is approved"
+    },
+    {
+      "id": "example-3",
+      "action": "link_payment_schedule",
+      "payment_id": "replace-with-payment-id",
+      "schedule_id": "replace-with-schedule-id",
+      "approved_by": "reviewer-name",
+      "reason": "Why this payment-to-schedule link is approved"
+    },
+    {
+      "id": "example-4",
+      "action": "reverse_savings_overcredit",
+      "borrower_id": "replace-with-borrower-id",
+      "loan_id": "replace-with-loan-id",
+      "amount": 100,
+      "reference_id": "optional-reference-id",
+      "notes": "Manual approved reversal of savings overcredit",
+      "approved_by": "reviewer-name",
+      "reason": "Why this reversal is approved"
+    },
+    {
+      "id": "example-5",
+      "action": "add_manual_note_only",
+      "approved_by": "reviewer-name",
+      "reason": "Documented no-op/manual handling"
+    }
+  ]
+}

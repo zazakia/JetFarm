@@ -1,0 +1,26 @@
+# Caddyfile — Auto-TLS reverse proxy for Metabase BI
+# Replace bi.crispyking.ph with your actual domain or VPS IP
+
+bi.crispyking.ph {
+    reverse_proxy metabase:3000 {
+        header_up X-Forwarded-Proto {scheme}
+        header_up X-Forwarded-Host {host}
+        # Health check on the /api/health endpoint
+        health_uri /api/health
+        health_interval 30s
+    }
+
+    # Security headers
+    header {
+        X-Content-Type-Options nosniff
+        X-Frame-Options SAMEORIGIN
+        Referrer-Policy strict-origin-when-cross-origin
+    }
+
+    log {
+        output file /data/logs/caddy_access.log {
+            roll_size 10mb
+            roll_keep 5
+        }
+    }
+}

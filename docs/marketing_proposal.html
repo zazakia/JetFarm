@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>POSCursor - Comprehensive Cooperative LMS Proposal</title>
+    <style>
+        body {
+            font-family: 'Calibri', 'Arial', sans-serif;
+            font-size: 11pt;
+            line-height: 1.5;
+            color: #2D3748;
+            margin: 1in;
+        }
+        h1 {
+            font-size: 26pt;
+            color: #1E3A8A;
+            text-align: center;
+            margin-top: 100px;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        .subtitle {
+            font-size: 16pt;
+            color: #0D9488;
+            text-align: center;
+            margin-bottom: 150px;
+            font-style: italic;
+        }
+        .cover-meta {
+            font-size: 11pt;
+            text-align: center;
+            margin-top: 150px;
+            color: #4A5568;
+            line-height: 1.8;
+        }
+        .page-break {
+            page-break-before: always;
+        }
+        h2 {
+            font-size: 18pt;
+            color: #1E3A8A;
+            border-bottom: 2px solid #1E3A8A;
+            padding-bottom: 4px;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+        h3 {
+            font-size: 13pt;
+            color: #0D9488;
+            margin-top: 20px;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+        h4 {
+            font-size: 11pt;
+            color: #B45309;
+            margin-top: 15px;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        p {
+            margin-top: 0;
+            margin-bottom: 10px;
+            text-align: justify;
+        }
+        ul, ol {
+            margin-top: 0;
+            margin-bottom: 15px;
+            padding-left: 20px;
+        }
+        li {
+            margin-bottom: 6px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            margin-bottom: 15px;
+        }
+        th, td {
+            border: 1px solid #CBD5E0;
+            padding: 8px 10px;
+            font-size: 10pt;
+            vertical-align: top;
+        }
+        th {
+            background-color: #F7FAFC;
+            color: #1E3A8A;
+            font-weight: bold;
+            text-align: left;
+        }
+        .amount {
+            text-align: right;
+            white-space: nowrap;
+        }
+        .center {
+            text-align: center;
+        }
+        .highlight {
+            background-color: #FEFCBF;
+            font-weight: bold;
+        }
+        .footer-note {
+            font-size: 9pt;
+            color: #718096;
+            margin-top: 50px;
+            border-top: 1px solid #E2E8F0;
+            padding-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- COVER PAGE -->
+    <div>
+        <h1>POSCURSOR</h1>
+        <div class="subtitle">Enterprise Loan & Savings Management System (LMS)<br>for Philippine Cooperatives and Microfinance Institutions</div>
+        
+        <div class="cover-meta">
+            <strong>Prepared For:</strong> POS Cursor Cooperative (SCSCC)<br>
+            <strong>Prepared By:</strong> POSCursor Business Solutions Team<br>
+            <strong>Version:</strong> 2.0 (CDA & CIC Compliant Edition)<br>
+            <strong>Date:</strong> July 8, 2026<br>
+            <strong>Status:</strong> Commercial Proposal and Technical Specifications
+        </div>
+    </div>
+
+    <div class="page-break"></div>
+
+    <!-- TABLE OF CONTENTS PLACEHOLDER -->
+    <h2>Executive Summary</h2>
+    <p>
+        In the rapidly evolving financial landscape of the Philippines, savings and credit cooperatives require robust, reliable, and legally compliant tools to manage assets, streamline field collections, and ensure regulatory transparency. <strong>POSCursor</strong> (customized for the <em>POS Cursor Cooperative</em>) is an enterprise-grade, mobile-first, and offline-first Loan and Savings Management System (LMS) specifically designed to address these requirements.
+    </p>
+    <p>
+        POSCursor bridges the gap between field operations and back-office financial accounting. Field collectors operate in remote areas without internet access, recording loan collections and member deposits securely on their mobile devices. Once a connection is established, the application automatically synchronizes data back to a secure cloud-hosted PostgreSQL database managed via Supabase. Behind the scenes, a comprehensive double-entry accounting engine automatically posts entries to a Chart of Accounts aligned with the <strong>Cooperative Development Authority (CDA)</strong> standards, providing instant compliance reporting, balance sheets, and operations statements.
+    </p>
+    <p>
+        This proposal outlines the platform's core architecture, detailed role-based features, benefits, and compliance modules (including CDA-format statements, automatic statutory fund allocations, and credit reporting exports for the <strong>Credit Information Corporation (CIC)</strong>).
+    </p>
+
+    <h3>Core Value Proposition</h3>
+    <ul>
+        <li><strong>Offline-First Resilience:</strong> field operations continue uninterrupted without internet, ensuring zero data loss during rural collections.</li>
+        <li><strong>Automated Regulatory Compliance:</strong> instant CDA financial statements, statutory reserve splits, and automated credit registry reporting files for the CIC.</li>
+        <li><strong>Auditability and Transparency:</strong> end-to-end audit trails, immutable collection sheets, cash handover validation (remittances), and role-based permissions prevent internal leakages.</li>
+        <li><strong>Integrated Accounting:</strong> direct ledger integration ensures that every transaction (loan release, payment, expense, savings interest) is posted automatically, eliminating manual reconciliation overhead.</li>
+    </ul>
+
+    <div class="page-break"></div>
+
+    <h2>1. System Architecture & Tech Stack</h2>
+    <p>
+        The platform utilizes a modern, resilient technology stack to achieve high responsiveness, robust security, offline persistence, and seamless sync capabilities:
+    </p>
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 30%">Layer</th>
+                <th style="width: 35%">Technology Components</th>
+                <th style="width: 35%">Purpose & Strategic Benefit</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Mobile & Web Frontend</strong></td>
+                <td>React Native, Expo SDK 55, Expo Router, NativeWind 4</td>
+                <td>Cross-platform native applications for iOS and Android, plus an admin web dashboard. Leverages file-based routing and atomic design for fluid performance.</td>
+            </tr>
+            <tr>
+                <td><strong>Local Database</strong></td>
+                <td>WatermelonDB (SQLite local backend)</td>
+                <td>Optimized for high-performance offline data caching, handling millions of records on low-end devices with asynchronous database queries.</td>
+            </tr>
+            <tr>
+                <td><strong>Cloud Backend & DB</strong></td>
+                <td>Supabase (PostgreSQL, Supabase Auth, Storage)</td>
+                <td>Relational integrity, real-time database listener, secure JWT authentication, and automatic daily cloud backup storage.</td>
+            </tr>
+            <tr>
+                <td><strong>Security & Encryption</strong></td>
+                <td>AES-256 at-rest encryption, Row-Level Security (RLS)</td>
+                <td>PII (Personally Identifiable Information) such as member addresses and phone numbers are encrypted locally and in the cloud database. RLS restricts access so users only see authorized data.</td>
+            </tr>
+            <tr>
+                <td><strong>Testing & Verification</strong></td>
+                <td>Jest, Playwright E2E testing</td>
+                <td>Continuous testing of calculations, workflows, and UI transitions to ensure zero regressions before production deployment.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>Offline-First Sync Engine (WatermelonDB ↔ Supabase)</h3>
+    <p>
+        Field collectors frequently operate in barangays with spotty or non-existent cellular coverage. To solve this, POSCursor uses a custom synchronization service:
+    </p>
+    <ol>
+        <li><strong>Local Write:</strong> Transactions are written instantly to the local SQLite database. The user interface updates immediately, ensuring zero lag.</li>
+        <li><strong>Status Tracking:</strong> The database marks records as <code>created</code>, <code>updated</code>, or <code>deleted</code> locally.</li>
+        <li><strong>Bidirectional Synchronization:</strong> When connectivity is detected, the system pulls remote updates (ensuring field data matches the central office) and pushes local modifications to Supabase, handling conflict resolution through chronological precedence.</li>
+    </ol>
+
+    <div class="page-break"></div>
+
+    <h2>2. Role-Based Access Control (RBAC)</h2>
+    <p>
+        To preserve operational security and adhere to internal control best practices (separation of duties), the system restricts access through six (6) distinct user roles:
+    </p>
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 20%">Role</th>
+                <th style="width: 40%">Operational Scope</th>
+                <th style="width: 40%">Key Benefits</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Admin</strong></td>
+                <td>Full system configuration, financial settings, audit log review, statutory fund distributions, and final report generation.</td>
+                <td>Complete administrative control, system auditing, and strategic oversight.</td>
+            </tr>
+            <tr>
+                <td><strong>Collector</strong></td>
+                <td>Access to assigned routes, collection sheets, recording member payments/deposits (offline), and submitting cash remittances.</td>
+                <td>Simplifies field data collection, eliminates paper sheets, and calculates cash-on-hand.</td>
+            </tr>
+            <tr>
+                <td><strong>Loan-Encoder</strong></td>
+                <td>Encodes borrower profiles, performs credit investigations (CI), draft loans, and runs loan calculators.</td>
+                <td>Ensures compliance with credit policies prior to board approval and disbursement.</td>
+            </tr>
+            <tr>
+                <td><strong>Payment-Encoder</strong></td>
+                <td>Records walk-in payments at the central office, manages over-the-counter transactions, and issues digital receipts.</td>
+                <td>Decouples cash collection from accounting posting, enforcing internal controls.</td>
+            </tr>
+            <tr>
+                <td><strong>Expenses-Encoder</strong></td>
+                <td>Logs operational disbursements, utility costs, salaries, and other daily cash outflows.</td>
+                <td>Centralizes cost tracking and ensures all expenses flow directly into the income statements.</td>
+            </tr>
+            <tr>
+                <td><strong>Borrower</strong></td>
+                <td>Self-service portal to view outstanding loan balances, repayment schedules, and personal savings ledgers.</td>
+                <td>Enhances member trust and reduces inquiry load on cooperative staff.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="page-break"></div>
+
+    <h2>3. Platform Modules & Features: Purpose and Benefits</h2>
+
+    <h3>3.1 Membership & Governance Module</h3>
+    <p><strong>Purpose:</strong> To manage the lifetime member journey, from initial Pre-Membership Education Seminar (PMES) training to membership approval and general assembly registry tracking.</p>
+    <ul>
+        <li><strong>PMES Participant Tracking:</strong> Registers and tracks attendees of the mandatory PMES. Only certified participants can apply for membership.
+            <br><em>Benefit:</em> Strict adherence to Philippine cooperative bylaws on education.
+        </li>
+        <li><strong>Onboarding & Fee Registry:</strong> Digitizes membership applications, collects the non-refundable ₱100.00 Membership Fee, and routes applications to the Education & Board of Directors for approval.
+            <br><em>Benefit:</em> Speeds up onboarding and eliminates paper filing backlogs.
+        </li>
+        <li><strong>Annual General Assembly (AGA) Registry & Attendance:</strong> Tracks attendance during the annual assembly.
+            <br><em>Benefit:</em> Facilitates quorum validation and automatically implements the <strong>AGA Absentee Rule</strong>.
+        </li>
+        <li><strong>Absentee Rule Automation:</strong> Members absent from the AGA without a valid, BOD-approved written reason have their annual Patronage Refund automatically plowed back and converted directly into their Capital Build-Up (CBU)/Share Capital.
+            <br><em>Benefit:</em> Incentivizes active governance participation while strengthening the cooperative's capital base.
+        </li>
+    </ul>
+
+    <h3>3.2 Capital Build-Up (CBU) & Share Capital Management</h3>
+    <p><strong>Purpose:</strong> To track, allocate, and grow the cooperative's core equity contributions (Share Capital) from its members.</p>
+    <ul>
+        <li><strong>Subscription Tracking:</strong> Tracks each member's subscribed shares (minimum 20 shares or ₱2,000.00) against their actual paid-up capital (minimum ₱500.00 initial investment).
+            <br><em>Benefit:</em> Monitors compliance with equity commitments and tracks outstanding subscription receivables.
+        </li>
+        <li><strong>Share Valuation Engine:</strong> Enforces the standard ₱100.00 par value per share.
+            <br><em>Benefit:</em> Prevents calculation errors and guarantees uniform share distribution.
+        </li>
+        <li><strong>Dividend Eligibility Gates:</strong> Enforces minimum maintaining balances and active status conditions for annual dividend distributions.
+            <br><em>Benefit:</em> Ensures distributions are allocated strictly to compliant, active members.
+        </li>
+    </ul>
+
+    <h3>3.3 Cooperative Savings Program</h3>
+    <p><strong>Purpose:</strong> To provide a secure deposit facility for members while calculating accurate quarterly interest payouts based on member savings behavior.</p>
+    <ul>
+        <li><strong>Average Daily Balance (ADB) Calculator:</strong> Automatically tracks deposits and withdrawals to calculate each member's monthly ADB.
+            <br><em>Benefit:</em> Replaces complex manual spreadsheets with real-time, error-free interest computations.
+        </li>
+        <li><strong>Quarterly Compounding Engine:</strong> Compounds interest quarterly at the cooperative rate of 4.0% per annum, subject to a minimum maintaining balance of ₱100.00.
+            <br><em>Benefit:</em> Incentivizes savings and updates member passbooks automatically.
+        </li>
+        <li><strong>Delinquency Savings Freeze:</strong> Automatically holds savings accounts when a member has an outstanding, past-due loan. Withdrawals are blocked, and balances can be automatically applied to outstanding debts.
+            <br><em>Benefit:</em> Protects cooperative assets and reduces non-performing loans (NPLs).
+        </li>
+    </ul>
+
+    <div class="page-break"></div>
+
+    <h3>3.4 Advanced Lending Module & Loan Calculator</h3>
+    <p><strong>Purpose:</strong> To enforce lending policies, perform credit assessments, compute releases, deduct statutory fees, and schedule collections.</p>
+    <ul>
+        <li><strong>Loan Classification System:</strong> Pre-configures specific business rules for four loan types:
+            <ol>
+                <li><strong>Petty Cash Loan:</strong> Maximum of 75% of paid-up capital, 0% interest, 2% service charge, 1-month term.</li>
+                <li><strong>Livelihood/Micro Finance Loan:</strong> Up to ₱5,000.00, 2% interest/month, 2% service charge, 2-month term.</li>
+                <li><strong>Salary Loan:</strong> Up to ₱5,000.00, 2% interest/month, 2% service charge, 2-month term.</li>
+                <li><strong>Emergency Loan:</strong> Up to ₱5,000.00 (requires collateral), 0% interest, 2% service charge, 1-month term.</li>
+            </ol>
+            <em>Benefit:</em> Hardcodes policy limits directly into the software, preventing unauthorized overrides.
+        </li>
+        <li><strong>Credit Investigation (CI) Log:</strong> Records credit investigation details, co-maker guarantees, and collateral valuations prior to board approval.
+            <br><em>Benefit:</em> Creates an audit trail of credit assessments, protecting capital.
+        </li>
+        <li><strong>Automated Loan Deductions:</strong> Automatically computes and deducts standard charges from the gross loan principal upon release:
+            <ul>
+                <li>Association Reserve Fund (ARF): 2% of principal.</li>
+                <li>Cooperative Project Fund / CBU (CPF): 4% of principal.</li>
+                <li>Processing Fee: 3% of principal.</li>
+                <li>Documentary Stamp Tax (DST): Flat ₱45.00 (standard) or 0.75% of principal (institutional).</li>
+                <li>Notarial Fee (₱300.00), Risk Share Fund (₱60.00), and Loan Handling Fee (₱100.00).</li>
+            </ul>
+            <em>Benefit:</em> Guarantees exact net release calculations and automatically posts fees to the appropriate revenue accounts.
+        </li>
+        <li><strong>Repayment Schedule Generator:</strong> Automatically creates daily, weekly, or semi-monthly amortization schedules based on the release date. Includes the <strong>Skip-Sunday Rule</strong> to ensure no collections are scheduled on Sundays.
+            <br><em>Benefit:</em> Standardizes expectations and optimizes the collector's daily routing schedule.
+        </li>
+    </ul>
+
+    <h3>3.5 Field Collection & Remittance Workflow</h3>
+    <p><strong>Purpose:</strong> To secure the daily collection pipeline, validate field cash collections, and track collector efficiency metrics.</p>
+    <ul>
+        <li><strong>Offline Digital Collection Sheet:</strong> Lists borrowers by route and indicates their expected daily amortization. Collector inputs payment amounts offline.
+            <br><em>Benefit:</em> Eliminates paper sheets, reduces input errors, and functions in remote areas.
+        </li>
+        <li><strong>GPS Location Mapping:</strong> Logs the geographic coordinates (latitude and longitude) of every collection transaction.
+            <br><em>Benefit:</em> Verifies field collector activity and provides location verification for audits.
+        </li>
+        <li><strong>Remittance Approval Workflow:</strong> Field collections calculate a "Cash on Hand" total for the collector. The collector hands over cash to the treasurer, who reviews the collection log and clicks "Approve" or "Reject".
+            <br><em>Benefit:</em> Establishes strict custody transfers, preventing cash leakages.
+        </li>
+    </ul>
+
+    <div class="page-break"></div>
+
+    <h2>4. CDA Compliance & Accounting Integration</h2>
+    <p>
+        POSCursor is built around a double-entry general ledger accounting system. Rather than tracking balances in isolation, every operational action triggers a structured accounting entry that updates the general ledger.
+    </p>
+
+    <h3>4.1 CDA-Aligned Chart of Accounts</h3>
+    <p>
+        The system pre-configures standard account codes set by the Cooperative Development Authority (CDA) of the Philippines:
+    </p>
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 20%">Account Code</th>
+                <th style="width: 40%">Account Title</th>
+                <th style="width: 40%">Automated Operations</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>1010</strong></td>
+                <td>Cash on Hand</td>
+                <td>Debited upon collection sheet approval; Credited upon loan release.</td>
+            </tr>
+            <tr>
+                <td><strong>1020</strong></td>
+                <td>Cash in Bank</td>
+                <td>Updated upon bank deposit or payroll bank disbursements.</td>
+            </tr>
+            <tr>
+                <td><strong>1100</strong></td>
+                <td>Loans Receivable</td>
+                <td>Debited upon gross loan release; Credited when principal payments are posted.</td>
+            </tr>
+            <tr>
+                <td><strong>2010</strong></td>
+                <td>Savings Deposits Payable</td>
+                <td>Credited during member deposits; Debited during withdrawals or past-due loan offsets.</td>
+            </tr>
+            <tr>
+                <td><strong>3010</strong></td>
+                <td>Share Capital (CBU)</td>
+                <td>Credited upon share purchases or plowed-back patronage refunds.</td>
+            </tr>
+            <tr>
+                <td><strong>4010</strong></td>
+                <td>Interest Income on Loans</td>
+                <td>Credited automatically when loan interest is collected.</td>
+            </tr>
+            <tr>
+                <td><strong>4020</strong></td>
+                <td>Service Charges</td>
+                <td>Credited automatically during loan deduction calculations.</td>
+            </tr>
+            <tr>
+                <td><strong>5000+</strong></td>
+                <td>Operating Expenses</td>
+                <td>Debited when expenses are encoded by the Expenses-Encoder.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>4.2 Accounting Period Controls</h3>
+    <ul>
+        <li><strong>Accounting Period History:</strong> Tracks active and historical periods.
+            <br><em>Benefit:</em> Organizes financial data chronologically.
+        </li>
+        <li><strong>Monthly & Yearly Closing Locks:</strong> Admins can officially close an accounting period. Once closed, no historical transactions can be added, modified, or deleted.
+            <br><em>Benefit:</em> Enforces audit integrity, prevents retrospective adjustments, and ensures financial reports match submitted tax and regulatory records.
+        </li>
+    </ul>
+
+    <div class="page-break"></div>
+
+    <h2>5. Compliance & Automated Reporting Modules</h2>
+    <p>
+        Regulatory reporting is often a bottleneck for cooperatives, requiring weeks of manual data assembly. POSCursor automates these reports, generating them directly from the ledger.
+    </p>
+
+    <h3>5.1 CDA-Aligned Financial Reports</h3>
+    <p>
+        The system outputs reports formatted to match the Cooperative Development Authority standards:
+    </p>
+    <ul>
+        <li><strong>Statement of Financial Condition (Balance Sheet):</strong> Lists Assets, Liabilities, and Equity (including Statutory Funds and Retained Surplus).
+            <br><em>Benefit:</em> Shows the cooperative's real-time financial health.
+        </li>
+        <li><strong>Statement of Operations (Income Statement):</strong> Details credit revenues (interest, service charges, penalties) and operational expenses.
+            <br><em>Benefit:</em> Computes Net Surplus (income) for any given period.
+        </li>
+        <li><strong>Statement of Changes in Equity:</strong> Tracks subscriptions, capital build-ups, and statutory reserve additions.
+            <br><em>Benefit:</em> Documents capital growth.
+        </li>
+        <li><strong>Notes to Financial Statements:</strong> Generates standard disclosure notes and breakdown ledgers.
+            <br><em>Benefit:</em> Speeds up annual audit preparation.
+        </li>
+    </ul>
+
+    <h3>5.2 Automated Statutory Reserve Allocations</h3>
+    <p>
+        Under R.A. 9520 (Philippine Cooperative Code), net surplus must be divided into statutory reserve funds. POSCursor automates these splits at year-end:
+    </p>
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 25%">Fund</th>
+                <th style="width: 20%">Percentage</th>
+                <th style="width: 55%">Regulatory Purpose & System Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>General Reserve Fund</strong></td>
+                <td>10.0%</td>
+                <td>Buffer for operational losses. Locked in account code <code>3020</code>; cannot be distributed.</td>
+            </tr>
+            <tr>
+                <td><strong>Education & Training Fund (CETF)</strong></td>
+                <td>10.0%</td>
+                <td>Allocated to account code <code>3030</code>. Splits 50% for local coop trainings and 50% remitted to the union/federation.</td>
+            </tr>
+            <tr>
+                <td><strong>Community Development Fund (CDF)</strong></td>
+                <td>3.0%</td>
+                <td>Allocated to account code <code>3040</code> for community outreach projects.</td>
+            </tr>
+            <tr>
+                <td><strong>Optional Fund</strong></td>
+                <td>7.0%</td>
+                <td>Allocated to account code <code>3050</code> for land, buildings, and computerization projects.</td>
+            </tr>
+            <tr class="highlight">
+                <td><strong>Distributable Net Surplus</strong></td>
+                <td>70.0%</td>
+                <td>Transferred to the member benefits pool. Splits into 70% Interest on Share Capital (ISC) and 30% Patronage Refund (PR).</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="page-break"></div>
+
+    <h3>5.3 CIC Automated Credit Reporting Module</h3>
+    <p><strong>Regulatory Context:</strong> Republic Act No. 9510 (Credit Information System Act) mandates that all lending institutions and cooperatives in the Philippines submit basic credit data and update member credit records monthly with the <strong>Credit Information Corporation (CIC)</strong>.</p>
+    <p><strong>System Features & Functions:</strong></p>
+    <ul>
+        <li><strong>Data Formatting:</strong> Extracts borrower profiles, loan balances, repayment histories, and delinquency statuses, formatting them to meet CIC requirements.</li>
+        <li><strong>Automated Extraction:</strong> Consolidates data from the database, eliminating manual data entry.</li>
+        <li><strong>Validation Checks:</strong> Validates fields (e.g., tax numbers, birthdates) before output to prevent transmission errors.</li>
+        <li><strong>Submission Ready:</strong> Outputs a standardized submission file for direct upload to the CIC portal.</li>
+    </ul>
+    <p><strong>Benefits:</strong></p>
+    <ul>
+        <li>Ensures full regulatory compliance, avoiding penalties from the CIC.</li>
+        <li>Saves staff time by automating data compilation.</li>
+        <li>Promotes credit transparency and helps members build verifiable credit histories.</li>
+    </ul>
+
+    <h3>5.4 LandBank Payroll & Disbursement Register Export</h3>
+    <p><strong>Purpose:</strong> To automate loan releases and dividend distributions by generating payroll register files compatible with Land Bank of the Philippines (LBP) banking portals.</p>
+    <ul>
+        <li><strong>Account Mapping:</strong> Links member records to verified LBP account numbers.</li>
+        <li><strong>Automatic Payroll Generation:</strong> Groups approved disbursements and formats them to meet LandBank requirements.</li>
+        <li><strong>Register File Export:</strong> Outputs a text or CSV file containing account names, numbers, and disbursement amounts.</li>
+        <li><strong>Benefits:</strong>
+            <br><em>Saves Time:</em> Eliminates the need to enter disbursements manually into banking portals.
+            <br><em>Reduces Risk:</em> Prevents typos, ensuring funds are sent to the correct accounts.
+        </li>
+    </ul>
+
+    <h3>5.5 Creditors Group Life (CGL) Insurance Summary</h3>
+    <p><strong>Purpose:</strong> To manage group life insurance coverage for active borrowers, protecting the cooperative from outstanding debt loss if a borrower passes away.</p>
+    <ul>
+        <li><strong>Insurance List:</strong> Lists active borrowers, loan amounts, and coverage dates.</li>
+        <li><strong>Automatic Premium Calculator:</strong> Computes premium deductions based on loan amounts and terms.</li>
+        <li><strong>Reporting:</strong> Generates monthly summaries for submission to the insurance provider.</li>
+        <li><strong>Benefits:</strong>
+            <br><em>Mitigates Risk:</em> Ensures all active loans are covered by insurance.
+            <br><em>Simplifies Admin Work:</em> Automates the creation of monthly insurance registers.
+        </li>
+    </ul>
+
+    <div class="page-break"></div>
+
+    <h2>6. Technical Proposal & Implementation Roadmap</h2>
+    <p>
+        Implementing POSCursor involves setting up cloud infrastructure, deploying applications, migrating historical data, and training staff.
+    </p>
+
+    <h3>6.1 Infrastructure Deployment Options</h3>
+    <ul>
+        <li><strong>Cloud-Hosted Model (Recommended):</strong>
+            <ul>
+                <li>Supabase database hosted on AWS.</li>
+                <li>Admin web panel hosted on Cloudflare Pages.</li>
+                <li>Mobile applications distributed via Expo Application Services (EAS) for Android and iOS.</li>
+            </ul>
+        </li>
+        <li><strong>Local Network Model:</strong>
+            <ul>
+                <li>Local SQLite/LokiJS backups synced to an on-premise server.</li>
+            </ul>
+        </li>
+    </ul>
+
+    <h3>6.2 Implementation Phases</h3>
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 15%">Phase</th>
+                <th style="width: 30%">Focus Areas</th>
+                <th style="width: 55%">Key Deliverables</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Phase 1</strong></td>
+                <td>System Setup & Database Seeding</td>
+                <td>Set up Supabase database; configure initial user roles and permissions; seed default CDA Chart of Accounts.</td>
+            </tr>
+            <tr>
+                <td><strong>Phase 2</strong></td>
+                <td>Data Migration</td>
+                <td>Import member records, historical balances, and active loans from existing spreadsheets. Run reconciliation audits.</td>
+            </tr>
+            <tr>
+                <td><strong>Phase 3</strong></td>
+                <td>Application Launch</td>
+                <td>Distribute Android app (.apk) to collectors. Deploy admin web dashboard.</td>
+            </tr>
+            <tr>
+                <td><strong>Phase 4</strong></td>
+                <td>User Training</td>
+                <td>Conduct training sessions for admins, collectors, and encoders.</td>
+            </tr>
+            <tr>
+                <td><strong>Phase 5</strong></td>
+                <td>Regulatory Reporting Launch</td>
+                <td>Activate automated reports for CDA, CIC, and LandBank integrations.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="footer-note">
+        <strong>POSCursor proposal</strong>. Prepared for the POS Cursor Cooperative. All rights reserved &copy; 2026.
+    </div>
+
+</body>
+</html>
