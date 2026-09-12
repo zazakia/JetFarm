@@ -15,39 +15,49 @@ export async function loginWithCredentials(page: Page, email: string, password =
 }
 
 export async function loginAsAdmin(page: Page) {
-  await loginWithCredentials(page, 'admin@poscursor.com');
+  await loginWithCredentials(page, 'admin@jetfarm.com');
   // Wait for the admin portal to be visible, potentially handling a redirect
   await expect(page.getByTestId('admin-portal-title')).toBeVisible({ timeout: 60000 });
 }
 
 export async function loginAsCollector(page: Page) {
-  await loginWithCredentials(page, 'collector@poscursor.com');
+  await loginWithCredentials(page, 'collector@jetfarm.com');
   await expect(page.getByText(/Collector Portal|Collection Sheet/i).first()).toBeVisible({ timeout: 60000 });
 }
 
 export async function loginAsLoanEncoder(page: Page) {
-  await loginWithCredentials(page, 'loan_encoder@poscursor.com');
+  await loginWithCredentials(page, 'loan_encoder@jetfarm.com');
   await expect(page.getByText('New Loan Entry', { exact: false })).toBeVisible({ timeout: 60000 });
 }
 
 export async function loginAsPaymentEncoder(page: Page) {
-  await loginWithCredentials(page, 'payment_encoder@poscursor.com');
+  await loginWithCredentials(page, 'payment_encoder@jetfarm.com');
   await expect(page.getByTestId('page-title')).toHaveText(/Record.*Payment/i, { timeout: 60000 });
 }
 
 export async function safeNavigate(page: Page, url: string, targetSelectorOrText?: string | RegExp) {
+  // Normalize url by stripping Expo Router route groups like /(admin)
+  const normalizedUrl = url.replace(/\/\([^)]+\)/g, '') || '/';
+  
   // Use client-side navigation if possible, or fallback to page.goto
-  await page.evaluate((targetUrl) => {
+  await page.evaluate(({ targetUrl, fallbackUrl }) => {
     if (window && (window as any).router) {
-      (window as any).router.push(targetUrl);
-    } else {
-      window.location.href = targetUrl;
+      try {
+        (window as any).router.push(targetUrl);
+        return;
+      } catch (e) {
+        try {
+          (window as any).router.push(fallbackUrl);
+          return;
+        } catch (e2) {}
+      }
     }
-  }, url).catch(() => {
-    return page.goto(url);
+    window.location.href = fallbackUrl;
+  }, { targetUrl: url, fallbackUrl: normalizedUrl }).catch(() => {
+    return page.goto(normalizedUrl);
   });
-  const pathPart = url.split('?')[0].replace(/^\//, '');
-  if (pathPart && pathPart !== '(') {
+  const pathPart = normalizedUrl.split('?')[0].replace(/^\//, '');
+  if (pathPart) {
     try {
       await page.waitForURL(u => u.pathname.includes(pathPart), { timeout: 15000 });
     } catch (e) {

@@ -83,6 +83,17 @@ import UserBranchRole from './models/UserBranchRole';
 import SalesReturn from './models/SalesReturn';
 import SalesReturnLine from './models/SalesReturnLine';
 import PosSession from './models/PosSession';
+import AgriParcel from './models/AgriParcel';
+import AgriLandOwner from './models/AgriLandOwner';
+import AgriInvestor from './models/AgriInvestor';
+import AgriCropCycle from './models/AgriCropCycle';
+import AgriGrowthCheckin from './models/AgriGrowthCheckin';
+import AgriHarvestLog from './models/AgriHarvestLog';
+import AgriFarmExpense from './models/AgriFarmExpense';
+import AgriFarmWorker from './models/AgriFarmWorker';
+import AgriLaborLog from './models/AgriLaborLog';
+import AgriWeeklySettlement from './models/AgriWeeklySettlement';
+import AgriInvestorLedger from './models/AgriInvestorLedger';
 
 // Configure WatermelonDB to use standard UUID v4 for record IDs.
 // This is required for compatibility with Supabase UUID columns.
@@ -166,6 +177,17 @@ const modelClasses = [
     SalesReturn,
     SalesReturnLine,
     PosSession,
+    AgriParcel,
+    AgriLandOwner,
+    AgriInvestor,
+    AgriCropCycle,
+    AgriGrowthCheckin,
+    AgriHarvestLog,
+    AgriFarmExpense,
+    AgriFarmWorker,
+    AgriLaborLog,
+    AgriWeeklySettlement,
+    AgriInvestorLedger,
 ];
 
 if (process.env.NODE_ENV !== 'test') {

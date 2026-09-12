@@ -15,6 +15,22 @@ export type MenuItem = {
 };
 
 // ==========================================
+// 0. AGRIBUSINESS OUTGROWER PLATFORM (JETFARM)
+// ==========================================
+export const AGRIBUSINESS_MENU: MenuItem[] = [
+    { icon: 'eco', label: 'Operator Command Center', route: '/(admin)/agribusiness' },
+    { icon: 'landscape', label: 'Land Parcels Registry', route: '/(admin)/agribusiness/parcels' },
+    { icon: 'map', label: 'GPS Boundary Mapping', route: '/(admin)/agribusiness/mapping' },
+    { icon: 'grass', label: 'Cassava Crop Cycles', route: '/(admin)/agribusiness/cycles' },
+    { icon: 'scale', label: 'Harvest Scale Terminal', route: '/(admin)/agribusiness/harvest' },
+    { icon: 'receipt-long', label: 'Land Owner Settlements', route: '/(admin)/agribusiness/settlements' },
+    { icon: 'attach-money', label: 'BioGreen Investor Ledger', route: '/(admin)/agribusiness/investors' },
+    { icon: 'engineering', label: 'Farm Labor & Payroll', route: '/(admin)/agribusiness/labor' },
+    { icon: 'receipt', label: 'Farm Input Expenses', route: '/(admin)/agribusiness/expenses' },
+    { icon: 'insights', label: 'P&L & Yield Analytics', route: '/(admin)/agribusiness/analytics' },
+];
+
+// ==========================================
 // 1. CRISPY KING STORE OPERATIONS & QSR
 // ==========================================
 export const CRISPY_KING_OPERATIONS: MenuItem[] = [
@@ -264,6 +280,9 @@ export function SidebarContent({ onClose }: { onClose?: () => void }) {
                 </View>
 
                 <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+                    {/* Agribusiness Outgrower Platform prioritized at top */}
+                    {renderMenuSection('Agribusiness Outgrower Platform', AGRIBUSINESS_MENU, true)}
+
                     {/* Crispy King prioritized at top */}
                     {renderMenuSection('Crispy King QSR Operations', CRISPY_KING_OPERATIONS, true)}
                     {renderMenuSection('Franchise & Enterprise', FRANCHISE_MENU, true)}

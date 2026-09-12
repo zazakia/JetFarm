@@ -49,6 +49,10 @@ function resolveRequestPath(urlPath) {
 }
 
 function exportWebBundle() {
+  if (process.env.SKIP_EXPORT === '1' && existsSync(path.join(distDir, 'index.html'))) {
+    console.log('[playwright-web] Skipping expo export (dist/ already exists and SKIP_EXPORT=1).');
+    return;
+  }
   const isWindows = process.platform === 'win32';
   const command = isWindows ? 'cmd.exe' : 'npx';
   const args = isWindows

@@ -1,4 +1,4 @@
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { AuthProvider, useAuth } from '../src/store/AuthContext';
 import { GlobalErrorBoundary } from '../src/components/ErrorBoundary';
 import Toast from '../src/components/AppToast';
@@ -39,19 +39,24 @@ if (typeof cssInterop === 'function') {
 function AppShell({ children }: { children: React.ReactNode }) {
     // Bootstrap network monitoring at the root level
     useNetworkStatus();
+    const router = useRouter();
     const { initialized, user } = useAuth();
     useEffect(() => {
         if (typeof globalThis !== 'undefined') {
             (globalThis as any).__WATERMELON_DB__ = database;
             (globalThis as any).__AUTO_SYNC_SERVICE__ = AutoSyncService;
             (globalThis as any).__SYNC_STORE__ = useSyncStore;
+            (globalThis as any).router = router;
+        }
+        if (typeof window !== 'undefined') {
+            (window as any).router = router;
         }
         AutoSyncService.start();
         void SettingsService.ensureDefaults()
             .then(async () => {
                 try {
-                    const name = await SettingsService.getAppSetting('brand.company_name', 'POS Cursor');
-                    const fullName = await SettingsService.getAppSetting('brand.company_name_full', 'POS Cursor');
+                    const name = await SettingsService.getAppSetting('brand.company_name', 'JetFarm');
+                    const fullName = await SettingsService.getAppSetting('brand.company_name_full', 'JetFarm');
                     const logo = await SettingsService.getAppSetting('brand.logo_base64', '');
 
                     const { setBrandData } = require('../src/constants/brand');

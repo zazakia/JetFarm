@@ -324,7 +324,7 @@ describe('FinancialStatementService', () => {
         it('returns organization metadata', async () => {
             const result = await FinancialStatementService.getNotes(YEAR);
 
-            expect(result.organization.name).toContain('POS Cursor');
+            expect(result.organization.name).toContain('JetFarm');
             expect(result.organization.address).toContain('Ormoc City');
         });
 

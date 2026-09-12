@@ -3,7 +3,7 @@ import { View, Text, Pressable, useWindowDimensions, Modal, SafeAreaView } from 
 import { Slot, usePathname, useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useAuth } from '../../src/store/AuthContext';
-import { SidebarContent, CRISPY_KING_OPERATIONS, FRANCHISE_MENU, LENDING_MENU, MAIN_MENU, ADMIN_MENU, DAILY_REPORTS, WEEKLY_REPORTS, MONTHLY_REPORTS, COOPERATIVE_REPORTS, FINANCIALS_MENU, ACCOUNTING_MENU, BOOKS_OF_ACCOUNTS_MENU, SUPPORT_MENU } from '../../src/components/SidebarContent';
+import { SidebarContent, AGRIBUSINESS_MENU, CRISPY_KING_OPERATIONS, FRANCHISE_MENU, LENDING_MENU, MAIN_MENU, ADMIN_MENU, DAILY_REPORTS, WEEKLY_REPORTS, MONTHLY_REPORTS, COOPERATIVE_REPORTS, FINANCIALS_MENU, ACCOUNTING_MENU, BOOKS_OF_ACCOUNTS_MENU, SUPPORT_MENU } from '../../src/components/SidebarContent';
 import { SyncStatusBadge } from '../../src/components/SyncStatusBadge';
 import { AuthGateLoading } from '../../src/components/AuthGateLoading';
 import { ROLE_HOME_ROUTES, UserRole } from '../../src/constants/roles';
@@ -88,7 +88,7 @@ export default function AdminShellLayout() {
         return <AuthGateLoading message="Redirecting..." />;
     }
 
-    const currentTitle = [...CRISPY_KING_OPERATIONS, ...FRANCHISE_MENU, ...LENDING_MENU, ...MAIN_MENU, ...ADMIN_MENU, ...DAILY_REPORTS, ...WEEKLY_REPORTS, ...MONTHLY_REPORTS, ...COOPERATIVE_REPORTS, ...FINANCIALS_MENU, ...ACCOUNTING_MENU, ...BOOKS_OF_ACCOUNTS_MENU, ...SUPPORT_MENU]
+    const currentTitle = [...AGRIBUSINESS_MENU, ...CRISPY_KING_OPERATIONS, ...FRANCHISE_MENU, ...LENDING_MENU, ...MAIN_MENU, ...ADMIN_MENU, ...DAILY_REPORTS, ...WEEKLY_REPORTS, ...MONTHLY_REPORTS, ...COOPERATIVE_REPORTS, ...FINANCIALS_MENU, ...ACCOUNTING_MENU, ...BOOKS_OF_ACCOUNTS_MENU, ...SUPPORT_MENU]
         .slice()
         .sort((a, b) => b.route.replace('/(admin)', '').length - a.route.replace('/(admin)', '').length)
         .find(item => pathname.replace('/(admin)', '').startsWith(item.route.replace('/(admin)', '')))?.label ?? COMPANY_NAME;

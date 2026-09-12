@@ -78,7 +78,18 @@
     "user_branch_roles",
     "sales_returns",
     "sales_return_lines",
-    "pos_sessions"
+    "pos_sessions",
+    "agri_parcels",
+    "agri_land_owners",
+    "agri_investors",
+    "agri_crop_cycles",
+    "agri_growth_checkins",
+    "agri_harvest_logs",
+    "agri_farm_expenses",
+    "agri_farm_workers",
+    "agri_labor_logs",
+    "agri_weekly_settlements",
+    "agri_investor_ledgers"
   ],
   "remoteTableMap": {
     "user_profiles": "user_profiles",
@@ -157,7 +168,18 @@
     "user_branch_roles": "user_branch_roles",
     "sales_returns": "sales_returns",
     "sales_return_lines": "sales_return_lines",
-    "pos_sessions": "pos_sessions"
+    "pos_sessions": "pos_sessions",
+    "agri_parcels": "agri_parcels",
+    "agri_land_owners": "agri_land_owners",
+    "agri_investors": "agri_investors",
+    "agri_crop_cycles": "agri_crop_cycles",
+    "agri_growth_checkins": "agri_growth_checkins",
+    "agri_harvest_logs": "agri_harvest_logs",
+    "agri_farm_expenses": "agri_farm_expenses",
+    "agri_farm_workers": "agri_farm_workers",
+    "agri_labor_logs": "agri_labor_logs",
+    "agri_weekly_settlements": "agri_weekly_settlements",
+    "agri_investor_ledgers": "agri_investor_ledgers"
   },
   "requiredRemoteColumns": {
     "borrowers": [
