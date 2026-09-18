@@ -1,5 +1,5 @@
 export const PRODUCTION_SUPABASE_URLS = new Set<string>([
-    'https://tigydhnptczbhvqwhiyh.supabase.co',
+    'https://jetfarm-placeholder-db.supabase.co',
 ]);
 
 export const normalizeSupabaseUrl = (url: string | undefined | null): string =>

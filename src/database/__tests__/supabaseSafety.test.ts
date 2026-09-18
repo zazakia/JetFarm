@@ -9,8 +9,8 @@ describe('Supabase production safety', () => {
     });
 
     it('correctly identifies production Supabase URL and isolates staging URL', () => {
-        expect(isProductionSupabaseUrl('https://tigydhnptczbhvqwhiyh.supabase.co')).toBe(true);
-        expect(isProductionSupabaseUrl('https://tigydhnptczbhvqwhiyh.supabase.co/')).toBe(true);
+        expect(isProductionSupabaseUrl('https://jetfarm-placeholder-db.supabase.co')).toBe(true);
+        expect(isProductionSupabaseUrl('https://jetfarm-placeholder-db.supabase.co/')).toBe(true);
         // Staging DB must not be classified as production
         expect(isProductionSupabaseUrl('https://zsrglwrscdxtyxyyyhwd.supabase.co')).toBe(false);
     });

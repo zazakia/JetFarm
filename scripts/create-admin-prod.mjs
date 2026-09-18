@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = 'https://tigydhnptczbhvqwhiyh.supabase.co';
+const supabaseUrl = 'https://jetfarm-placeholder-db.supabase.co';
 const supabaseServiceKey = 'sb_secret_ol8W_ecINarfdG4SunrfOw_qaSo0q6F';
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey, {

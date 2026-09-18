@@ -253,7 +253,7 @@ const headersContent = `/*
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()
-  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://tigydhnptczbhvqwhiyh.supabase.co wss://tigydhnptczbhvqwhiyh.supabase.co; upgrade-insecure-requests\n`;
+  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://jetfarm-placeholder-db.supabase.co wss://jetfarm-placeholder-db.supabase.co; upgrade-insecure-requests\n`;
 writeFileSync(headersPath, headersContent, 'utf8');
 console.log('[deploy-cloudflare] Successfully wrote _headers');
 

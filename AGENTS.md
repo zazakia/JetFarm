@@ -108,7 +108,7 @@ npm run export:web     # Production web export
 
 ## DEPLOYMENT & PRODUCTION
 - **Cloudflare Pages URL**: `https://jetfarm.pages.dev`
-- **Production Supabase DB**: `tigydhnptczbhvqwhiyh`
+- **Production Supabase DB**: `jetfarm-placeholder-db`
 - **Deploy Command**: `npm run deploy:cloudflare` (Executes Expo Web Export + Wrangler deploy with `_redirects` and `_headers` routing).
 - **Admin Access**: `cybergada@gmail.com`
 
@@ -124,6 +124,6 @@ npm run export:web     # Production web export
 - **Git Security Guard**: Never track or commit `.env` or `.env.production` files. Run `git check-ignore -v .env.production` to confirm exclusion before committing.
 - **Production Endpoints**:
   - Web App: `https://jetfarm.pages.dev`
-  - Supabase Project Ref: `tigydhnptczbhvqwhiyh` (`https://tigydhnptczbhvqwhiyh.supabase.co`)
+  - Supabase Project Ref: `jetfarm-placeholder-db` (`https://jetfarm-placeholder-db.supabase.co`)
   - Storage Bucket: `downloads` (public read for APK distributions, service_role write)
 

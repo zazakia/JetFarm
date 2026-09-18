@@ -6,7 +6,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
 
 const STAGING_PROJECT_REF = 'zsrglwrscdxtyxyyyhwd';
-const PRODUCTION_PROJECT_REF = 'tigydhnptczbhvqwhiyh';
+const PRODUCTION_PROJECT_REF = 'jetfarm-placeholder-db';
 
 const ACCESS_TOKEN = process.env.SUPABASE_ACCESS_TOKEN || 'sbp_fc2ed3e3beb309d57558f83aebefed0d103b1b09';
 

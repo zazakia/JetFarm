@@ -7,7 +7,7 @@ import { chromium } from 'playwright';
 const STAGING_PORT = 19010;
 const STAGING_URL = `http://127.0.0.1:${STAGING_PORT}`;
 const EXPECTED_STAGING_SUPABASE = 'zsrglwrscdxtyxyyyhwd.supabase.co';
-const PRODUCTION_SUPABASE = 'tigydhnptczbhvqwhiyh.supabase.co';
+const PRODUCTION_SUPABASE = 'jetfarm-placeholder-db.supabase.co';
 
 async function waitForServer(url, timeoutMs = 15000) {
   const start = Date.now();

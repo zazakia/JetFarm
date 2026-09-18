@@ -15,7 +15,7 @@ Before starting the build or running quality gates:
 
 1. **Production Environment Secrets**:
    Confirm that `.env.production` is present in the project root and contains valid production keys:
-   - `EXPO_PUBLIC_SUPABASE_URL` (`https://tigydhnptczbhvqwhiyh.supabase.co`)
+   - `EXPO_PUBLIC_SUPABASE_URL` (`https://jetfarm-placeholder-db.supabase.co`)
    - `EXPO_PUBLIC_SUPABASE_ANON_KEY`
    - `SUPABASE_SERVICE_ROLE_KEY` or `SUPABASE_SECRET_KEY` (required for uploading release APKs to the `downloads` storage bucket)
    - `CLOUDFLARE_ACCOUNT_ID` / `CLOUDFLARE_API_TOKEN` (or active `npx wrangler` login)

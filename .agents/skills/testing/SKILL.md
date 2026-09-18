@@ -55,7 +55,7 @@ EXPO_PUBLIC_SUPABASE_URL=https://example.supabase.co
 EXPO_PUBLIC_SUPABASE_ANON_KEY=dummy-key
 ```
 
-Never point Jest at `tigydhnptczbhvqwhiyh` (production). Playwright has its own safety check in `playwright.config.ts`.
+Never point Jest at `jetfarm-placeholder-db` (production). Playwright has its own safety check in `playwright.config.ts`.
 
 ## TDD workflow
 

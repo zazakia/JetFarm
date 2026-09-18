@@ -2,7 +2,7 @@
  * migrate-production-db.mjs
  * 
  * Applies pending migrations in `supabase/migrations/` to the production Supabase database
- * (tigydhnptczbhvqwhiyh) using the verified Supavisor session-mode pooler host.
+ * (jetfarm-placeholder-db) using the verified Supavisor session-mode pooler host.
  * Also verifies schema integrity after migration and updates supabase_migrations.schema_migrations.
  */
 
@@ -32,7 +32,7 @@ if (existsSync(join(ROOT, '.env.production'))) {
 }
 
 const { Client } = pg;
-const projectRef = 'tigydhnptczbhvqwhiyh';
+const projectRef = 'jetfarm-placeholder-db';
 const password = process.env.SUPABASE_DB_PASSWORD || process.env.EXPO_PUBLIC_SUPABASE_DB_PASSWORD || 'Qweasd145698@';
 
 const client = new Client({
