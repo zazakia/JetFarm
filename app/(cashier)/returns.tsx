@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../src/store/AuthContext';
 import { formatPHP } from '../../src/utils/currency';
+import { COMPANY_NAME } from '../../src/constants/brand';
 import { CRISPY_KING_MENU, MenuItem } from '../../src/services/QSRPosService';
 import { SalesReturnService, ReturnItemInput, ReturnCondition } from '../../src/services/SalesReturnService';
 import { SupervisorApprovalModal } from '../../src/components/SupervisorApprovalModal';
@@ -127,7 +128,7 @@ export default function CashierReturnsScreen() {
             <View className="bg-emerald-800 rounded-2xl p-5 mb-4 shadow-sm">
                 <View className="flex-row items-center justify-between mb-2">
                     <Text className="text-emerald-200 text-xs font-semibold uppercase tracking-wider">
-                        Crispy King Store Operations
+                        {COMPANY_NAME} Store Operations
                     </Text>
                     <View className="bg-emerald-700 px-3 py-1 rounded-full">
                         <Text className="text-white text-xs font-bold">POS Return & Refund</Text>

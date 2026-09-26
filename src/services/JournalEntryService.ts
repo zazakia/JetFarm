@@ -49,6 +49,9 @@ export interface JournalLineInput {
     debitAmount?: number;
     creditAmount?: number;
     description?: string;
+    businessUnitId?: string;
+    moduleSourceTable?: string;
+    moduleSourceId?: string;
 }
 
 export interface JournalEntryInput {

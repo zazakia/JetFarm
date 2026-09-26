@@ -1,4 +1,4 @@
--- Migration: 20260911000000_metabase_readonly_role.sql
+-- Migration: 20260911050000_metabase_readonly_role.sql
 -- Description: Create dedicated read-only role for Metabase BI reporting
 --   - Grants SELECT on public schema tables & views
 --   - Sets default privileges so future tables are readable

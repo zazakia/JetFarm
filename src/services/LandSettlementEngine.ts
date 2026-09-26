@@ -6,6 +6,7 @@ import AgriParcel from '../database/models/AgriParcel';
 import AgriLandOwner from '../database/models/AgriLandOwner';
 import AgriHarvestLog from '../database/models/AgriHarvestLog';
 import { formatPHP } from '../utils/currency';
+import { AutoPostingService } from './AutoPostingService';
 
 export interface SettlementCalculationResult {
     cumulativeKilos: number;
@@ -196,6 +197,31 @@ export class LandSettlementEngine {
                 }
             });
         });
+
+        if (record.netPayoutDueThisWeek > 0) {
+            try {
+                let landOwnerName = '';
+                try {
+                    const lo = await db.get<AgriLandOwner>('agri_land_owners').find(record.landOwnerId);
+                    landOwnerName = lo.name;
+                } catch {
+                    // Ignore missing land owner name
+                }
+
+                await AutoPostingService.postAgriWeeklySettlement({
+                    settlementId: record.id,
+                    cropCycleId: record.cropCycleId,
+                    weekNumber: record.weekNumber,
+                    landOwnerName,
+                    netPayoutDue: record.netPayoutDueThisWeek,
+                    paymentStatus: markAsPaid ? 'paid' : 'approved',
+                    disbursementDate: markAsPaid ? disbursementDate : null,
+                    postedBy: 'system',
+                });
+            } catch (postErr) {
+                console.warn('[LandSettlementEngine] Auto-post settlement warning:', postErr);
+            }
+        }
 
         return record;
     }

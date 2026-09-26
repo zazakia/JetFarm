@@ -26,6 +26,23 @@ describe('ChartOfAccountsService', () => {
         // Seeding again should be idempotent
         const secondCount = await service.seed('TestUser');
         expect(secondCount).toBe(0);
+
+        // Agribusiness accounts should be present
+        const bioAsset = await service.getByCode('1240');
+        expect(bioAsset).toBeDefined();
+        expect(bioAsset?.name).toContain('Biological Assets');
+
+        const agriRevenue = await service.getByCode('4140');
+        expect(agriRevenue).toBeDefined();
+        expect(agriRevenue?.name).toContain('Crop Harvest Sales');
+
+        const landOwnerSettlementExp = await service.getByCode('5160');
+        expect(landOwnerSettlementExp).toBeDefined();
+        expect(landOwnerSettlementExp?.name).toContain('Land Owner Crop Share');
+
+        const farmLaborExp = await service.getByCode('5161');
+        expect(farmLaborExp).toBeDefined();
+        expect(farmLaborExp?.name).toContain('Farm Field Labor');
     });
 
     it('should fetch tree structure correctly', async () => {

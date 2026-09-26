@@ -377,6 +377,147 @@ describe('AutoPostingService', () => {
         expect(lines.find(l => l.accountCode === '1020')?.creditAmount).toBe(15000);
     });
 
+    it('should auto-post farm expenses for jet (cash) and investor (equity)', async () => {
+        // Jet-funded fertilizer expense -> DR 5162, CR 1010
+        await AutoPostingService.postAgriFarmExpense({
+            expenseId: 'agri-exp-1',
+            amount: 8500,
+            category: 'fertilizer',
+            description: '14-14-14 Complete Fertilizer 10 bags',
+            paidBy: 'jet',
+            cropCycleId: 'cycle-001',
+            entryDate: new Date(),
+            postedBy: 'OperatorJet',
+        });
+
+        const entry1 = await JournalEntryService.getEntryBySource('agri_farm_expenses', 'agri-exp-1');
+        expect(entry1).toBeDefined();
+        expect(entry1?.totalDebit).toBe(8500);
+        expect(entry1?.totalCredit).toBe(8500);
+
+        const lines1 = await JournalEntryService.getLinesForEntry(entry1!.id);
+        expect(lines1.find(l => l.accountCode === '5162')?.debitAmount).toBe(8500);
+        expect(lines1.find(l => l.accountCode === '1010')?.creditAmount).toBe(8500);
+        expect(lines1[0].businessUnitId).toBe('agribusiness');
+
+        // Investor-funded tractor expense -> DR 5164, CR 3015
+        await AutoPostingService.postAgriFarmExpense({
+            expenseId: 'agri-exp-2',
+            amount: 12000,
+            category: 'tractor_equipment',
+            description: 'Tractor plowing and furrowing 4 ha',
+            paidBy: 'investor',
+            cropCycleId: 'cycle-001',
+            entryDate: new Date(),
+            postedBy: 'BioGreenAdmin',
+        });
+
+        const entry2 = await JournalEntryService.getEntryBySource('agri_farm_expenses', 'agri-exp-2');
+        expect(entry2).toBeDefined();
+        const lines2 = await JournalEntryService.getLinesForEntry(entry2!.id);
+        expect(lines2.find(l => l.accountCode === '5164')?.debitAmount).toBe(12000);
+        expect(lines2.find(l => l.accountCode === '3015')?.creditAmount).toBe(12000);
+    });
+
+    it('should auto-post land owner weekly settlements correctly', async () => {
+        // Paid settlement -> DR 5160, CR 1010
+        await AutoPostingService.postAgriWeeklySettlement({
+            settlementId: 'agri-set-1',
+            cropCycleId: 'cycle-001',
+            weekNumber: 1,
+            landOwnerName: 'Don Ramon Valderama',
+            netPayoutDue: 25000,
+            paymentStatus: 'paid',
+            disbursementDate: new Date(),
+            postedBy: 'JetAdmin',
+        });
+
+        const entry = await JournalEntryService.getEntryBySource('agri_weekly_settlements', 'agri-set-1');
+        expect(entry).toBeDefined();
+        expect(entry?.totalDebit).toBe(25000);
+        const lines = await JournalEntryService.getLinesForEntry(entry!.id);
+        expect(lines.find(l => l.accountCode === '5160')?.debitAmount).toBe(25000);
+        expect(lines.find(l => l.accountCode === '1010')?.creditAmount).toBe(25000);
+
+        // Approved but unpaid settlement -> DR 5160, CR 2035 (Payable)
+        await AutoPostingService.postAgriWeeklySettlement({
+            settlementId: 'agri-set-2',
+            cropCycleId: 'cycle-001',
+            weekNumber: 2,
+            landOwnerName: 'Don Ramon Valderama',
+            netPayoutDue: 18000,
+            paymentStatus: 'approved',
+            disbursementDate: null,
+            postedBy: 'JetAdmin',
+        });
+
+        const entry2 = await JournalEntryService.getEntryBySource('agri_weekly_settlements', 'agri-set-2');
+        expect(entry2).toBeDefined();
+        const lines2 = await JournalEntryService.getLinesForEntry(entry2!.id);
+        expect(lines2.find(l => l.accountCode === '5160')?.debitAmount).toBe(18000);
+        expect(lines2.find(l => l.accountCode === '2035')?.creditAmount).toBe(18000);
+    });
+
+    it('should auto-post farm labor logs for field workers', async () => {
+        // Paid labor -> DR 5161, CR 1010
+        await AutoPostingService.postAgriLaborLog({
+            laborLogId: 'labor-1',
+            workerName: 'Mang Juan',
+            task: 'Cassava Stem Planting',
+            totalPay: 3500,
+            paymentStatus: 'paid',
+            workDate: new Date(),
+            cropCycleId: 'cycle-001',
+            postedBy: 'SupervisorDan',
+        });
+
+        const entry = await JournalEntryService.getEntryBySource('agri_labor_logs', 'labor-1');
+        expect(entry).toBeDefined();
+        const lines = await JournalEntryService.getLinesForEntry(entry!.id);
+        expect(lines.find(l => l.accountCode === '5161')?.debitAmount).toBe(3500);
+        expect(lines.find(l => l.accountCode === '1010')?.creditAmount).toBe(3500);
+    });
+
+    it('should auto-post harvest sales and off-take revenue', async () => {
+        // Off-take delivery: 15,000 kg @ ₱4.00/kg = ₱60,000 -> DR 1010, CR 4140
+        await AutoPostingService.postAgriHarvestSale({
+            harvestLogId: 'harvest-01',
+            cropCycleId: 'cycle-001',
+            batchNumber: 'BATCH-2026-001',
+            netWeightKg: 15000,
+            pricePerKilo: 4.0,
+            grossRevenue: 60000,
+            harvestDate: new Date(),
+            postedBy: 'ScaleSupervisor',
+        });
+
+        const entry = await JournalEntryService.getEntryBySource('agri_harvest_logs', 'harvest-01');
+        expect(entry).toBeDefined();
+        expect(entry?.totalDebit).toBe(60000);
+        const lines = await JournalEntryService.getLinesForEntry(entry!.id);
+        expect(lines.find(l => l.accountCode === '1010')?.debitAmount).toBe(60000);
+        expect(lines.find(l => l.accountCode === '4140')?.creditAmount).toBe(60000);
+    });
+
+    it('should auto-post investor capital injection and harvest off-take deductions', async () => {
+        // Capital injection -> DR 1010, CR 3015
+        await AutoPostingService.postAgriInvestorTransaction({
+            ledgerId: 'inv-leg-1',
+            investorName: 'BioGreen Corp',
+            type: 'capital_injection',
+            amount: 500000,
+            transactionDate: new Date(),
+            postedBy: 'CFO',
+        });
+
+        const entry1 = await JournalEntryService.getEntryBySource('agri_investor_ledgers', 'inv-leg-1');
+        expect(entry1).toBeDefined();
+        expect(entry1?.totalDebit).toBe(500000);
+        const lines1 = await JournalEntryService.getLinesForEntry(entry1!.id);
+        expect(lines1.find(l => l.accountCode === '1010')?.debitAmount).toBe(500000);
+        expect(lines1.find(l => l.accountCode === '3015')?.creditAmount).toBe(500000);
+    });
+
     it('should backfill unposted transactions cleanly without creating duplicates', async () => {
         // Create an unposted payment
         await database.write(async () => {
@@ -394,11 +535,21 @@ describe('AutoPostingService', () => {
                 st.type = 'deposit';
                 st.date = Date.now();
             });
+
+            // Create an unposted farm expense
+            await database.get('agri_farm_expenses').create((fe: any) => {
+                fe._raw.id = 'unposted-agri-exp-1';
+                fe.amount = 4200;
+                fe.category = 'herbicide_pesticide';
+                fe.description = 'Weedone Herbicide 5 Liters';
+                fe.paidBy = 'jet';
+                fe.expenseDate = Date.now();
+            });
         });
 
         // Run backfill
         const res = await AutoPostingService.backfillUnpostedTransactions();
-        expect(res.postedCount).toBeGreaterThanOrEqual(2);
+        expect(res.postedCount).toBeGreaterThanOrEqual(3);
         expect(res.errors.length).toBe(0);
 
         // Verify journal entry for payment exists
@@ -411,8 +562,14 @@ describe('AutoPostingService', () => {
         expect(savEntry).toBeDefined();
         expect(savEntry?.totalDebit).toBe(500);
 
+        // Verify journal entry for farm expense exists
+        const expEntry = await JournalEntryService.getEntryBySource('agri_farm_expenses', 'unposted-agri-exp-1');
+        expect(expEntry).toBeDefined();
+        expect(expEntry?.totalDebit).toBe(4200);
+
         // Run backfill again — should post 0 new entries (idempotent)
         const reRun = await AutoPostingService.backfillUnpostedTransactions();
         expect(reRun.postedCount).toBe(0);
     });
 });
+

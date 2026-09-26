@@ -4,6 +4,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { SalesReturnService, ReturnDraft } from '../../../src/services/SalesReturnService';
 import { formatPHP } from '../../../src/utils/currency';
+import { COMPANY_NAME } from '../../../src/constants/brand';
 import { format } from 'date-fns';
 
 export default function AdminReturnsScreen() {
@@ -48,7 +49,7 @@ export default function AdminReturnsScreen() {
                 <View>
                     <Text className="text-gray-900 font-black text-2xl">Sales Returns & Refunds</Text>
                     <Text className="text-gray-600 text-xs font-bold mt-1 uppercase tracking-wider">
-                        Crispy King Store In-Store Returns & Inventory Reversal Audit
+                        {COMPANY_NAME} In-Store Returns & Inventory Reversal Audit
                     </Text>
                 </View>
                 <Pressable

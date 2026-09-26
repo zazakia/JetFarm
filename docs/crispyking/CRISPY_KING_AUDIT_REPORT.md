@@ -207,7 +207,7 @@ The manual spreadsheet ecosystem currently running Crispy King / Viterbo Foods O
 | **Anti-Theft Device Registry** | `src/database/models/DeviceRegistry.ts`<br/>`app/(admin)/devices/` | Remote lock and remote wipe commands triggered via admin dashboard. | **PASSED** (Full E2E verified) |
 | **Franchise CRM & Royalty** | `src/database/models/FranchiseContract.ts`<br/>`src/database/models/FranchiseRoyaltyLedger.ts` | 80/20 net profit split engine with zero centavo rounding drift. | **PASSED** (Full E2E verified) |
 | **High-Risk POS Approvals** | `src/components/SupervisorApprovalModal.tsx`<br/>`src/services/SupervisorApprovalService.ts` | Supervisor PIN gate for voids, price adjustments, and safe drops. | **PASSED** (Unit verified) |
-| **Metabase BI Infrastructure** | `scripts/metabase/docker-compose.yml`<br/>`supabase/migrations/20260911000000_metabase_readonly_role.sql` | Caddy reverse proxy, Docker compose stack, and read-only DB role. | **PASSED** (Config verified) |
+| **Metabase BI Infrastructure** | `scripts/metabase/docker-compose.yml`<br/>`supabase/migrations/20260911050000_metabase_readonly_role.sql` | Caddy reverse proxy, Docker compose stack, and read-only DB role. | **PASSED** (Config verified) |
 
 ---
 

@@ -44,10 +44,10 @@ function loadEnvFile(filePath) {
   }
 }
 
-const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL || 'http://127.0.0.1:45421';
+const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL || 'http://127.0.0.1:46421';
 const IS_LOCAL_SUPABASE_URL = /^https?:\/\/(127\.0\.0\.1|localhost|10\.0\.2\.2)(:|\/|$)/.test(SUPABASE_URL);
 const DB_HOST = process.env.SUPABASE_DB_HOST || '127.0.0.1';
-const DB_PORT = Number(process.env.SUPABASE_DB_PORT || '45422');
+const DB_PORT = Number(process.env.SUPABASE_DB_PORT || '46422');
 const DB_NAME = process.env.SUPABASE_DB_NAME || 'postgres';
 const DB_USER = process.env.SUPABASE_DB_USER || 'postgres';
 const DB_PASSWORD = process.env.EXPO_PUBLIC_SUPABASE_DB_PASSWORD || process.env.SUPABASE_DB_PASSWORD;

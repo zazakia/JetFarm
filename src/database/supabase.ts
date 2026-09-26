@@ -28,9 +28,9 @@ try {
 }
 
 // Read from environment variables with safe offline-first emulator fallbacks
-const configuredSupabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || 'http://127.0.0.1:45421';
+const configuredSupabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || 'http://127.0.0.1:46421';
 const supabaseUrl = getRuntimeSupabaseUrl(configuredSupabaseUrl);
-const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0';
+const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH';
 const isTestEnvironment = process.env.NODE_ENV === 'test';
 
 // Safety Guard: Block production database access in development/test environments
@@ -39,7 +39,7 @@ if (configuredSupabaseUrl && isProductionSupabaseUrl(configuredSupabaseUrl)) {
     if (isTestEnvironment || isLocalDev) {
         throw new Error(
             `\n❌ SAFETY BREACH: Attempting to connect to the PRODUCTION Supabase instance (${configuredSupabaseUrl}) in a local ${process.env.NODE_ENV || 'development'} environment is blocked!\n` +
-            `Please use the local emulator (http://127.0.0.1:45421) or a dedicated staging database.\n`
+            `Please use the local emulator (http://127.0.0.1:46421) or a dedicated staging database.\n`
         );
     }
 }

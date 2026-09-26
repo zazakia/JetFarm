@@ -29,8 +29,8 @@ export default function UiBrandingSettingsScreen() {
     const router = useRouter();
     const { user } = useAuth();
     
-    const [companyName, setCompanyName] = useState('POS Cursor');
-    const [companyNameFull, setCompanyNameFull] = useState('POS Cursor');
+    const [companyName, setCompanyName] = useState('Agri-One');
+    const [companyNameFull, setCompanyNameFull] = useState('Agri-One');
     const [customLogo, setCustomLogo] = useState('');
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -38,8 +38,8 @@ export default function UiBrandingSettingsScreen() {
     useEffect(() => {
         const loadSettings = async () => {
             try {
-                const name = await SettingsService.getAppSetting('brand.company_name', 'POS Cursor');
-                const fullName = await SettingsService.getAppSetting('brand.company_name_full', 'POS Cursor');
+                const name = await SettingsService.getAppSetting('brand.company_name', 'Agri-One');
+                const fullName = await SettingsService.getAppSetting('brand.company_name_full', 'Agri-One');
                 const logo = await SettingsService.getAppSetting('brand.logo_base64', '');
                 
                 setCompanyName(name);

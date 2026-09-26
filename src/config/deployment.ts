@@ -1,22 +1,32 @@
-export type DeploymentMode = 'crispy-king' | 'cooperative';
+export type DeploymentMode = 'agri' | 'cooperative' | 'crispy-king';
 
 let runtimeOverride: DeploymentMode | null = null;
 
 /**
  * Returns the current deployment mode.
- * Priority: runtime override > EXPO_PUBLIC_DEPLOYMENT_MODE > 'crispy-king' (default)
+ * Priority: runtime override > EXPO_PUBLIC_BUSINESS_TYPE > EXPO_PUBLIC_DEPLOYMENT_MODE > 'agri' (default)
  */
 export function getDeploymentMode(): DeploymentMode {
     if (runtimeOverride !== null) {
         return runtimeOverride;
     }
 
-    const envMode = process.env.EXPO_PUBLIC_DEPLOYMENT_MODE?.trim().toLowerCase();
-    if (envMode === 'cooperative') {
+    const envMode = (process.env.EXPO_PUBLIC_BUSINESS_TYPE || process.env.EXPO_PUBLIC_DEPLOYMENT_MODE)?.trim().toLowerCase();
+    if (envMode === 'agri' || envMode === 'agribusiness') {
+        return 'agri';
+    }
+    if (envMode === 'cooperative' || envMode === 'coop') {
         return 'cooperative';
     }
 
     return 'crispy-king';
+}
+
+/**
+ * Checks if the system is running in Agribusiness mode.
+ */
+export function isAgri(): boolean {
+    return getDeploymentMode() === 'agri';
 }
 
 /**

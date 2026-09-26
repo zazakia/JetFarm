@@ -355,6 +355,27 @@ export default function AgriAnalyticsScreen() {
                         </View>
                     </View>
 
+                    {/* General Ledger Accounting Bridge Banner */}
+                    <Pressable
+                        onPress={() => router.push('/(admin)/agribusiness/accounting' as any)}
+                        className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 mb-6 flex-row items-center justify-between active:bg-emerald-100 shadow-sm"
+                    >
+                        <View className="flex-row items-center gap-3">
+                            <View className="w-10 h-10 rounded-xl bg-emerald-700 items-center justify-center">
+                                <MaterialIcons name="account-balance" size={22} color="#FFFFFF" />
+                            </View>
+                            <View>
+                                <Text className="text-emerald-950 font-bold text-sm">
+                                    Audited Farm General Ledger
+                                </Text>
+                                <Text className="text-emerald-700 text-xs">
+                                    Review double-entry journal postings & reconciliation for this cycle
+                                </Text>
+                            </View>
+                        </View>
+                        <MaterialIcons name="chevron-right" size={24} color="#047857" />
+                    </Pressable>
+
                     {/* Yield Forecasting & Scenario Simulator */}
                     <View className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm">
                         <View className="flex-row items-center justify-between mb-3 border-b border-gray-100 pb-3">

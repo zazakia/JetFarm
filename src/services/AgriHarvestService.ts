@@ -3,6 +3,7 @@ import { database as globalDatabase } from '../database';
 import AgriHarvestLog from '../database/models/AgriHarvestLog';
 import AgriCropCycle from '../database/models/AgriCropCycle';
 import AgriInvestorLedger from '../database/models/AgriInvestorLedger';
+import { AutoPostingService } from './AutoPostingService';
 
 export interface WeighInInput {
     cropCycleId: string;
@@ -122,6 +123,28 @@ export class AgriHarvestService {
 
         if (!harvestLog) {
             throw new Error('Failed to record harvest weigh-in');
+        }
+
+        try {
+            const cycle = await db.get<AgriCropCycle>('agri_crop_cycles').find(input.cropCycleId);
+            const offtakePrice = cycle.offtakePricePerKg || 4.0;
+            const grossRevenue = Number((netWeightKg * offtakePrice).toFixed(2));
+
+            if (grossRevenue > 0) {
+                await AutoPostingService.postAgriHarvestSale({
+                    harvestLogId: (harvestLog as AgriHarvestLog).id,
+                    cropCycleId: input.cropCycleId,
+                    batchNumber,
+                    netWeightKg,
+                    pricePerKilo: offtakePrice,
+                    grossRevenue,
+                    harvestDate: date,
+                    investorId: cycle.investorId,
+                    postedBy: input.weighInSupervisor || 'system',
+                });
+            }
+        } catch (postErr) {
+            console.warn('[AgriHarvestService] Auto-post harvest sale warning:', postErr);
         }
 
         return harvestLog;

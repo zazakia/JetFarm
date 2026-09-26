@@ -56,4 +56,120 @@ describe('AgriFinanceAnalyticsService', () => {
             expect(forecast.projectedGrossRevenue).toBe(405000); // 90,000 * ₱4.50
         });
     });
+
+    describe('getAgriGeneralLedgerSummary and getCropCycleJournalEntries', () => {
+        let database: any;
+
+        beforeEach(async () => {
+            const { createTestDatabase } = require('../../__tests__/test-utils');
+            database = createTestDatabase();
+        });
+
+        afterEach(async () => {
+            const { closeTestDatabase } = require('../../__tests__/test-utils');
+            await closeTestDatabase(database);
+        });
+
+        it('computes Agri GL summary accurately from double-entry lines', async () => {
+            await database.write(async () => {
+                // Create a journal entry for harvest sale
+                const entry1 = await database.get('journal_entries').create((e: any) => {
+                    e._raw.id = 'entry-sale-1';
+                    e.referenceNumber = 'JE-AGRI-001';
+                    e.description = 'Harvest Sale';
+                    e.entryType = 'auto';
+                    e.isPosted = true;
+                    e.totalDebit = 100000;
+                    e.totalCredit = 100000;
+                    e.entryDate = new Date();
+                });
+
+                await database.get('journal_entry_lines').create((l: any) => {
+                    l.journalEntryId = entry1.id;
+                    l.accountCode = '1010';
+                    l.debitAmount = 100000;
+                    l.creditAmount = 0;
+                    l.businessUnitId = 'agribusiness';
+                    l.moduleSourceId = 'cycle-101';
+                });
+                await database.get('journal_entry_lines').create((l: any) => {
+                    l.journalEntryId = entry1.id;
+                    l.accountCode = '4140'; // Crop Harvest Sales
+                    l.debitAmount = 0;
+                    l.creditAmount = 100000;
+                    l.businessUnitId = 'agribusiness';
+                    l.moduleSourceId = 'cycle-101';
+                });
+
+                // Create a journal entry for land settlement
+                const entry2 = await database.get('journal_entries').create((e: any) => {
+                    e._raw.id = 'entry-settle-1';
+                    e.referenceNumber = 'JE-AGRI-002';
+                    e.description = 'Land Owner Settlement';
+                    e.entryType = 'auto';
+                    e.isPosted = true;
+                    e.totalDebit = 25000;
+                    e.totalCredit = 25000;
+                    e.entryDate = new Date();
+                });
+
+                await database.get('journal_entry_lines').create((l: any) => {
+                    l.journalEntryId = entry2.id;
+                    l.accountCode = '5160'; // Settlement expense
+                    l.debitAmount = 25000;
+                    l.creditAmount = 0;
+                    l.businessUnitId = 'agribusiness';
+                    l.moduleSourceId = 'cycle-101';
+                });
+                await database.get('journal_entry_lines').create((l: any) => {
+                    l.journalEntryId = entry2.id;
+                    l.accountCode = '1010';
+                    l.debitAmount = 0;
+                    l.creditAmount = 25000;
+                    l.businessUnitId = 'agribusiness';
+                    l.moduleSourceId = 'cycle-101';
+                });
+
+                // Create a journal entry for fertilizer
+                const entry3 = await database.get('journal_entries').create((e: any) => {
+                    e._raw.id = 'entry-fert-1';
+                    e.referenceNumber = 'JE-AGRI-003';
+                    e.description = 'Fertilizer input';
+                    e.entryType = 'auto';
+                    e.isPosted = true;
+                    e.totalDebit = 15000;
+                    e.totalCredit = 15000;
+                    e.entryDate = new Date();
+                });
+
+                await database.get('journal_entry_lines').create((l: any) => {
+                    l.journalEntryId = entry3.id;
+                    l.accountCode = '5162'; // Fertilizer expense
+                    l.debitAmount = 15000;
+                    l.creditAmount = 0;
+                    l.businessUnitId = 'agribusiness';
+                    l.moduleSourceId = 'cycle-101';
+                });
+                await database.get('journal_entry_lines').create((l: any) => {
+                    l.journalEntryId = entry3.id;
+                    l.accountCode = '1010';
+                    l.debitAmount = 0;
+                    l.creditAmount = 15000;
+                    l.businessUnitId = 'agribusiness';
+                    l.moduleSourceId = 'cycle-101';
+                });
+            });
+
+            const summary = await AgriFinanceAnalyticsService.getAgriGeneralLedgerSummary(database);
+            expect(summary.totalRevenue).toBe(100000);
+            expect(summary.landOwnerSettlementCost).toBe(25000);
+            expect(summary.farmInputExpenses).toBe(15000);
+            expect(summary.totalExpenses).toBe(40000); // 25k + 15k
+            expect(summary.netSurplus).toBe(60000); // 100k - 40k
+            expect(summary.journalEntryCount).toBe(3);
+
+            const cycleEntries = await AgriFinanceAnalyticsService.getCropCycleJournalEntries('cycle-101', database);
+            expect(cycleEntries.length).toBe(3);
+        });
+    });
 });

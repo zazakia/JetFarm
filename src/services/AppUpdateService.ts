@@ -38,8 +38,8 @@ export interface UpdateCheckResult {
 
 export type DownloadProgressCallback = (progressPercent: number, bytesWritten: number, totalBytes: number) => void;
 
-const SNOOZED_UPDATE_KEY = 'poscursor_snoozed_update_version';
-const LAST_UPDATE_CHECK_KEY = 'poscursor_last_update_check_ts';
+const SNOOZED_UPDATE_KEY = 'agri-one_snoozed_update_version';
+const LAST_UPDATE_CHECK_KEY = 'agri-one_last_update_check_ts';
 
 export const MAX_UPDATE_SNOOZES = 3;
 export const SNOOZE_FORCE_WINDOW_MS = 72 * 60 * 60 * 1000; // 72 hours
@@ -290,7 +290,7 @@ export class AppUpdateService {
         }
 
         try {
-            const destinationFileUri = `${FileSystem.cacheDirectory}poscursor-update.apk`;
+            const destinationFileUri = `${FileSystem.cacheDirectory}agri-one-update.apk`;
 
             const info = await FileSystem.getInfoAsync(destinationFileUri);
             if (info.exists) {

@@ -2,6 +2,7 @@ import React from 'react';
 import { render, fireEvent, waitFor, act } from '@testing-library/react-native';
 import { GlobalSearch } from '../GlobalSearch';
 import BaseModelService from '../../services/BaseModelService';
+import { setDeploymentMode, resetDeploymentMode } from '../../config/deployment';
 
 const mockPush = jest.fn();
 jest.mock('expo-router', () => ({
@@ -103,5 +104,44 @@ describe('GlobalSearch', () => {
         await waitFor(() => {
             expect(getByText('No results found for "NonExistentXYZ"')).toBeTruthy();
         });
+    });
+
+    it('finds Agribusiness Outgrower Platform items in search results', async () => {
+        const { getByPlaceholderText, getByText } = render(
+            <GlobalSearch onNavigate={mockOnNavigate} />
+        );
+        await act(async () => {});
+
+        const input = getByPlaceholderText('Search menus & reports...');
+        await act(async () => {
+            fireEvent(input, 'focus');
+            fireEvent.changeText(input, 'Harvest');
+        });
+
+        await waitFor(() => {
+            expect(getByText('Harvest Scale Terminal')).toBeTruthy();
+        });
+    });
+
+    it('does NOT return Crispy King Store Operations in search results in agribusiness mode', async () => {
+        setDeploymentMode('agri');
+        try {
+            const { getByPlaceholderText, queryByText } = render(
+                <GlobalSearch onNavigate={mockOnNavigate} />
+            );
+            await act(async () => {});
+
+            const input = getByPlaceholderText('Search menus & reports...');
+            await act(async () => {
+                fireEvent(input, 'focus');
+                fireEvent.changeText(input, 'Touch POS Terminal');
+            });
+
+            await waitFor(() => {
+                expect(queryByText('Touch POS Terminal')).toBeNull();
+            });
+        } finally {
+            resetDeploymentMode();
+        }
     });
 });

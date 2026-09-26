@@ -5,11 +5,11 @@ export const APP_BUILD_NUMBER = 1;
 export const APP_RELEASE_NAME = 'v0.1.0';
 export const WATERMELONDB_SCHEMA_VERSION = 25;
 export const APP_RELEASE_DATE = '2026-09-11';
-export const APP_DOWNLOAD_URL = 'https://jetfarm.pages.dev/download';
-export const APP_VERSIONED_DOWNLOAD_URL = `https://jetfarm.pages.dev/download/v${APP_VERSION}`;
+export const APP_DOWNLOAD_URL = 'https://agri-one.pages.dev/download';
+export const APP_VERSIONED_DOWNLOAD_URL = `https://agri-one.pages.dev/download/v${APP_VERSION}`;
 
-export const PRIMARY_VERSION_URL = 'https://jetfarm.pages.dev/version.json';
-export const FALLBACK_VERSION_URL = 'https://jetfarm.pages.dev/version.json';
+export const PRIMARY_VERSION_URL = 'https://agri-one.pages.dev/version.json';
+export const FALLBACK_VERSION_URL = 'https://agri-one.pages.dev/version.json';
 
 /**
  * Returns the current runtime application version string (e.g. "0.1.0").
@@ -36,5 +36,5 @@ export function getFullReleaseString(): string {
  * Returns standard footer copyright & release text.
  */
 export function getAppFooterText(): string {
-    return `JetFarm ${getReleaseName()} • Build ${APP_BUILD_NUMBER}`;
+    return `Agri-One ${getReleaseName()} • Build ${APP_BUILD_NUMBER}`;
 }

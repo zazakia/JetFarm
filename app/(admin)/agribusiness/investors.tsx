@@ -8,6 +8,7 @@ import AgriInvestorLedger from '../../../src/database/models/AgriInvestorLedger'
 import AgriCropCycle from '../../../src/database/models/AgriCropCycle';
 import { formatPHP } from '../../../src/utils/currency';
 import { Q } from '@nozbe/watermelondb';
+import { AutoPostingService } from '../../../src/services/AutoPostingService';
 
 export default function InvestorsScreen() {
     const router = useRouter();
@@ -126,8 +127,9 @@ export default function InvestorsScreen() {
             // Capital injected by investor is a credit against off-takes
             const newBalance = Number((prevBalance - amt).toFixed(2));
 
+            let createdLedger: AgriInvestorLedger | null = null;
             await database.write(async () => {
-                await database.get<AgriInvestorLedger>('agri_investor_ledgers').create(record => {
+                createdLedger = await database.get<AgriInvestorLedger>('agri_investor_ledgers').create(record => {
                     record.investorId = selectedInvestorId;
                     record.cropCycleId = selectedCycleId || null;
                     record.transactionDate = new Date();
@@ -138,10 +140,27 @@ export default function InvestorsScreen() {
                 });
             });
 
+            if (createdLedger) {
+                try {
+                    await AutoPostingService.postAgriInvestorTransaction({
+                        ledgerId: (createdLedger as AgriInvestorLedger).id,
+                        investorName: selectedInvestor?.companyName,
+                        type: 'capital_injection',
+                        amount: amt,
+                        transactionDate: new Date(),
+                        cropCycleId: selectedCycleId || null,
+                        notes: capitalNotes.trim() || 'Capital injection',
+                        postedBy: 'Operator',
+                    });
+                } catch (postErr) {
+                    console.warn('[AgriInvestors] Auto-post investor transaction warning:', postErr);
+                }
+            }
+
             setCapitalModal(false);
             setCapitalAmount('');
             loadData();
-            Alert.alert('Success', `Recorded ${formatPHP(amt)} capital funded by Investor!`);
+            Alert.alert('Success', `Recorded ${formatPHP(amt)} capital funded by Investor and posted to General Ledger!`);
         } catch (err: any) {
             Alert.alert('Error', err?.message || 'Failed to record capital');
         } finally {

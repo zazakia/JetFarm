@@ -7,6 +7,7 @@ import AgriFarmExpense from '../../../src/database/models/AgriFarmExpense';
 import AgriCropCycle from '../../../src/database/models/AgriCropCycle';
 import { formatPHP } from '../../../src/utils/currency';
 import { Q } from '@nozbe/watermelondb';
+import { AutoPostingService } from '../../../src/services/AutoPostingService';
 
 export const EXPENSE_CATEGORIES = [
     { id: 'fertilizer', label: 'Fertilizer', icon: 'eco' as const, badgeBg: 'bg-emerald-100', badgeText: 'text-emerald-800' },
@@ -105,8 +106,9 @@ export default function FarmExpensesScreen() {
 
         setSaving(true);
         try {
+            let createdExpense: AgriFarmExpense | null = null;
             await database.write(async () => {
-                await database.get<AgriFarmExpense>('agri_farm_expenses').create((record) => {
+                createdExpense = await database.get<AgriFarmExpense>('agri_farm_expenses').create((record) => {
                     record.cropCycleId = formCycleId || null;
                     record.parcelId = null;
                     record.expenseDate = new Date();
@@ -118,13 +120,30 @@ export default function FarmExpensesScreen() {
                 });
             });
 
+            if (createdExpense) {
+                try {
+                    await AutoPostingService.postAgriFarmExpense({
+                        expenseId: (createdExpense as AgriFarmExpense).id,
+                        amount: parsedAmount,
+                        category: formCategory,
+                        description: formDescription.trim(),
+                        paidBy: formPaidBy,
+                        cropCycleId: formCycleId || null,
+                        entryDate: new Date(),
+                        postedBy: 'Operator',
+                    });
+                } catch (postErr) {
+                    console.warn('[FarmExpenses] Failed to auto-post to accounting:', postErr);
+                }
+            }
+
             setModalVisible(false);
             setFormDescription('');
             setFormAmount('');
             setFormReceiptRef('');
             setFormPaidBy('jet');
             setFormCategory('fertilizer');
-            Alert.alert('Success', 'Farm input expense recorded successfully.');
+            Alert.alert('Success', 'Farm input expense recorded and posted to General Ledger.');
             loadData();
         } catch (err: any) {
             Alert.alert('Error', err.message || 'Failed to save farm expense.');

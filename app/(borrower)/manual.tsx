@@ -61,7 +61,7 @@ export default function MemberManualScreen() {
     return (
         <SafeAreaView className="flex-1 bg-slate-50">
             <LinearGradient colors={['#1E3A8A', '#065F46']} className="pt-12 pb-6 px-6 rounded-b-[40px] shadow-sm">
-                <Text className="text-white/90 text-xs font-bold uppercase tracking-[3px] mb-1">POS Cursor</Text>
+                <Text className="text-white/90 text-xs font-bold uppercase tracking-[3px] mb-1">Agri-One</Text>
                 <Text className="text-white text-3xl font-black">Member Manual</Text>
                 <Text className="text-white/70 text-sm font-medium mt-2">
                     Official operational manual, business rules, interest rates, and member benefits policy.

@@ -15,7 +15,7 @@ export type MenuItem = {
 };
 
 // ==========================================
-// 0. AGRIBUSINESS OUTGROWER PLATFORM (JETFARM)
+// 0. AGRIBUSINESS OUTGROWER PLATFORM (AGRI-ONE)
 // ==========================================
 export const AGRIBUSINESS_MENU: MenuItem[] = [
     { icon: 'eco', label: 'Operator Command Center', route: '/(admin)/agribusiness' },
@@ -280,29 +280,11 @@ export function SidebarContent({ onClose }: { onClose?: () => void }) {
                 </View>
 
                 <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-                    {/* Agribusiness Outgrower Platform prioritized at top */}
+                    {/* Agribusiness Outgrower Platform */}
                     {renderMenuSection('Agribusiness Outgrower Platform', AGRIBUSINESS_MENU, true)}
-
-                    {/* Crispy King prioritized at top */}
-                    {renderMenuSection('Crispy King QSR Operations', CRISPY_KING_OPERATIONS, true)}
-                    {renderMenuSection('Franchise & Enterprise', FRANCHISE_MENU, true)}
 
                     {/* General Operations */}
                     {renderMenuSection('Core Dashboard', MAIN_MENU)}
-
-                    {/* Lending System (Domain Separated) */}
-                    {isEnabled('system.lending') && renderMenuSection('Lending & Credit Management', LENDING_MENU)}
-
-                    {/* Financials & Books of Accounts */}
-                    {renderMenuSection('Cash & Vault Management', FINANCIALS_MENU)}
-                    {renderMenuSection('General Ledger & Accounting', ACCOUNTING_MENU)}
-                    {renderMenuSection('Books of Accounts', BOOKS_OF_ACCOUNTS_MENU)}
-
-                    {/* Reports & Audits */}
-                    {renderMenuSection('Daily Operational Reports', DAILY_REPORTS)}
-                    {renderMenuSection('Weekly Reports', WEEKLY_REPORTS)}
-                    {renderMenuSection('Monthly Analytics', MONTHLY_REPORTS)}
-                    {renderMenuSection('Cooperative Portfolio', COOPERATIVE_REPORTS)}
 
                     {/* System Administration */}
                     {renderMenuSection('System Administration', ADMIN_MENU)}

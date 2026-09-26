@@ -40,6 +40,11 @@ import SavingsTransaction from '../database/models/SavingsTransaction';
 import ShareCapitalTransaction from '../database/models/ShareCapitalTransaction';
 import CashTransaction from '../database/models/CashTransaction';
 import BankTransaction from '../database/models/BankTransaction';
+import AgriFarmExpense from '../database/models/AgriFarmExpense';
+import AgriWeeklySettlement from '../database/models/AgriWeeklySettlement';
+import AgriLaborLog from '../database/models/AgriLaborLog';
+import AgriHarvestLog from '../database/models/AgriHarvestLog';
+import AgriInvestorLedger from '../database/models/AgriInvestorLedger';
 
 
 // ─── Default Account Codes ────────────────────────────────────────────────────
@@ -67,6 +72,26 @@ const ACCT = {
     TRAINING_AND_DEVELOPMENT: '5080',
     PROFESSIONAL_FEES: '5090',
     OTHER_OPERATING_EXPENSES: '5100',
+
+    // Agribusiness Domain Accounts (CDA & PAS 41 Agricultural standard)
+    BIOLOGICAL_ASSETS_STANDING_CROPS: '1240',
+    AGRI_PRODUCE_INVENTORY: '1245',
+    AGRI_SUPPLIES_INVENTORY: '1246',
+    LAND_OWNER_SETTLEMENT_PAYABLE: '2035',
+    FARM_LABOR_PAYABLE: '2036',
+    AGRI_PROJECT_EQUITY: '3015',
+    AGRI_HARVEST_SALES_REVENUE: '4140',
+    AGRI_BYPRODUCT_REVENUE: '4145',
+    LAND_OWNER_SETTLEMENT_EXPENSE: '5160',
+    FARM_LABOR_EXPENSE: '5161',
+    AGRI_FERTILIZER_EXPENSE: '5162',
+    AGRI_HERBICIDE_EXPENSE: '5163',
+    AGRI_TRACTOR_EXPENSE: '5164',
+    AGRI_SEEDLINGS_EXPENSE: '5165',
+    AGRI_FUEL_EXPENSE: '5166',
+    AGRI_TRUCKING_EXPENSE: '5167',
+    AGRI_TOOLS_EXPENSE: '5168',
+    AGRI_OTHER_FARM_EXPENSE: '5169',
 };
 
 /** Maps expense category keywords → account code */
@@ -103,6 +128,32 @@ function mapExpenseCategoryToAccount(category: string): string {
         if (key.includes(keyword)) return code;
     }
     return ACCT.OTHER_OPERATING_EXPENSES;
+}
+
+function mapAgriExpenseCategoryToAccount(category: string): string {
+    const lower = (category || '').toLowerCase().trim();
+    if (lower.includes('fertilizer') || lower.includes('urea') || lower.includes('potash') || lower.includes('compost')) {
+        return ACCT.AGRI_FERTILIZER_EXPENSE; // 5162
+    }
+    if (lower.includes('herbicide') || lower.includes('pest') || lower.includes('chemical') || lower.includes('spray')) {
+        return ACCT.AGRI_HERBICIDE_EXPENSE; // 5163
+    }
+    if (lower.includes('tractor') || lower.includes('tillage') || lower.includes('machinery') || lower.includes('plow') || lower.includes('furrow')) {
+        return ACCT.AGRI_TRACTOR_EXPENSE; // 5164
+    }
+    if (lower.includes('seed') || lower.includes('cutting') || lower.includes('stem') || lower.includes('planting material')) {
+        return ACCT.AGRI_SEEDLINGS_EXPENSE; // 5165
+    }
+    if (lower.includes('fuel') || lower.includes('diesel') || lower.includes('gas') || lower.includes('oil')) {
+        return ACCT.AGRI_FUEL_EXPENSE; // 5166
+    }
+    if (lower.includes('transport') || lower.includes('truck') || lower.includes('hauling') || lower.includes('logistics')) {
+        return ACCT.AGRI_TRUCKING_EXPENSE; // 5167
+    }
+    if (lower.includes('tool') || lower.includes('scale') || lower.includes('equipment') || lower.includes('implement')) {
+        return ACCT.AGRI_TOOLS_EXPENSE; // 5168
+    }
+    return ACCT.AGRI_OTHER_FARM_EXPENSE; // 5169
 }
 
 // ─── Service ──────────────────────────────────────────────────────────────────
@@ -750,6 +801,300 @@ export class AutoPostingServiceClass {
     }
 
     /**
+     * Post a farm expense record (fertilizer, herbicide, tractor, seedlings, fuel, etc.).
+     * DR: Respective Farm Expense Account (5162-5169)
+     * CR: Cash on Hand (1010) if paid by Jet / farm cash, OR Agribusiness Project Equity / BioGreen Fund (3015) if paid by investor
+     */
+    async postAgriFarmExpense(opts: {
+        expenseId: string;
+        amount: number;
+        category: string;
+        description: string;
+        paidBy: 'jet' | 'investor' | string;
+        cropCycleId?: string | null;
+        entryDate?: Date;
+        postedBy?: string;
+    }): Promise<JournalEntry | null> {
+        if (opts.amount <= 0) return null;
+
+        const expenseAccountCode = mapAgriExpenseCategoryToAccount(opts.category);
+        const isInvestorPaid = opts.paidBy === 'investor';
+        const creditAccountCode = isInvestorPaid ? ACCT.AGRI_PROJECT_EQUITY : ACCT.CASH_ON_HAND;
+        const creditAccountName = isInvestorPaid ? 'Agribusiness Project Equity / BioGreen Fund' : 'Cash on Hand (COH)';
+
+        const entryDate = opts.entryDate || new Date();
+        const cycleTag = opts.cropCycleId ? ` [Cycle: ${opts.cropCycleId}]` : '';
+
+        return this.journalEntryService.createEntry({
+            entryDate,
+            description: `Farm Expense — ${opts.category}: ${opts.description}${cycleTag} (${isInvestorPaid ? 'BioGreen Partner Funded' : 'JetFarm Disbursed'})`,
+            entryType: 'auto',
+            sourceTable: 'agri_farm_expenses',
+            sourceId: opts.expenseId,
+            postedBy: opts.postedBy,
+            lines: [
+                {
+                    accountCode: expenseAccountCode,
+                    accountName: opts.category,
+                    debitAmount: opts.amount,
+                    description: opts.description,
+                    businessUnitId: 'agribusiness',
+                    moduleSourceTable: 'agri_farm_expenses',
+                    moduleSourceId: opts.cropCycleId || opts.expenseId,
+                },
+                {
+                    accountCode: creditAccountCode,
+                    accountName: creditAccountName,
+                    creditAmount: opts.amount,
+                    description: isInvestorPaid ? 'BioGreen Partner Equity Contribution' : 'Cash disbursed for farm inputs',
+                    businessUnitId: 'agribusiness',
+                    moduleSourceTable: 'agri_farm_expenses',
+                    moduleSourceId: opts.cropCycleId || opts.expenseId,
+                },
+            ],
+        }, opts.postedBy);
+    }
+
+    /**
+     * Post a weekly land owner crop share settlement (₱1/kg vs ₱25k minimum guarantee).
+     * DR: Land Owner Crop Share & Guaranteed Settlement (5160)
+     * CR: Cash on Hand (1010) if paid, OR Land Owner Settlement Payable (2035) if approved
+     */
+    async postAgriWeeklySettlement(opts: {
+        settlementId: string;
+        cropCycleId: string;
+        weekNumber: number;
+        landOwnerName?: string;
+        netPayoutDue: number;
+        paymentStatus?: string;
+        disbursementDate?: Date | null;
+        postedBy?: string;
+    }): Promise<JournalEntry | null> {
+        if (opts.netPayoutDue <= 0) return null;
+
+        const isPaid = (opts.paymentStatus || '').toLowerCase() === 'paid';
+        const creditAccountCode = isPaid ? ACCT.CASH_ON_HAND : ACCT.LAND_OWNER_SETTLEMENT_PAYABLE;
+        const creditAccountName = isPaid ? 'Cash on Hand (COH)' : 'Land Owner Crop Share / Settlement Payable';
+
+        const entryDate = isPaid && opts.disbursementDate ? new Date(opts.disbursementDate) : new Date();
+        const loName = opts.landOwnerName ? ` — ${opts.landOwnerName}` : '';
+
+        return this.journalEntryService.createEntry({
+            entryDate,
+            description: `Land Owner Settlement — Wk ${opts.weekNumber}${loName} [Cycle: ${opts.cropCycleId}] (${isPaid ? 'Paid' : 'Approved Payable'})`,
+            entryType: 'auto',
+            sourceTable: 'agri_weekly_settlements',
+            sourceId: opts.settlementId,
+            postedBy: opts.postedBy,
+            lines: [
+                {
+                    accountCode: ACCT.LAND_OWNER_SETTLEMENT_EXPENSE,
+                    accountName: 'Land Owner Crop Share & Guaranteed Settlement',
+                    debitAmount: opts.netPayoutDue,
+                    description: `Crop share settlement Wk ${opts.weekNumber}`,
+                    businessUnitId: 'agribusiness',
+                    moduleSourceTable: 'agri_weekly_settlements',
+                    moduleSourceId: opts.cropCycleId,
+                },
+                {
+                    accountCode: creditAccountCode,
+                    accountName: creditAccountName,
+                    creditAmount: opts.netPayoutDue,
+                    description: isPaid ? 'Settlement cash disbursement' : 'Accrued land owner settlement payable',
+                    businessUnitId: 'agribusiness',
+                    moduleSourceTable: 'agri_weekly_settlements',
+                    moduleSourceId: opts.cropCycleId,
+                },
+            ],
+        }, opts.postedBy);
+    }
+
+    /**
+     * Post a farm labor log wage disbursement or payable.
+     * DR: Farm Field Labor & Harvesting Wages (5161)
+     * CR: Cash on Hand (1010) if paid, OR Farm Labor Payable (2036) if pending
+     */
+    async postAgriLaborLog(opts: {
+        laborLogId: string;
+        workerName?: string;
+        task: string;
+        totalPay: number;
+        paymentStatus?: string;
+        workDate?: Date;
+        cropCycleId?: string | null;
+        postedBy?: string;
+    }): Promise<JournalEntry | null> {
+        if (opts.totalPay <= 0) return null;
+
+        const isPaid = (opts.paymentStatus || '').toLowerCase() === 'paid';
+        const creditAccountCode = isPaid ? ACCT.CASH_ON_HAND : ACCT.FARM_LABOR_PAYABLE;
+        const creditAccountName = isPaid ? 'Cash on Hand (COH)' : 'Farm Labor & Field Wages Payable';
+
+        const entryDate = opts.workDate || new Date();
+        const workerTag = opts.workerName ? ` (${opts.workerName})` : '';
+
+        return this.journalEntryService.createEntry({
+            entryDate,
+            description: `Farm Field Labor — ${opts.task}${workerTag}${opts.cropCycleId ? ` [Cycle: ${opts.cropCycleId}]` : ''}`,
+            entryType: 'auto',
+            sourceTable: 'agri_labor_logs',
+            sourceId: opts.laborLogId,
+            postedBy: opts.postedBy,
+            lines: [
+                {
+                    accountCode: ACCT.FARM_LABOR_EXPENSE,
+                    accountName: 'Farm Field Labor & Harvesting Wages',
+                    debitAmount: opts.totalPay,
+                    description: opts.task,
+                    businessUnitId: 'agribusiness',
+                    moduleSourceTable: 'agri_labor_logs',
+                    moduleSourceId: opts.cropCycleId || opts.laborLogId,
+                },
+                {
+                    accountCode: creditAccountCode,
+                    accountName: creditAccountName,
+                    creditAmount: opts.totalPay,
+                    description: isPaid ? 'Cash wage disbursement' : 'Accrued farm labor wages payable',
+                    businessUnitId: 'agribusiness',
+                    moduleSourceTable: 'agri_labor_logs',
+                    moduleSourceId: opts.cropCycleId || opts.laborLogId,
+                },
+            ],
+        }, opts.postedBy);
+    }
+
+    /**
+     * Post harvest off-take delivery / cassava sales revenue.
+     * DR: Cash on Hand (1010) (or Receivables)
+     * CR: Crop Harvest Sales & Offtake Revenue (4140)
+     */
+    async postAgriHarvestSale(opts: {
+        harvestLogId: string;
+        cropCycleId: string;
+        batchNumber: string;
+        netWeightKg: number;
+        pricePerKilo?: number;
+        grossRevenue: number;
+        harvestDate?: Date;
+        investorId?: string | null;
+        postedBy?: string;
+    }): Promise<JournalEntry | null> {
+        if (opts.grossRevenue <= 0) return null;
+
+        const entryDate = opts.harvestDate || new Date();
+
+        return this.journalEntryService.createEntry({
+            entryDate,
+            description: `Agri Harvest Off-take Sale — Batch ${opts.batchNumber} (${opts.netWeightKg.toLocaleString()} kg @ ₱${(opts.pricePerKilo || 4).toFixed(2)}/kg) [Cycle: ${opts.cropCycleId}]`,
+            entryType: 'auto',
+            sourceTable: 'agri_harvest_logs',
+            sourceId: opts.harvestLogId,
+            postedBy: opts.postedBy,
+            lines: [
+                {
+                    accountCode: ACCT.CASH_ON_HAND,
+                    accountName: 'Cash on Hand (COH)',
+                    debitAmount: opts.grossRevenue,
+                    description: `Proceeds from harvest batch ${opts.batchNumber}`,
+                    businessUnitId: 'agribusiness',
+                    moduleSourceTable: 'agri_harvest_logs',
+                    moduleSourceId: opts.cropCycleId,
+                },
+                {
+                    accountCode: ACCT.AGRI_HARVEST_SALES_REVENUE,
+                    accountName: 'Crop Harvest Sales & Offtake Revenue',
+                    creditAmount: opts.grossRevenue,
+                    description: 'Harvest off-take revenue recognized',
+                    businessUnitId: 'agribusiness',
+                    moduleSourceTable: 'agri_harvest_logs',
+                    moduleSourceId: opts.cropCycleId,
+                },
+            ],
+        }, opts.postedBy);
+    }
+
+    /**
+     * Post BioGreen / Agri Investor ledger transaction (capital injection or off-take settlement).
+     */
+    async postAgriInvestorTransaction(opts: {
+        ledgerId: string;
+        investorName?: string;
+        type: string;
+        amount: number;
+        transactionDate?: Date;
+        cropCycleId?: string | null;
+        notes?: string | null;
+        postedBy?: string;
+    }): Promise<JournalEntry | null> {
+        if (opts.amount <= 0) return null;
+
+        const entryDate = opts.transactionDate || new Date();
+        const invTag = opts.investorName ? ` (${opts.investorName})` : '';
+
+        if (opts.type === 'capital_injection' || opts.type === 'equipment_provision') {
+            return this.journalEntryService.createEntry({
+                entryDate,
+                description: `Agri Investor Capital Injection${invTag}: ${opts.notes || 'Capital contribution for farm operations'}`,
+                entryType: 'auto',
+                sourceTable: 'agri_investor_ledgers',
+                sourceId: opts.ledgerId,
+                postedBy: opts.postedBy,
+                lines: [
+                    {
+                        accountCode: ACCT.CASH_ON_HAND,
+                        accountName: 'Cash on Hand (COH)',
+                        debitAmount: opts.amount,
+                        description: 'Investor capital deposited into operations',
+                        businessUnitId: 'agribusiness',
+                        moduleSourceTable: 'agri_investor_ledgers',
+                        moduleSourceId: opts.cropCycleId || opts.ledgerId,
+                    },
+                    {
+                        accountCode: ACCT.AGRI_PROJECT_EQUITY,
+                        accountName: 'Agribusiness Project Equity / BioGreen Fund',
+                        creditAmount: opts.amount,
+                        description: 'Partner equity contribution recognized',
+                        businessUnitId: 'agribusiness',
+                        moduleSourceTable: 'agri_investor_ledgers',
+                        moduleSourceId: opts.cropCycleId || opts.ledgerId,
+                    },
+                ],
+            }, opts.postedBy);
+        } else if (opts.type === 'harvest_offtake') {
+            return this.journalEntryService.createEntry({
+                entryDate,
+                description: `Agri Harvest Off-take Delivery${invTag}: ${opts.notes || 'Off-take settled against partner ledger'}`,
+                entryType: 'auto',
+                sourceTable: 'agri_investor_ledgers',
+                sourceId: opts.ledgerId,
+                postedBy: opts.postedBy,
+                lines: [
+                    {
+                        accountCode: ACCT.AGRI_PROJECT_EQUITY,
+                        accountName: 'Agribusiness Project Equity / BioGreen Fund',
+                        debitAmount: opts.amount,
+                        description: 'Settlement against partner equity/advance',
+                        businessUnitId: 'agribusiness',
+                        moduleSourceTable: 'agri_investor_ledgers',
+                        moduleSourceId: opts.cropCycleId || opts.ledgerId,
+                    },
+                    {
+                        accountCode: ACCT.AGRI_HARVEST_SALES_REVENUE,
+                        accountName: 'Crop Harvest Sales & Offtake Revenue',
+                        creditAmount: opts.amount,
+                        description: 'Off-take revenue recognized',
+                        businessUnitId: 'agribusiness',
+                        moduleSourceTable: 'agri_investor_ledgers',
+                        moduleSourceId: opts.cropCycleId || opts.ledgerId,
+                    },
+                ],
+            }, opts.postedBy);
+        }
+
+        return null;
+    }
+
+    /**
      * Reclassifies any previously created journal entries for CBU or Savings migration
      * that were incorrectly credited to Other Income (4060) or Miscellaneous Income (4070),
      * moving them to Share Capital (3010) and Savings Deposits Payable (2010).
@@ -1067,6 +1412,117 @@ export class AutoPostingServiceClass {
                 errors.push(`Bank transactions backfill error: ${err.message}`);
             }
 
+            // 9. Backfill Agri Farm Expenses
+            try {
+                const farmExpenses = await this.db.get<AgriFarmExpense>('agri_farm_expenses')
+                    .query(Q.where('deleted_at', null))
+                    .fetch();
+                for (const fe of farmExpenses) {
+                    if (!postedSourceSet.has(`agri_farm_expenses:${fe.id}`)) {
+                        const amount = fe.amount ?? 0;
+                        if (amount > 0) {
+                            await this.postAgriFarmExpense({
+                                expenseId: fe.id,
+                                amount,
+                                category: fe.category || 'miscellaneous',
+                                description: fe.description || 'Farm operational expense',
+                                paidBy: fe.paidBy || 'jet',
+                                cropCycleId: fe.cropCycleId,
+                                entryDate: new Date(fe.expenseDate || fe.createdAt || Date.now()),
+                                postedBy: 'system',
+                            });
+                            postedCount++;
+                            postedSourceSet.add(`agri_farm_expenses:${fe.id}`);
+                        }
+                    }
+                }
+            } catch (err: any) {
+                errors.push(`Agri farm expenses backfill error: ${err.message}`);
+            }
+
+            // 10. Backfill Agri Weekly Settlements
+            try {
+                const settlements = await this.db.get<AgriWeeklySettlement>('agri_weekly_settlements')
+                    .query(Q.where('deleted_at', null))
+                    .fetch();
+                for (const ws of settlements) {
+                    const status = (ws.paymentStatus || '').toLowerCase();
+                    if (['paid', 'approved'].includes(status) && !postedSourceSet.has(`agri_weekly_settlements:${ws.id}`)) {
+                        const amount = ws.netPayoutDueThisWeek ?? 0;
+                        if (amount > 0) {
+                            await this.postAgriWeeklySettlement({
+                                settlementId: ws.id,
+                                cropCycleId: ws.cropCycleId,
+                                weekNumber: ws.weekNumber || 1,
+                                netPayoutDue: amount,
+                                paymentStatus: ws.paymentStatus,
+                                disbursementDate: ws.disbursementDate ? new Date(ws.disbursementDate) : null,
+                                postedBy: 'system',
+                            });
+                            postedCount++;
+                            postedSourceSet.add(`agri_weekly_settlements:${ws.id}`);
+                        }
+                    }
+                }
+            } catch (err: any) {
+                errors.push(`Agri weekly settlements backfill error: ${err.message}`);
+            }
+
+            // 11. Backfill Agri Labor Logs
+            try {
+                const laborLogs = await this.db.get<AgriLaborLog>('agri_labor_logs')
+                    .query(Q.where('deleted_at', null))
+                    .fetch();
+                for (const ll of laborLogs) {
+                    const status = (ll.paymentStatus || '').toLowerCase();
+                    if (status === 'paid' && !postedSourceSet.has(`agri_labor_logs:${ll.id}`)) {
+                        const amount = ll.totalPay ?? 0;
+                        if (amount > 0) {
+                            await this.postAgriLaborLog({
+                                laborLogId: ll.id,
+                                task: ll.task || 'Field Labor',
+                                totalPay: amount,
+                                paymentStatus: ll.paymentStatus,
+                                workDate: new Date(ll.workDate || ll.createdAt || Date.now()),
+                                cropCycleId: ll.cropCycleId,
+                                postedBy: 'system',
+                            });
+                            postedCount++;
+                            postedSourceSet.add(`agri_labor_logs:${ll.id}`);
+                        }
+                    }
+                }
+            } catch (err: any) {
+                errors.push(`Agri labor logs backfill error: ${err.message}`);
+            }
+
+            // 12. Backfill Agri Investor Ledgers
+            try {
+                const investorLedgers = await this.db.get<AgriInvestorLedger>('agri_investor_ledgers')
+                    .query(Q.where('deleted_at', null))
+                    .fetch();
+                for (const il of investorLedgers) {
+                    if (!postedSourceSet.has(`agri_investor_ledgers:${il.id}`)) {
+                        const amount = il.amount ?? 0;
+                        if (amount > 0) {
+                            await this.postAgriInvestorTransaction({
+                                ledgerId: il.id,
+                                type: il.type,
+                                amount,
+                                transactionDate: new Date(il.transactionDate || il.createdAt || Date.now()),
+                                cropCycleId: il.cropCycleId,
+                                notes: il.notes,
+                                postedBy: 'system',
+                            });
+                            postedCount++;
+                            postedSourceSet.add(`agri_investor_ledgers:${il.id}`);
+                        }
+                    }
+                }
+            } catch (err: any) {
+                errors.push(`Agri investor ledgers backfill error: ${err.message}`);
+            }
+
         } catch (err: any) {
             errors.push(`General backfill error: ${err.message}`);
         }
@@ -1080,4 +1536,4 @@ export { instance as AutoPostingService };
 export default instance;
 
 // Export the account code map for use in tests and UI
-export { ACCT as AUTO_POSTING_ACCOUNTS, mapExpenseCategoryToAccount };
+export { ACCT as AUTO_POSTING_ACCOUNTS, mapExpenseCategoryToAccount, mapAgriExpenseCategoryToAccount };

@@ -25,7 +25,7 @@ const textMap = {
     lg: 24,
 };
 
-const logoSource = require('../../assets/poscursor_logo.png');
+const logoSource = require('../../assets/agri_one_logo.png');
 
 export function AppLogo({
     size = 'md',

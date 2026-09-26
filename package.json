@@ -33,6 +33,7 @@
     "deploy:staging": "node scripts/deploy-cloudflare-staging.mjs",
     "migrate:staging": "node scripts/apply-staging-migrations.mjs",
     "deploy:cloudflare": "npm version patch --no-git-tag-version && node scripts/deploy-cloudflare.mjs",
+    "deploy:hetzner": "node scripts/deploy-hetzner.mjs",
     "workflow:e2e": "node scripts/pipeline-e2e.mjs",
     "deploy:pipeline": "node scripts/pipeline-e2e.mjs --deploy",
     "postinstall": "patch-package",

@@ -4,6 +4,8 @@ import AgriCropCycle from '../database/models/AgriCropCycle';
 import AgriWeeklySettlement from '../database/models/AgriWeeklySettlement';
 import AgriLaborLog from '../database/models/AgriLaborLog';
 import AgriFarmExpense from '../database/models/AgriFarmExpense';
+import JournalEntry from '../database/models/JournalEntry';
+import JournalEntryLine from '../database/models/JournalEntryLine';
 
 export interface CyclePnLResult {
     cropCycleId?: string;
@@ -20,6 +22,22 @@ export interface CyclePnLResult {
     costPerKilo: number;
     revenuePerHectare: number;
     yieldPerHectareTons: number;
+}
+
+export interface AgriGLSummaryResult {
+    totalRevenue: number;
+    landOwnerSettlementCost: number;
+    laborCost: number;
+    farmInputExpenses: number;
+    totalExpenses: number;
+    netSurplus: number;
+    biologicalAssetsValue: number;
+    produceInventoryValue: number;
+    suppliesInventoryValue: number;
+    landOwnerPayable: number;
+    farmLaborPayable: number;
+    investorPartnerEquity: number;
+    journalEntryCount: number;
 }
 
 export interface YieldForecastResult {
@@ -185,6 +203,127 @@ export class AgriFinanceAnalyticsService {
             projectedYieldRangeKg,
             projectedGrossRevenue,
         };
+    }
+
+    /**
+     * Compute real-time General Ledger balance summary for the Agribusiness Domain
+     */
+    static async getAgriGeneralLedgerSummary(
+        db: Database = globalDatabase
+    ): Promise<AgriGLSummaryResult> {
+        const lines = await db
+            .get<JournalEntryLine>('journal_entry_lines')
+            .query(Q.where('deleted_at', null))
+            .fetch();
+
+        let totalRevenue = 0;
+        let landOwnerSettlementCost = 0;
+        let laborCost = 0;
+        let farmInputExpenses = 0;
+        let biologicalAssetsValue = 0;
+        let produceInventoryValue = 0;
+        let suppliesInventoryValue = 0;
+        let landOwnerPayable = 0;
+        let farmLaborPayable = 0;
+        let investorPartnerEquity = 0;
+        const entryIdSet = new Set<string>();
+
+        for (const line of lines) {
+            const code = line.accountCode;
+            const isAgriUnit = line.businessUnitId === 'agribusiness';
+            const isAgriCode = [
+                '1240', '1245', '1246',
+                '2035', '2036',
+                '3015',
+                '4140', '4145',
+                '5160', '5161', '5162', '5163', '5164', '5165', '5166', '5167', '5168', '5169'
+            ].includes(code);
+
+            if (isAgriUnit || isAgriCode) {
+                entryIdSet.add(line.journalEntryId);
+
+                const dr = line.debitAmount || 0;
+                const cr = line.creditAmount || 0;
+
+                if (code === '4140' || code === '4145') {
+                    totalRevenue += (cr - dr);
+                } else if (code === '5160') {
+                    landOwnerSettlementCost += (dr - cr);
+                } else if (code === '5161') {
+                    laborCost += (dr - cr);
+                } else if (code.startsWith('516') || (isAgriUnit && code.startsWith('5'))) {
+                    farmInputExpenses += (dr - cr);
+                } else if (code === '1240') {
+                    biologicalAssetsValue += (dr - cr);
+                } else if (code === '1245') {
+                    produceInventoryValue += (dr - cr);
+                } else if (code === '1246') {
+                    suppliesInventoryValue += (dr - cr);
+                } else if (code === '2035') {
+                    landOwnerPayable += (cr - dr);
+                } else if (code === '2036') {
+                    farmLaborPayable += (cr - dr);
+                } else if (code === '3015') {
+                    investorPartnerEquity += (cr - dr);
+                }
+            }
+        }
+
+        const totalExpenses = Number((landOwnerSettlementCost + laborCost + farmInputExpenses).toFixed(2));
+        const netSurplus = Number((totalRevenue - totalExpenses).toFixed(2));
+
+        return {
+            totalRevenue: Number(totalRevenue.toFixed(2)),
+            landOwnerSettlementCost: Number(landOwnerSettlementCost.toFixed(2)),
+            laborCost: Number(laborCost.toFixed(2)),
+            farmInputExpenses: Number(farmInputExpenses.toFixed(2)),
+            totalExpenses,
+            netSurplus,
+            biologicalAssetsValue: Number(biologicalAssetsValue.toFixed(2)),
+            produceInventoryValue: Number(produceInventoryValue.toFixed(2)),
+            suppliesInventoryValue: Number(suppliesInventoryValue.toFixed(2)),
+            landOwnerPayable: Number(landOwnerPayable.toFixed(2)),
+            farmLaborPayable: Number(farmLaborPayable.toFixed(2)),
+            investorPartnerEquity: Number(investorPartnerEquity.toFixed(2)),
+            journalEntryCount: entryIdSet.size,
+        };
+    }
+
+    /**
+     * Fetch all Journal Entries and line items tied to a specific Crop Cycle
+     */
+    static async getCropCycleJournalEntries(
+        cropCycleId: string,
+        db: Database = globalDatabase
+    ): Promise<Array<{ entry: JournalEntry; lines: JournalEntryLine[] }>> {
+        const matchingLines = await db
+            .get<JournalEntryLine>('journal_entry_lines')
+            .query(
+                Q.where('deleted_at', null),
+                Q.where('module_source_id', cropCycleId)
+            )
+            .fetch();
+
+        const entryIdSet = new Set<string>(matchingLines.map(l => l.journalEntryId));
+        const results: Array<{ entry: JournalEntry; lines: JournalEntryLine[] }> = [];
+
+        for (const entryId of entryIdSet) {
+            try {
+                const entry = await db.get<JournalEntry>('journal_entries').find(entryId);
+                const lines = await db
+                    .get<JournalEntryLine>('journal_entry_lines')
+                    .query(
+                        Q.where('deleted_at', null),
+                        Q.where('journal_entry_id', entryId)
+                    )
+                    .fetch();
+                results.push({ entry, lines });
+            } catch {
+                // Ignore missing entry
+            }
+        }
+
+        return results;
     }
 }
 export default AgriFinanceAnalyticsService;

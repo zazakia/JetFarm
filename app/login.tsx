@@ -20,23 +20,23 @@ const ROLE_STYLES: Record<string, {
     badgeText: string;
 }> = {
     admin: {
-        gradient: ['#7F1D1D', '#991B1B'],
-        iconBg: 'rgba(220, 38, 38, 0.25)',
+        gradient: ['#064E3B', '#047857'],
+        iconBg: 'rgba(16, 185, 129, 0.25)',
         icon: 'admin-panel-settings',
-        badge: 'rgba(239, 68, 68, 0.30)',
-        badgeText: '#FCA5A5',
+        badge: 'rgba(16, 185, 129, 0.30)',
+        badgeText: '#A7F3D0',
     },
     collector: {
-        gradient: ['#064E3B', '#065F46'],
+        gradient: ['#047857', '#059669'],
         iconBg: 'rgba(16, 185, 129, 0.25)',
-        icon: 'directions-walk',
+        icon: 'terrain',
         badge: 'rgba(16, 185, 129, 0.30)',
         badgeText: '#A7F3D0',
     },
     loan_encoder: {
         gradient: ['#1E3A8A', '#1D4ED8'],
         iconBg: 'rgba(59, 130, 246, 0.25)',
-        icon: 'post-add',
+        icon: 'grass',
         badge: 'rgba(59, 130, 246, 0.30)',
         badgeText: '#BAD0FB',
     },
@@ -95,28 +95,70 @@ function getInitials(name: string) {
         .toUpperCase();
 }
 
+const AGRI_FEATURES = [
+    {
+        icon: 'grass' as const,
+        title: 'Crop Cycle & Agronomy Planning',
+        description: 'Track plant growth stages, field activity calendars, seed varieties, chemical applications, and projected harvest windows.',
+        tag: 'AGRONOMY',
+        badgeColor: '#10B981',
+    },
+    {
+        icon: 'map' as const,
+        title: 'GPS Parcel & Land Management',
+        description: 'Map multi-hectare land boundaries, soil conditions, terrain topography, and multi-season crop rotation histories.',
+        tag: 'PARCELS',
+        badgeColor: '#059669',
+    },
+    {
+        icon: 'scale' as const,
+        title: 'Harvest Intake & Weighbridge Logs',
+        description: 'Log sack and metric tonnage intake, tare & moisture deductions, batch provenance, and direct warehouse stock updates.',
+        tag: 'HARVEST',
+        badgeColor: '#D97706',
+    },
+    {
+        icon: 'groups' as const,
+        title: 'Pakyaw & Farm Labor Payroll',
+        description: 'Manage piece-rate (pakyaw) task contracts, daily worker attendance, and specialized agricultural wage disbursements.',
+        tag: 'WORKFORCE',
+        badgeColor: '#3B82F6',
+    },
+    {
+        icon: 'handshake' as const,
+        title: 'Landowner & Tenant Settlements',
+        description: 'Automated harvest split formulas, milling expense deductions, cash advance recovery, and transparent payout vouchers.',
+        tag: 'SETTLEMENTS',
+        badgeColor: '#8B5CF6',
+    },
+    {
+        icon: 'analytics' as const,
+        title: 'Agri Accounting & Cost Telemetry',
+        description: 'Real-time cost-per-hectare telemetry, automated double-entry GL journal postings, input depreciation, and parcel P&L.',
+        tag: 'ACCOUNTING',
+        badgeColor: '#EC4899',
+    },
+] as const;
+
 const JETFARM_MISSION = [
-    "Promote better social relationship between and among members, staff and officers.",
-    "Bring its services closer to the members and develop stronger mutual trust that should expand membership and touch the lives of more people.",
-    "Utilize all available resources efficiently and effectively and bring about more better services to members and in turn more extensive utilization of the cooperatives services by the members for better economic and social benefits.",
-    "Strengthen existing cooperative services and activities;",
-    "Provide affordable and quality services for the member's satisfaction."
+    "Digitize commercial farm and plantation operations with resilient offline-first field synchronization.",
+    "Provide farm managers and agronomists with precision telemetry on crop cycles, input expenses, and harvest yields.",
+    "Ensure transparent, dispute-free harvest settlements for landowners, tenants, millers, and agricultural workers.",
+    "Deliver enterprise financial control and automated double-entry general ledger accounting from seed to sale.",
+    "Empower agricultural enterprises to maximize productivity, prevent yield shrinkage, and scale sustainable operations."
 ] as const;
 
 const JETFARM_GOALS = [
-    "To attain increased income, savings, investments, productivity, and purchasing power, and promote among themselves equitable distribution of net surplus through maximum utilization of economies of scale, cost-sharing and risk-sharing;",
-    "To provide optimum social and economic benefits to its members;",
-    "To teach members efficient ways of doing things in a cooperative manner;",
-    "To propagate cooperative practices and new ideas in business and management;",
-    "To allow the lower income and less privileged groups to increase their ownership in the wealth of the nation;",
-    "To actively support the government, other cooperatives and people oriented organizations, both local and foreign, in promoting cooperatives as a practical means towards sustainable socio-economic development under a truly just and democratic society;",
-    "To institutionalize a dynamic savings mobilization and capital build-up schemes to sustain its developmental activities and long-term investments, thereby ensuring optimum economic benefits to the members, their families and the general public;",
-    "To adopt membership expansion mechanism/scheme, thereby ensuring growth of the cooperative movement;",
-    "To implement policy guidelines that will ensure transparency, equitable access to its resources and services, and promote the interests of the members; and",
-    "To adopt such other plans as may help foster the welfare of the members, their families and the community."
+    "To eliminate paper-based field records and manual weighbridge intake errors through mobile digital logs;",
+    "To track granular input costs (seeds, fertilizer, crop protection, fuel, irrigation) accurately per hectare and cycle;",
+    "To automate weekly and seasonal landowner settlements with zero reconciliation disputes or calculation delays;",
+    "To enable field supervisors and agronomists to operate 100% offline in remote plantations with zero data loss;",
+    "To provide real-time executive analytics for yield forecasting, parcel profitability, and operational resource planning;",
+    "To institutionalize transparent piece-rate (Pakyaw) labor compensation and fair worker payment workflows;",
+    "To maintain rigorous audit trails and compliant double-entry journal postings for all farm inventory and financial transactions."
 ] as const;
 
-const DEMO_MESSAGE = `Hello, I want to request a demo of ${COMPANY_NAME} for my lending business.`;
+const DEMO_MESSAGE = `Hello, I want to request a demo of ${COMPANY_NAME} for my agribusiness & plantation operations.`;
 
 export default function LoginScreen() {
     const { width } = useWindowDimensions();
@@ -136,9 +178,9 @@ export default function LoginScreen() {
     const horizontalPadding = isCompactPhone ? 12 : 20;
     const cardPadding = isCompactPhone ? 16 : 24;
     const compactCardPadding = isCompactPhone ? 16 : 22;
-    const heroTitleSize = isWideLayout ? 42 : isCompactPhone ? 27 : 32;
-    const heroTitleLineHeight = isWideLayout ? 50 : isCompactPhone ? 33 : 39;
-    const featureCardWidth = isWideLayout ? '31.7%' : isTabletLayout ? '48%' : '100%';
+    const heroTitleSize = isWideLayout ? 38 : isCompactPhone ? 25 : 30;
+    const heroTitleLineHeight = isWideLayout ? 46 : isCompactPhone ? 32 : 38;
+    const featureCardWidth = isTabletLayout ? '48.5%' : '100%';
     const fullWidthCtaStyle = !isTabletLayout ? { width: '100%' as const, alignItems: 'center' as const } : {};
 
     useEffect(() => {
@@ -238,7 +280,7 @@ export default function LoginScreen() {
     return (
         <SafeAreaView className="flex-1">
             <LinearGradient
-                colors={['#3F1608', '#0F172A', '#521B08']}
+                colors={['#042F22', '#0A1624', '#063C2F']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 className="flex-1"
@@ -298,7 +340,7 @@ export default function LoginScreen() {
                                     Login to your workspace
                                 </Text>
                                 <Text style={{ color: '#94A3B8', fontSize: 13, lineHeight: 19, fontWeight: '700', marginBottom: 22 }}>
-                                    Secure access for admins, collectors, encoders, and borrowers.
+                                    Secure access for farm managers, agronomists, field supervisors, and staff.
                                 </Text>
 
                                 <View className="mb-6">
@@ -366,7 +408,7 @@ export default function LoginScreen() {
 
                                 <View style={{ alignItems: 'flex-end', marginBottom: 24 }}>
                                     <AnimatedPressable>
-                                        <Text style={{ color: '#EF4444', fontWeight: '900', fontSize: 10, letterSpacing: 1, textTransform: 'uppercase' }}>Forgot Password?</Text>
+                                        <Text style={{ color: '#10B981', fontWeight: '900', fontSize: 10, letterSpacing: 1, textTransform: 'uppercase' }}>Forgot Password?</Text>
                                     </AnimatedPressable>
                                 </View>
 
@@ -375,7 +417,7 @@ export default function LoginScreen() {
                                     disabled={loading}
                                 >
                                     <LinearGradient
-                                        colors={loading ? ['#94A3B8', '#64748B'] : ['#DC2626', '#991B1B']}
+                                        colors={loading ? ['#94A3B8', '#64748B'] : ['#059669', '#047857']}
                                         start={{ x: 0, y: 0 }}
                                         end={{ x: 1, y: 0 }}
                                         style={{
@@ -385,12 +427,12 @@ export default function LoginScreen() {
                                             alignItems: 'center',
                                             ...Platform.select({
                                                 web: {
-                                                    boxShadow: '0 4px 8px 0 rgba(220, 38, 38, 0.3)',
+                                                    boxShadow: '0 4px 12px 0 rgba(5, 150, 105, 0.35)',
                                                 },
                                                 default: {
-                                                    shadowColor: '#DC2626',
+                                                    shadowColor: '#059669',
                                                     shadowOffset: { width: 0, height: 4 },
-                                                    shadowOpacity: 0.3,
+                                                    shadowOpacity: 0.35,
                                                     shadowRadius: 8,
                                                     elevation: 5,
                                                 },
@@ -408,7 +450,7 @@ export default function LoginScreen() {
                                 <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 20 }}>
                                     <Text style={{ color: '#64748B', fontWeight: '700', fontSize: 12 }}>New member?</Text>
                                     <AnimatedPressable onPress={() => router.push('/register')} style={{ marginLeft: 8 }}>
-                                        <Text style={{ color: '#EF4444', fontWeight: '900', fontSize: 12 }}>Register Now</Text>
+                                        <Text style={{ color: '#10B981', fontWeight: '900', fontSize: 12 }}>Register Now</Text>
                                     </AnimatedPressable>
                                 </View>
                             </Animated.View>
@@ -561,7 +603,7 @@ export default function LoginScreen() {
                             <Animated.View
                                 entering={FadeInDown.duration(600).springify()}
                                 style={{
-                                    backgroundColor: 'rgba(15,23,42,0.38)',
+                                    backgroundColor: 'rgba(15,23,42,0.48)',
                                     borderWidth: 1,
                                     borderColor: 'rgba(255,255,255,0.08)',
                                     borderRadius: isCompactPhone ? 24 : 32,
@@ -573,9 +615,9 @@ export default function LoginScreen() {
                                 <View style={{ flexDirection: isCompactPhone ? 'column' : 'row', alignItems: isCompactPhone ? 'flex-start' : 'center', marginBottom: isCompactPhone ? 18 : 22 }}>
                                     <View
                                         style={{
-                                            backgroundColor: 'rgba(255,255,255,0.08)',
+                                            backgroundColor: 'rgba(16,185,129,0.12)',
                                             borderWidth: 1,
-                                            borderColor: 'rgba(255,255,255,0.15)',
+                                            borderColor: 'rgba(16,185,129,0.25)',
                                             borderRadius: isCompactPhone ? 16 : 20,
                                             padding: isCompactPhone ? 8 : 12,
                                             marginRight: isCompactPhone ? 0 : 14,
@@ -585,11 +627,11 @@ export default function LoginScreen() {
                                         <AppLogo size={isCompactPhone ? 'sm' : 'md'} hideText={true} />
                                     </View>
                                     <View style={{ flex: 1, minWidth: 0 }}>
-                                        <Text style={{ color: '#FBBF24', fontSize: 11, fontWeight: '900', letterSpacing: 2, textTransform: 'uppercase' }}>
-                                            {COMPANY_PRODUCT_NAME}
+                                        <Text style={{ color: '#34D399', fontSize: 11, fontWeight: '900', letterSpacing: 2, textTransform: 'uppercase' }}>
+                                            {COMPANY_NAME} AGRIBUSINESS OS
                                         </Text>
                                         <Text style={{ color: '#E2E8F0', marginTop: 4, fontSize: 13, fontWeight: '700' }}>
-                                            Brgy. Linao Ormoc City • 255-4463
+                                            Integrated Smart Farm & Plantation Operations Platform
                                         </Text>
                                     </View>
                                 </View>
@@ -603,10 +645,10 @@ export default function LoginScreen() {
                                         letterSpacing: -1,
                                     }}
                                 >
-                                    POS Cursor CSCC is likened to the rays of the sun, a symbol of Strength, Hope and Aspiration.
+                                    Next-Generation Agribusiness & Plantation Operations Management
                                 </Text>
                                 <Text style={{ color: '#CBD5E1', fontSize: isCompactPhone ? 14 : 16, lineHeight: isCompactPhone ? 22 : 25, marginTop: 16, fontWeight: '600', fontStyle: 'italic' }}>
-                                    "We envision ourselves in commitment to help its members and community in its financial management for social and economic growth."
+                                    "Empowering commercial growers, plantations, and agricultural enterprises with unified field-to-ledger intelligence — from GPS parcel mapping and crop cycles to Pakyaw labor payroll, weighbridge harvest intake, and landowner settlements."
                                 </Text>
 
                                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 22 }}>
@@ -614,7 +656,7 @@ export default function LoginScreen() {
                                         testID="landing-request-demo"
                                         onPress={requestDemoByEmail}
                                         style={{
-                                            backgroundColor: '#B91C1C',
+                                            backgroundColor: '#059669',
                                             borderRadius: 14,
                                             paddingVertical: 13,
                                             paddingHorizontal: 18,
@@ -672,31 +714,14 @@ export default function LoginScreen() {
                                         }}
                                     >
                                         <Text style={{ color: '#FEF08A', fontWeight: '900', fontSize: 12, letterSpacing: 1, textTransform: 'uppercase', textAlign: 'center' }}>
-                                            Online Calculator
+                                            Farm Yield Calculator
                                         </Text>
                                     </AnimatedPressable>
                                     <AnimatedPressable
                                         testID="landing-loan-application"
                                         onPress={() => router.push('/loan-application')}
                                         style={{
-                                            backgroundColor: 'rgba(220,38,38,0.14)',
-                                            borderWidth: 1,
-                                            borderColor: 'rgba(248,113,113,0.35)',
-                                            borderRadius: 14,
-                                            paddingVertical: 13,
-                                            paddingHorizontal: 18,
-                                            ...fullWidthCtaStyle,
-                                        }}
-                                    >
-                                        <Text style={{ color: '#FCA5A5', fontWeight: '900', fontSize: 12, letterSpacing: 1, textTransform: 'uppercase', textAlign: 'center' }}>
-                                            Apply for Loan
-                                        </Text>
-                                    </AnimatedPressable>
-                                    <AnimatedPressable
-                                        testID="landing-download-apk"
-                                        onPress={() => Linking.openURL('https://jetfarm.pages.dev/download')}
-                                        style={{
-                                            backgroundColor: 'rgba(16,185,129,0.16)',
+                                            backgroundColor: 'rgba(16,185,129,0.14)',
                                             borderWidth: 1,
                                             borderColor: 'rgba(52,211,153,0.35)',
                                             borderRadius: 14,
@@ -706,32 +731,115 @@ export default function LoginScreen() {
                                         }}
                                     >
                                         <Text style={{ color: '#A7F3D0', fontWeight: '900', fontSize: 12, letterSpacing: 1, textTransform: 'uppercase', textAlign: 'center' }}>
+                                            Agri Advance / Loan
+                                        </Text>
+                                    </AnimatedPressable>
+                                    <AnimatedPressable
+                                        testID="landing-download-apk"
+                                        onPress={() => Linking.openURL('https://jetfarm.pages.dev/download')}
+                                        style={{
+                                            backgroundColor: 'rgba(14,165,233,0.16)',
+                                            borderWidth: 1,
+                                            borderColor: 'rgba(56,189,248,0.35)',
+                                            borderRadius: 14,
+                                            paddingVertical: 13,
+                                            paddingHorizontal: 18,
+                                            ...fullWidthCtaStyle,
+                                        }}
+                                    >
+                                        <Text style={{ color: '#BAE6FD', fontWeight: '900', fontSize: 12, letterSpacing: 1, textTransform: 'uppercase', textAlign: 'center' }}>
                                             Download Android APK
                                         </Text>
                                     </AnimatedPressable>
                                 </View>
 
-                                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 22 }}>
-                                    {['Offline-ready', 'Printable reports', 'Role-based access'].map((label) => (
+                                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 22 }}>
+                                    {[
+                                        'Offline-ready',
+                                        'GPS Parcel Mapping',
+                                        'Crop Cycle Tracking',
+                                        'Harvest Yield Logs',
+                                        'Pakyaw Labor Payroll',
+                                        'Landowner Settlements',
+                                        'Printable reports',
+                                        'Role-based access'
+                                    ].map((label) => (
                                         <View
                                             key={label}
                                             style={{
-                                                backgroundColor: 'rgba(245,158,11,0.10)',
-                                                borderColor: 'rgba(245,158,11,0.22)',
+                                                backgroundColor: 'rgba(16,185,129,0.12)',
+                                                borderColor: 'rgba(16,185,129,0.26)',
                                                 borderWidth: 1,
                                                 borderRadius: 999,
                                                 paddingHorizontal: 12,
-                                                paddingVertical: 7,
+                                                paddingVertical: 6,
                                             }}
                                         >
-                                            <Text style={{ color: '#FDE68A', fontWeight: '900', fontSize: 11 }}>{label}</Text>
+                                            <Text style={{ color: '#A7F3D0', fontWeight: '800', fontSize: 11 }}>{label}</Text>
                                         </View>
                                     ))}
                                 </View>
                             </Animated.View>
 
-                            {/* POS Cursor Mission */}
-                            <Animated.View entering={FadeInUp.duration(600).delay(80).springify()} style={{ marginBottom: 18 }}>
+                            {/* Core Agribusiness Modules Section */}
+                            <Animated.View entering={FadeInUp.duration(600).delay(60).springify()} style={{ marginBottom: 18 }}>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 14 }}>
+                                    <MaterialIcons name="agriculture" size={22} color="#10B981" style={{ marginRight: 8 }} />
+                                    <Text style={{ color: '#F8FAFC', fontSize: 20, fontWeight: '900' }}>
+                                        Core Agribusiness Modules
+                                    </Text>
+                                </View>
+                                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
+                                    {AGRI_FEATURES.map((feat, idx) => (
+                                        <Animated.View
+                                            key={feat.title}
+                                            entering={FadeInUp.duration(400).delay(idx * 40).springify()}
+                                            style={{
+                                                width: featureCardWidth,
+                                                backgroundColor: 'rgba(15,23,42,0.65)',
+                                                borderWidth: 1,
+                                                borderColor: 'rgba(255,255,255,0.08)',
+                                                borderRadius: 20,
+                                                padding: 16,
+                                            }}
+                                        >
+                                            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                                                <View style={{
+                                                    width: 38,
+                                                    height: 38,
+                                                    borderRadius: 12,
+                                                    backgroundColor: 'rgba(16,185,129,0.16)',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                }}>
+                                                    <MaterialIcons name={feat.icon} size={20} color={feat.badgeColor} />
+                                                </View>
+                                                <View style={{
+                                                    backgroundColor: 'rgba(255,255,255,0.06)',
+                                                    paddingHorizontal: 8,
+                                                    paddingVertical: 3,
+                                                    borderRadius: 6,
+                                                    borderWidth: 1,
+                                                    borderColor: 'rgba(255,255,255,0.08)',
+                                                }}>
+                                                    <Text style={{ color: feat.badgeColor, fontSize: 9, fontWeight: '900', letterSpacing: 1 }}>
+                                                        {feat.tag}
+                                                    </Text>
+                                                </View>
+                                            </View>
+                                            <Text style={{ color: '#F8FAFC', fontSize: 15, fontWeight: '800', marginBottom: 6 }}>
+                                                {feat.title}
+                                            </Text>
+                                            <Text style={{ color: '#94A3B8', fontSize: 12, lineHeight: 18, fontWeight: '500' }}>
+                                                {feat.description}
+                                            </Text>
+                                        </Animated.View>
+                                    ))}
+                                </View>
+                            </Animated.View>
+
+                            {/* Agribusiness Mission */}
+                            <Animated.View entering={FadeInUp.duration(600).delay(100).springify()} style={{ marginBottom: 18 }}>
                                 <Text style={{ color: '#F8FAFC', fontSize: 20, fontWeight: '900', marginBottom: 12 }}>
                                     Our Mission
                                 </Text>
@@ -754,13 +862,13 @@ export default function LoginScreen() {
                                                     width: 32,
                                                     height: 32,
                                                     borderRadius: 16,
-                                                    backgroundColor: 'rgba(220,38,38,0.14)',
+                                                    backgroundColor: 'rgba(16,185,129,0.15)',
                                                     alignItems: 'center',
                                                     justifyContent: 'center',
                                                     marginRight: 14,
                                                 }}
                                             >
-                                                <Text style={{ color: '#EF4444', fontWeight: '900', fontSize: 14 }}>{index + 1}</Text>
+                                                <Text style={{ color: '#34D399', fontWeight: '900', fontSize: 14 }}>{index + 1}</Text>
                                             </View>
                                             <Text style={{ flex: 1, color: '#E2E8F0', fontSize: 13, lineHeight: 20, fontWeight: '600' }}>
                                                 {mission}
@@ -770,7 +878,7 @@ export default function LoginScreen() {
                                 </View>
                             </Animated.View>
 
-                            {/* POS Cursor Goals */}
+                            {/* Agribusiness Goals */}
                             <Animated.View
                                 entering={FadeInUp.duration(600).delay(140).springify()}
                                 style={{
@@ -792,8 +900,8 @@ export default function LoginScreen() {
                                     <View style={{ flexDirection: 'column', gap: 12 }}>
                                         {JETFARM_GOALS.map((goal, index) => (
                                             <View key={`goal-${index}`} style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
-                                                <Ionicons name="checkmark-circle" size={18} color="#D97706" style={{ marginTop: 2 }} />
-                                                <Text style={{ color: '#FEF3C7', fontSize: 13, lineHeight: 20, fontWeight: '500', marginLeft: 12, flex: 1 }}>
+                                                <Ionicons name="checkmark-circle" size={18} color="#10B981" style={{ marginTop: 2 }} />
+                                                <Text style={{ color: '#ECFDF5', fontSize: 13, lineHeight: 20, fontWeight: '500', marginLeft: 12, flex: 1 }}>
                                                     {goal}
                                                 </Text>
                                             </View>

@@ -10,6 +10,7 @@ import { ROLE_HOME_ROUTES, UserRole } from '../../src/constants/roles';
 import { COMPANY_NAME } from '../../src/constants/brand';
 import { useFeatureFlags, useRolePermissions } from '../../src/hooks/useSettingsConfig';
 import { getFeatureKeyForRoute } from '../../src/utils/featureFlags';
+import { isCrispyKing } from '../../src/config/deployment';
 
 function FeatureDisabledNotice({ featureName }: { featureName: string }) {
     const router = useRouter();
@@ -88,7 +89,21 @@ export default function AdminShellLayout() {
         return <AuthGateLoading message="Redirecting..." />;
     }
 
-    const currentTitle = [...AGRIBUSINESS_MENU, ...CRISPY_KING_OPERATIONS, ...FRANCHISE_MENU, ...LENDING_MENU, ...MAIN_MENU, ...ADMIN_MENU, ...DAILY_REPORTS, ...WEEKLY_REPORTS, ...MONTHLY_REPORTS, ...COOPERATIVE_REPORTS, ...FINANCIALS_MENU, ...ACCOUNTING_MENU, ...BOOKS_OF_ACCOUNTS_MENU, ...SUPPORT_MENU]
+    const currentTitle = [
+        ...AGRIBUSINESS_MENU,
+        ...(isCrispyKing() ? [...CRISPY_KING_OPERATIONS, ...FRANCHISE_MENU] : []),
+        ...LENDING_MENU,
+        ...MAIN_MENU,
+        ...ADMIN_MENU,
+        ...DAILY_REPORTS,
+        ...WEEKLY_REPORTS,
+        ...MONTHLY_REPORTS,
+        ...COOPERATIVE_REPORTS,
+        ...FINANCIALS_MENU,
+        ...ACCOUNTING_MENU,
+        ...BOOKS_OF_ACCOUNTS_MENU,
+        ...SUPPORT_MENU
+    ]
         .slice()
         .sort((a, b) => b.route.replace('/(admin)', '').length - a.route.replace('/(admin)', '').length)
         .find(item => pathname.replace('/(admin)', '').startsWith(item.route.replace('/(admin)', '')))?.label ?? COMPANY_NAME;

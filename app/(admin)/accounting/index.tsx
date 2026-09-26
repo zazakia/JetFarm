@@ -5,6 +5,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { ChartOfAccountsService } from '../../../src/services/ChartOfAccountsService';
 import { JournalEntryService } from '../../../src/services/JournalEntryService';
 import { AutoPostingService } from '../../../src/services/AutoPostingService';
+import { AgriFinanceAnalyticsService, AgriGLSummaryResult } from '../../../src/services/AgriFinanceAnalyticsService';
 import JournalEntry from '../../../src/database/models/JournalEntry';
 import { formatPHP } from '../../../src/utils/currency';
 import { format } from 'date-fns';
@@ -16,6 +17,7 @@ export default function AccountingDashboard() {
     const [refreshing, setRefreshing] = useState(false);
     const [isSyncing, setIsSyncing] = useState(false);
     const [recentEntries, setRecentEntries] = useState<JournalEntry[]>([]);
+    const [agriSummary, setAgriSummary] = useState<AgriGLSummaryResult | null>(null);
     
     const [summary, setSummary] = useState({
         assets: 0,
@@ -64,6 +66,9 @@ export default function AccountingDashboard() {
                 const expenses = await JournalEntryService.getTypeBalance('expense', now);
 
                 setSummary({ assets, liabilities, equity, income, expenses });
+
+                const agri = await AgriFinanceAnalyticsService.getAgriGeneralLedgerSummary();
+                setAgriSummary(agri);
 
                 const recent = await JournalEntryService.getEntries({ limit: 10 });
                 setRecentEntries(recent);
@@ -214,6 +219,87 @@ export default function AccountingDashboard() {
                     </View>
                 </View>
 
+                {/* Agribusiness Domain Performance (PAS 41) */}
+                <View className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm mb-6">
+                    <View className="flex-row justify-between items-center mb-4">
+                        <View className="flex-row items-center">
+                            <View className="w-8 h-8 rounded-xl bg-emerald-100 items-center justify-center mr-2.5">
+                                <MaterialIcons name="agriculture" size={18} color="#047857" />
+                            </View>
+                            <View>
+                                <Text className="text-gray-900 font-black text-md uppercase tracking-wider">Agribusiness Domain (PAS 41)</Text>
+                                <Text className="text-gray-500 text-[10px] font-bold">Biological Assets & Farm Ledger Operations</Text>
+                            </View>
+                        </View>
+                        <Pressable
+                            onPress={() => router.push('/(admin)/agribusiness/accounting')}
+                            className="bg-emerald-700 px-3 py-1.5 rounded-xl flex-row items-center active:bg-emerald-800"
+                        >
+                            <Text className="text-white text-xs font-bold mr-1">Farm Ledger</Text>
+                            <MaterialIcons name="arrow-forward" size={14} color="#FFFFFF" />
+                        </Pressable>
+                    </View>
+
+                    {/* Key Agri Ledger Metrics */}
+                    <View className="flex-row flex-wrap justify-between mb-4">
+                        <View className="w-[48%] bg-emerald-50/50 p-3.5 rounded-2xl border border-emerald-100 mb-3">
+                            <Text className="text-[10px] text-emerald-700 font-bold uppercase tracking-wider mb-1">Biological Assets</Text>
+                            <Text className="text-sm font-black text-emerald-900">
+                                {formatPHP(agriSummary?.biologicalAssetsValue ?? 0)}
+                            </Text>
+                            <Text className="text-[9px] text-gray-500 mt-0.5">Acct 1240 Standing Crops</Text>
+                        </View>
+
+                        <View className="w-[48%] bg-blue-50/50 p-3.5 rounded-2xl border border-blue-100 mb-3">
+                            <Text className="text-[10px] text-blue-700 font-bold uppercase tracking-wider mb-1">Harvest Revenue</Text>
+                            <Text className="text-sm font-black text-blue-900">
+                                {formatPHP(agriSummary?.totalRevenue ?? 0)}
+                            </Text>
+                            <Text className="text-[9px] text-gray-500 mt-0.5">Acct 4140 Crop Offtake</Text>
+                        </View>
+
+                        <View className="w-[48%] bg-amber-50/50 p-3.5 rounded-2xl border border-amber-100">
+                            <Text className="text-[10px] text-amber-700 font-bold uppercase tracking-wider mb-1">Direct Farm Costs</Text>
+                            <Text className="text-sm font-black text-amber-900">
+                                {formatPHP(agriSummary?.totalExpenses ?? 0)}
+                            </Text>
+                            <Text className="text-[9px] text-gray-500 mt-0.5">Land, Labor & Inputs</Text>
+                        </View>
+
+                        <View className="w-[48%] bg-purple-50/50 p-3.5 rounded-2xl border border-purple-100">
+                            <Text className="text-[10px] text-purple-700 font-bold uppercase tracking-wider mb-1">Net Farm Margin</Text>
+                            <Text className="text-sm font-black text-purple-900">
+                                {formatPHP(agriSummary?.netSurplus ?? 0)}
+                            </Text>
+                            <Text className="text-[9px] text-gray-500 mt-0.5">
+                                {agriSummary?.journalEntryCount ?? 0} GL farm entries
+                            </Text>
+                        </View>
+                    </View>
+
+                    {/* Breakdown sub-strip */}
+                    <View className="bg-gray-50 p-3 rounded-2xl border border-gray-100 flex-row justify-between">
+                        <View className="items-center flex-1 border-r border-gray-200">
+                            <Text className="text-[9px] text-gray-500 uppercase font-bold">Land Owner Share</Text>
+                            <Text className="text-xs font-black text-gray-800 mt-0.5">
+                                {formatPHP(agriSummary?.landOwnerSettlementCost ?? 0)}
+                            </Text>
+                        </View>
+                        <View className="items-center flex-1 border-r border-gray-200">
+                            <Text className="text-[9px] text-gray-500 uppercase font-bold">Field Labor</Text>
+                            <Text className="text-xs font-black text-gray-800 mt-0.5">
+                                {formatPHP(agriSummary?.laborCost ?? 0)}
+                            </Text>
+                        </View>
+                        <View className="items-center flex-1">
+                            <Text className="text-[9px] text-gray-500 uppercase font-bold">Farm Supplies</Text>
+                            <Text className="text-xs font-black text-gray-800 mt-0.5">
+                                {formatPHP(agriSummary?.farmInputExpenses ?? 0)}
+                            </Text>
+                        </View>
+                    </View>
+                </View>
+
                 {/* Books of Accounts Grid */}
                 <View className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm mb-6">
                     <Text className="text-gray-900 font-black text-md mb-1 uppercase tracking-wider">Books of Accounts</Text>
@@ -223,6 +309,7 @@ export default function AccountingDashboard() {
                         {[
                             { name: 'Cash Receipts', desc: 'CRJ Inflows', route: '/(admin)/accounting/crj', icon: 'receipt', color: '#047857', bg: 'bg-emerald-50' },
                             { name: 'Disbursements', desc: 'CDJ Outflows', route: '/(admin)/accounting/cdj', icon: 'outbox', color: '#B91C1C', bg: 'bg-red-50' },
+                            { name: 'Agri Farm Journal', desc: 'PAS 41 Farm Ledger', route: '/(admin)/agribusiness/accounting', icon: 'agriculture', color: '#047857', bg: 'bg-emerald-50' },
                             { name: 'AR Ledger', desc: 'Receivables & Aging', route: '/(admin)/accounting/ar-ledger', icon: 'people-alt', color: '#1E3A8A', bg: 'bg-blue-50' },
                             { name: 'AP Journal', desc: 'Payables & Vendors', route: '/(admin)/accounting/ap-journal', icon: 'payments', color: '#B45309', bg: 'bg-amber-50' },
                             { name: 'Sales Journal', desc: 'Credit Sales (SJ)', route: '/(admin)/accounting/sales-journal', icon: 'store', color: '#4338CA', bg: 'bg-indigo-50' },

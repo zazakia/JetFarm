@@ -18,7 +18,7 @@ function loadEnvFile(filePath) {
 
 loadEnvFile(path.join(process.cwd(), '.env.local'));
 
-const SUPABASE_URL = 'http://127.0.0.1:45421';
+const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL || 'http://127.0.0.1:46421';
 const ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '';
 
 async function testEndpoint(tableName) {

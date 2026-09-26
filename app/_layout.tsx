@@ -55,8 +55,8 @@ function AppShell({ children }: { children: React.ReactNode }) {
         void SettingsService.ensureDefaults()
             .then(async () => {
                 try {
-                    const name = await SettingsService.getAppSetting('brand.company_name', 'JetFarm');
-                    const fullName = await SettingsService.getAppSetting('brand.company_name_full', 'JetFarm');
+                    const name = await SettingsService.getAppSetting('brand.company_name', 'Agri-One');
+                    const fullName = await SettingsService.getAppSetting('brand.company_name_full', 'Agri-One');
                     const logo = await SettingsService.getAppSetting('brand.logo_base64', '');
 
                     const { setBrandData } = require('../src/constants/brand');

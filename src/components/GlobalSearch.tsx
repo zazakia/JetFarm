@@ -5,6 +5,7 @@ import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import Borrower from '../database/models/Borrower';
 import BaseModelService from '../services/BaseModelService';
 import {
+    AGRIBUSINESS_MENU,
     CRISPY_KING_OPERATIONS,
     FRANCHISE_MENU,
     LENDING_MENU,
@@ -19,6 +20,7 @@ import {
     BOOKS_OF_ACCOUNTS_MENU,
     SUPPORT_MENU
 } from './SidebarContent';
+import { isCrispyKing } from '../config/deployment';
 
 type SearchResultItem = {
     id: string;
@@ -38,8 +40,8 @@ export const GlobalSearch = ({ onNavigate }: { onNavigate?: () => void }) => {
 
     // All available menus to search from
     const allMenus = [
-        ...CRISPY_KING_OPERATIONS,
-        ...FRANCHISE_MENU,
+        ...AGRIBUSINESS_MENU,
+        ...(isCrispyKing() ? [...CRISPY_KING_OPERATIONS, ...FRANCHISE_MENU] : []),
         ...LENDING_MENU,
         ...MAIN_MENU,
         ...ADMIN_MENU,

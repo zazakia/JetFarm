@@ -8,6 +8,7 @@ import AgriLaborLog from '../../../src/database/models/AgriLaborLog';
 import AgriCropCycle from '../../../src/database/models/AgriCropCycle';
 import { formatPHP } from '../../../src/utils/currency';
 import { Q } from '@nozbe/watermelondb';
+import { AutoPostingService } from '../../../src/services/AutoPostingService';
 
 export default function FarmLaborScreen() {
     const router = useRouter();
@@ -184,8 +185,31 @@ export default function FarmLaborScreen() {
                     r.paymentStatus = 'paid';
                 });
             });
+
+            // Post to General Ledger
+            try {
+                let wName = '';
+                try {
+                    const worker = await database.get<AgriFarmWorker>('agri_farm_workers').find(log.workerId);
+                    wName = worker.name;
+                } catch {}
+
+                await AutoPostingService.postAgriLaborLog({
+                    laborLogId: log.id,
+                    workerName: wName,
+                    task: log.task,
+                    totalPay: log.totalPay,
+                    paymentStatus: 'paid',
+                    workDate: new Date(),
+                    cropCycleId: log.cropCycleId,
+                    postedBy: 'Operator',
+                });
+            } catch (postErr) {
+                console.warn('[FarmLabor] Auto-post labor log warning:', postErr);
+            }
+
             loadData();
-            Alert.alert('Success', 'Labor payment marked as paid.');
+            Alert.alert('Success', 'Labor payment marked as paid and posted to General Ledger.');
         } catch (err: any) {
             Alert.alert('Error', err?.message || 'Failed to update status');
         }

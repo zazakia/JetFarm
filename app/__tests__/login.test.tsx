@@ -112,7 +112,9 @@ describe('LoginScreen', () => {
             expect(AuthService.getQuickLoginUsers).toHaveBeenCalled();
         });
 
-        expect(screen.getByText(/POS Cursor CSCC is likened to the rays of the sun/i)).toBeTruthy();
+        expect(screen.getByText(/Agribusiness & Plantation Operations Management/i)).toBeTruthy();
+        expect(screen.getByText(/Core Agribusiness Modules/i)).toBeTruthy();
+        expect(screen.getByText(/Crop Cycle & Agronomy Planning/i)).toBeTruthy();
         expect(screen.getByText(/Our Mission/i)).toBeTruthy();
         expect(screen.getByText(/Our Goals/i)).toBeTruthy();
         expect(screen.getByText(/Offline-ready/i)).toBeTruthy();

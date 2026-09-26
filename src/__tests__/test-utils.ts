@@ -62,6 +62,28 @@ import RoyaltyCalculation from '../database/models/RoyaltyCalculation';
 import PayrollRun from '../database/models/PayrollRun';
 import PayrollLine from '../database/models/PayrollLine';
 import StatutoryRate from '../database/models/StatutoryRate';
+import Branch from '../database/models/Branch';
+import Warehouse from '../database/models/Warehouse';
+import UserBranchRole from '../database/models/UserBranchRole';
+import SalesReturn from '../database/models/SalesReturn';
+import SalesReturnLine from '../database/models/SalesReturnLine';
+import PosSession from '../database/models/PosSession';
+import FranchiseContract from '../database/models/FranchiseContract';
+import StoreAudit from '../database/models/StoreAudit';
+import DeviceRegistry from '../database/models/DeviceRegistry';
+import EmployeeLeave from '../database/models/EmployeeLeave';
+import FranchiseRoyaltyLedger from '../database/models/FranchiseRoyaltyLedger';
+import AgriParcel from '../database/models/AgriParcel';
+import AgriLandOwner from '../database/models/AgriLandOwner';
+import AgriInvestor from '../database/models/AgriInvestor';
+import AgriCropCycle from '../database/models/AgriCropCycle';
+import AgriGrowthCheckin from '../database/models/AgriGrowthCheckin';
+import AgriHarvestLog from '../database/models/AgriHarvestLog';
+import AgriFarmExpense from '../database/models/AgriFarmExpense';
+import AgriFarmWorker from '../database/models/AgriFarmWorker';
+import AgriLaborLog from '../database/models/AgriLaborLog';
+import AgriWeeklySettlement from '../database/models/AgriWeeklySettlement';
+import AgriInvestorLedger from '../database/models/AgriInvestorLedger';
 
 export const modelClasses = [
     UserProfile,
@@ -124,6 +146,28 @@ export const modelClasses = [
     PayrollRun,
     PayrollLine,
     StatutoryRate,
+    Branch,
+    Warehouse,
+    UserBranchRole,
+    SalesReturn,
+    SalesReturnLine,
+    PosSession,
+    FranchiseContract,
+    StoreAudit,
+    DeviceRegistry,
+    EmployeeLeave,
+    FranchiseRoyaltyLedger,
+    AgriParcel,
+    AgriLandOwner,
+    AgriInvestor,
+    AgriCropCycle,
+    AgriGrowthCheckin,
+    AgriHarvestLog,
+    AgriFarmExpense,
+    AgriFarmWorker,
+    AgriLaborLog,
+    AgriWeeklySettlement,
+    AgriInvestorLedger,
 ];
 
 export function createTestLokiAdapter(schema = mySchema) {

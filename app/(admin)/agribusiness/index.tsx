@@ -225,6 +225,7 @@ export default function AgribusinessDashboard() {
                     { label: 'BioGreen Investor', route: '/(admin)/agribusiness/investors', icon: 'business-center', desc: 'Capital & off-take ledger', color: 'bg-indigo-600' },
                     { label: 'Farm Labor', route: '/(admin)/agribusiness/labor', icon: 'engineering', desc: 'Worker registry & tasks', color: 'bg-cyan-700' },
                     { label: 'Farm Expenses', route: '/(admin)/agribusiness/expenses', icon: 'receipt-long', desc: 'Fertilizer, tractor, seed costs', color: 'bg-rose-600' },
+                    { label: 'Farm Accounting & GL', route: '/(admin)/agribusiness/accounting', icon: 'account-balance', desc: 'Double-entry books & P&L', color: 'bg-emerald-800' },
                     { label: 'Cycle P&L & Forecast', route: '/(admin)/agribusiness/analytics', icon: 'insights', desc: 'Margins, cost/ha, cost/kg', color: 'bg-purple-600' },
                 ].map((item, idx) => (
                     <Pressable

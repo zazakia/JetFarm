@@ -868,30 +868,21 @@ export default function AdminDashboardScreen() {
                         showsHorizontalScrollIndicator={false}
                         contentContainerStyle={{ paddingRight: 24, paddingBottom: 20 }}
                     >
-                        {/* Crispy King Priority Actions */}
-                        <QuickActionBtn onPress={() => router.push('/(cashier)/pos' as any)} icon="point-of-sale" label="Touch POS" bg="bg-emerald-700" fg="#FFF" />
-                        <QuickActionBtn onPress={() => router.push('/(cashier)' as any)} icon="store" label="POS Register" bg="bg-emerald-800" fg="#FFF" />
-                        <QuickActionBtn onPress={() => router.push('/(admin)/returns' as any)} icon="assignment-return" label="Sales Returns" bg="bg-teal-700" fg="#FFF" />
-                        <QuickActionBtn onPress={() => router.push('/(branch-manager)/receiving' as any)} icon="move-to-inbox" label="Receiving" bg="bg-blue-800" fg="#FFF" />
-                        <QuickActionBtn onPress={() => router.push('/(branch-manager)/waste-log' as any)} icon="delete-sweep" label="Spoilage / BO" bg="bg-rose-700" fg="#FFF" />
-                        <QuickActionBtn onPress={() => router.push('/(branch-manager)/msr' as any)} icon="summarize" label="Digital MSR" bg="bg-indigo-700" fg="#FFF" />
-                        <QuickActionBtn onPress={() => router.push('/(admin)/franchise' as any)} icon="handshake" label="Franchise CRM" bg="bg-purple-800" fg="#FFF" />
+                        {/* Agribusiness Quick Actions */}
+                        <QuickActionBtn onPress={() => router.push('/(admin)/agribusiness' as any)} icon="eco" label="Command Center" bg="bg-green-700" fg="#FFF" />
+                        <QuickActionBtn onPress={() => router.push('/(admin)/agribusiness/harvest' as any)} icon="scale" label="Harvest" bg="bg-lime-700" fg="#FFF" />
+                        <QuickActionBtn onPress={() => router.push('/(admin)/agribusiness/cycles' as any)} icon="grass" label="Crop Cycles" bg="bg-emerald-700" fg="#FFF" />
+                        <QuickActionBtn onPress={() => router.push('/(admin)/agribusiness/parcels' as any)} icon="landscape" label="Parcels" bg="bg-teal-700" fg="#FFF" />
+                        <QuickActionBtn onPress={() => router.push('/(admin)/agribusiness/settlements' as any)} icon="receipt-long" label="Settlements" bg="bg-green-800" fg="#FFF" />
+                        <QuickActionBtn onPress={() => router.push('/(admin)/agribusiness/investors' as any)} icon="attach-money" label="Investors" bg="bg-emerald-800" fg="#FFF" />
+                        <QuickActionBtn onPress={() => router.push('/(admin)/agribusiness/labor' as any)} icon="engineering" label="Labor" bg="bg-lime-800" fg="#FFF" />
+                        <QuickActionBtn onPress={() => router.push('/(admin)/agribusiness/analytics' as any)} icon="insights" label="Analytics" bg="bg-teal-800" fg="#FFF" />
 
-                        {/* General Accounting & Management */}
+                        {/* General Management */}
                         <QuickActionBtn onPress={() => router.push('/(admin)/accounting')} icon="menu-book" label="Accounting" bg="bg-blue-900" fg="#FFF" />
                         <QuickActionBtn onPress={() => router.push('/(admin)/cash-on-hand')} icon="account-balance-wallet" label="Cash Vault" bg="bg-amber-700" fg="#FFF" />
                         <QuickActionBtn onPress={() => router.push('/(admin)/cash-on-hand/petty-cash' as any)} icon="money" label="Petty Cash" bg="bg-teal-800" fg="#FFF" />
                         <QuickActionBtn onPress={() => router.push('/(admin)/reports/financial-summary')} icon="assessment" label="Financial Summary" bg="bg-emerald-600" fg="#FFF" />
-
-                        {/* Lending System Domain */}
-                        {isLendingEnabled && (
-                            <>
-                                <QuickActionBtn onPress={() => router.push('/(admin)/loans/new')} icon="add-circle" label="New Loan" bg="bg-blue-600" fg="#FFF" />
-                                <QuickActionBtn onPress={() => router.push('/(admin)/borrowers')} icon="person-add" label="New Borrower" bg="bg-white" fg="#2563EB" />
-                                <QuickActionBtn onPress={() => router.push('/(admin)/payments')} icon="payments" label="Record Payment" bg="bg-white" fg="#355E3B" />
-                                <QuickActionBtn onPress={() => router.push('/(admin)/remittances')} icon="account-balance" label="Review Remits" bg="bg-slate-800" fg="#FFF" />
-                            </>
-                        )}
                         <QuickActionBtn onPress={() => router.push('/(admin)/expenses')} icon="receipt-long" label="Add Expense" bg="bg-white" fg="#9333EA" />
                         <QuickActionBtn onPress={() => router.push('/(admin)/payroll')} icon="monetization-on" label="Run Payroll" bg="bg-white" fg="#1E3A8A" />
                     </ScrollView>
