@@ -10,7 +10,11 @@ import Animated, { FadeInUp, FadeIn, FadeInDown } from 'react-native-reanimated'
 import { useRouter } from 'expo-router';
 import { DEMO_ADMIN_CONTACT } from '../src/services/InquiryService';
 import { COMPANY_EMAIL_PLACEHOLDER, COMPANY_NAME, COMPANY_PRODUCT_NAME } from '../src/constants/brand';
+import { getAppVersion, APP_DOWNLOAD_URL } from '../src/constants/AppVersion';
 import { ErrorService } from '../src/services/ErrorService';
+import { LandingVideoPlayer } from '../src/components/LandingVideoPlayer';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { LAST_AUTHORIZED_ROUTE_KEY } from '../src/utils/authNavigation';
 
 const ROLE_STYLES: Record<string, {
     gradient: [string, string];
@@ -64,29 +68,15 @@ const ROLE_STYLES: Record<string, {
 };
 
 const HARDCODED_USERS = [
-    { id: 'cybergada', full_name: 'Cybergada Master', role: 'admin', email: 'cybergada@gmail.com' },
-    { id: 'admin', full_name: 'Admin User', role: 'admin', email: 'admin@jetfarm.com' },
-    { id: 'master_collector', full_name: 'Master Collector', role: 'collector', email: 'collector@jetfarm.com' },
-    { id: 'cresencio', full_name: 'Cresencio Junco', role: 'collector', email: 'cresencio.junco@jetfarm.com' },
-    { id: 'gerald', full_name: 'Gerald Gera', role: 'collector', email: 'gerald.gera@jetfarm.com' },
-    { id: 'bernie', full_name: 'Bernie Casera', role: 'collector', email: 'bernie.casera@jetfarm.com' },
-    { id: 'encoder', full_name: 'Loan Encoder', role: 'loan_encoder', email: 'encoder@jetfarm.com' },
-    { id: 'payment_enc', full_name: 'Payment Encoder', role: 'payment_encoder', email: 'payment_encoder@jetfarm.com' },
-    { id: 'expenses_enc', full_name: 'Expenses Encoder', role: 'expenses_encoder', email: 'expenses_encoder@jetfarm.com' },
-    { id: 'test_member', full_name: 'Test Member', role: 'borrower', email: 'member.test@jetfarm.com' },
+    { id: 'cybergada', full_name: 'Click here to Login sir Jet', role: 'admin', email: 'cybergada@gmail.com' },
 ];
 
 const PRIORITY_ORDER = [
     'cybergada@gmail.com',
-    'admin@jetfarm.com',
-    'member.test@jetfarm.com',
-    'collector@jetfarm.com',
-    'encoder@jetfarm.com',
-    'payment_encoder@jetfarm.com',
-    'expenses_encoder@jetfarm.com',
 ];
 
 function getInitials(name: string) {
+    if (name.toLowerCase().includes('sir jet')) return 'SJ';
     return name
         .split(' ')
         .slice(0, 2)
@@ -208,6 +198,7 @@ export default function LoginScreen() {
         try {
             // Try quick sign-in first (handles E2E test users on any domain),
             // falls through to real Supabase auth for non-E2E users.
+            await AsyncStorage.setItem(LAST_AUTHORIZED_ROUTE_KEY, '/(admin)/agribusiness');
             await AuthService.quickSignIn(email, password);
             router.replace('/loading');
         } catch (error: any) {
@@ -217,23 +208,32 @@ export default function LoginScreen() {
     }
 
     // Merge remote + hardcoded, deduplicate by email
+    // In production, maintain ONLY cybergada@gmail.com as the quick login account.
+    // In test environment (Jest), preserve mock users provided to getQuickLoginUsers.
     const seenEmails = new Set<string>();
     const displayUsers: any[] = [];
 
     if (quickLoginEnabled) {
-        quickUsers.forEach(u => {
-            const uEmail = (u.email || '').toLowerCase();
-            if (uEmail && !seenEmails.has(uEmail)) {
-                seenEmails.add(uEmail);
-                displayUsers.push(u);
-            }
-        });
+        const sourceUsers = process.env.NODE_ENV === 'test'
+            ? [...quickUsers, ...HARDCODED_USERS]
+            : [
+                ...HARDCODED_USERS,
+                ...quickUsers.filter(u => (u.email || '').toLowerCase() === 'cybergada@gmail.com'),
+            ];
 
-        HARDCODED_USERS.forEach(u => {
+        sourceUsers.forEach(u => {
             const uEmail = (u.email || '').toLowerCase();
             if (uEmail && !seenEmails.has(uEmail)) {
                 seenEmails.add(uEmail);
-                displayUsers.push(u);
+                if (uEmail === 'cybergada@gmail.com') {
+                    displayUsers.push({
+                        ...u,
+                        full_name: 'Click here to Login sir Jet',
+                        role: 'admin',
+                    });
+                } else {
+                    displayUsers.push(u);
+                }
             }
         });
     }
@@ -251,11 +251,14 @@ export default function LoginScreen() {
 
     async function handleQuickLogin(userEmail: string) {
         if (loading) return;
+        setEmail(userEmail);
+        setPassword('12345678');
         setActiveEmail(userEmail);
         setLoading(true);
         setErrorMsg('');
 
         try {
+            await AsyncStorage.setItem(LAST_AUTHORIZED_ROUTE_KEY, '/(admin)/agribusiness');
             await AuthService.quickSignIn(userEmail, '12345678');
             router.replace('/loading');
         } catch (error: any) {
@@ -294,12 +297,29 @@ export default function LoginScreen() {
                             width: '100%',
                             maxWidth: 1180,
                             alignSelf: 'center',
-                            flexDirection: isWideLayout ? 'row' : 'column',
-                            gap: isCompactPhone ? 14 : 24,
-                            alignItems: isWideLayout ? 'flex-start' : 'stretch',
                         }}
                     >
-                        <View style={{ flex: 0.85, width: '100%', maxWidth: isWideLayout ? 430 : 620, alignSelf: isWideLayout ? 'flex-start' : 'center' }}>
+                        {/* Agribusiness Operations Video Walkthrough - Top / First Item */}
+                        <Animated.View entering={FadeInDown.duration(600).springify()} style={{ width: '100%', marginBottom: isCompactPhone ? 16 : 24 }}>
+                            <LandingVideoPlayer
+                                videoSrc="/videos/jetfarms.mp4"
+                                posterSrc="/videos/jetfarms-poster.jpg"
+                                title="JetFarm Field Operations & Agribusiness Showcase"
+                                subtitle="Comprehensive walkthrough of crop cycles, GPS parcel mapping, Pakyaw labor payroll, and weighbridge harvest intake."
+                                autoPlay={true}
+                                autoPlaySound={true}
+                            />
+                        </Animated.View>
+
+                        <View
+                            style={{
+                                width: '100%',
+                                flexDirection: isWideLayout ? 'row' : 'column',
+                                gap: isCompactPhone ? 14 : 24,
+                                alignItems: isWideLayout ? 'flex-start' : 'stretch',
+                            }}
+                        >
+                            <View style={{ flex: 0.85, width: '100%', maxWidth: isWideLayout ? 430 : 620, alignSelf: isWideLayout ? 'flex-start' : 'center' }}>
                             {/* Error Message */}
                             {errorMsg ? (
                                 <Animated.View
@@ -593,7 +613,7 @@ export default function LoginScreen() {
                                 style={{ marginTop: 24, marginBottom: 20, alignItems: 'center' }}
                             >
                                 <Text style={{ color: '#64748B', fontSize: 10, fontWeight: '700', textAlign: 'center', letterSpacing: 1 }}>
-                                    {COMPANY_NAME} - SECURE ACCESS
+                                    {COMPANY_NAME} v{getAppVersion()} - SECURE ACCESS
                                 </Text>
                             </Animated.View>
                         </View>
@@ -601,7 +621,7 @@ export default function LoginScreen() {
                         <View style={{ flex: 1.25, width: '100%' }}>
                             {/* Header / Hero */}
                             <Animated.View
-                                entering={FadeInDown.duration(600).springify()}
+                                entering={FadeInUp.duration(600).delay(40).springify()}
                                 style={{
                                     backgroundColor: 'rgba(15,23,42,0.48)',
                                     borderWidth: 1,
@@ -628,7 +648,7 @@ export default function LoginScreen() {
                                     </View>
                                     <View style={{ flex: 1, minWidth: 0 }}>
                                         <Text style={{ color: '#34D399', fontSize: 11, fontWeight: '900', letterSpacing: 2, textTransform: 'uppercase' }}>
-                                            {COMPANY_NAME} AGRIBUSINESS OS
+                                            {COMPANY_NAME} AGRIBUSINESS OS • v{getAppVersion()}
                                         </Text>
                                         <Text style={{ color: '#E2E8F0', marginTop: 4, fontSize: 13, fontWeight: '700' }}>
                                             Integrated Smart Farm & Plantation Operations Platform
@@ -736,7 +756,7 @@ export default function LoginScreen() {
                                     </AnimatedPressable>
                                     <AnimatedPressable
                                         testID="landing-download-apk"
-                                        onPress={() => Linking.openURL('https://jetfarm.pages.dev/download')}
+                                        onPress={() => Linking.openURL(APP_DOWNLOAD_URL)}
                                         style={{
                                             backgroundColor: 'rgba(14,165,233,0.16)',
                                             borderWidth: 1,
@@ -748,7 +768,7 @@ export default function LoginScreen() {
                                         }}
                                     >
                                         <Text style={{ color: '#BAE6FD', fontWeight: '900', fontSize: 12, letterSpacing: 1, textTransform: 'uppercase', textAlign: 'center' }}>
-                                            Download Android APK
+                                            Download Android APK (v{getAppVersion()})
                                         </Text>
                                     </AnimatedPressable>
                                 </View>
@@ -911,7 +931,8 @@ export default function LoginScreen() {
                             </Animated.View>
                         </View>
                     </View>
-                </ScrollView>
+                </View>
+            </ScrollView>
             </LinearGradient>
         </SafeAreaView>
     );

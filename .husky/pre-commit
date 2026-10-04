@@ -1,0 +1,3 @@
+# Fast local gates on staged files (eslint + clean-root/env policy).
+# tsc + targeted Jest run at pre-push. See scripts/changed-files-gate.mjs
+node scripts/changed-files-gate.mjs --run=pre-commit

@@ -1,0 +1,3 @@
+# Pre-push gates: eslint + tsc --noEmit + jest --findRelatedTests on the pushed range.
+# See scripts/changed-files-gate.mjs (docs/AI-ASSISTED-DEV-WORKFLOW-PLAN.md §4)
+node scripts/changed-files-gate.mjs --run=pre-push

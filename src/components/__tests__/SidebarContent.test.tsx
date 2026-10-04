@@ -89,4 +89,10 @@ describe('SidebarContent', () => {
         expect(labels).toContain('Farm Input Expenses');
         expect(labels).toContain('P&L & Yield Analytics');
     });
+
+    it('renders the Take Guided Tour button in the sidebar', () => {
+        const { getByTestId, getByText } = render(<SidebarContent />);
+        expect(getByTestId('sidebar-start-tour-button')).toBeTruthy();
+        expect(getByText('Take Guided Tour')).toBeTruthy();
+    });
 });

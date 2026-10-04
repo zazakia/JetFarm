@@ -1,6 +1,11 @@
 import { test, expect } from '@playwright/test';
 import path from 'path';
-import { loginAsAdmin, expectLoginScreen } from './playwright-auth';
+import { loginAsAdmin, expectLoginScreen, safeNavigate } from './playwright-auth';
+import { LENDING_E2E_ENABLED, LENDING_SKIP_REASON } from './lending-gate';
+
+// Loan management ships dark (system.lending=false): every screen below is feature-gated.
+// Re-run with E2E_LENDING=1 against a profile that enables the flag.
+test.beforeEach(() => test.skip(!LENDING_E2E_ENABLED, LENDING_SKIP_REASON));
 
 const SCREENSHOT_DIR = './test-results/screenshots';
 
@@ -35,10 +40,8 @@ test.describe('Data Management System - Visual Verification', () => {
     await loginAsAdmin(page);
     await page.screenshot({ path: `${SCREENSHOT_DIR}/02_admin_dashboard.png` });
 
-    // Navigate to Members
-    await page.getByText('Members', { exact: false }).first().click();
-
-    // The search bar placeholder in BorrowersListScreen is "Search name, phone, or address..."
+    // Navigate to Members (sidebar section removed — use direct route)
+    await safeNavigate(page, '/(admin)/borrowers');
     await expect(page.getByPlaceholder('Search name, phone, or address...')).toBeVisible({ timeout: 30000 });
     await page.screenshot({ path: `${SCREENSHOT_DIR}/03_borrowers_list.png` });
 
@@ -50,7 +53,7 @@ test.describe('Data Management System - Visual Verification', () => {
     await loginAsAdmin(page);
 
     // Navigate to members
-    await page.getByText('Members', { exact: false }).first().click();
+    await safeNavigate(page, '/(admin)/borrowers');
     await expect(page.getByPlaceholder('Search name, phone, or address...')).toBeVisible({ timeout: 30000 });
 
     // Verify at least one borrower name is visible (not empty list)
@@ -110,7 +113,7 @@ test.describe('Data Management System - Visual Verification', () => {
     await loginAsAdmin(page);
 
     // 2. Navigate to members
-    await page.getByText('Members', { exact: false }).first().click();
+    await safeNavigate(page, '/(admin)/borrowers');
     await expect(page.getByPlaceholder('Search name, phone, or address...')).toBeVisible({ timeout: 30000 });
 
     const emptyState = page.getByText('No borrowers found');

@@ -1,9 +1,14 @@
 import { test, expect } from '@playwright/test';
 import { loginWithCredentials } from './playwright-auth';
+import { LENDING_E2E_ENABLED, LENDING_SKIP_REASON } from './lending-gate';
+
+// Loan management ships dark (system.lending=false): every screen below is feature-gated.
+// Re-run with E2E_LENDING=1 against a profile that enables the flag.
+test.beforeEach(() => test.skip(!LENDING_E2E_ENABLED, LENDING_SKIP_REASON));
 
 test.describe('Collector Module E2E', () => {
   async function loginCollector(page: any) {
-    await loginWithCredentials(page, 'cresencio.junco@poscursor.com');
+    await loginWithCredentials(page, 'cresencio.junco@jetfarm.com');
     await expect(page.getByText('Collector Portal', { exact: false }).first()).toBeVisible({ timeout: 60000 });
   }
 

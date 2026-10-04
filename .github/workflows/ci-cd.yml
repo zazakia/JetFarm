@@ -27,6 +27,8 @@ jobs:
         run: node scripts/check-auth-schema.mjs
       - name: TypeScript Check
         run: npx tsc --noEmit
+      - name: CRUD + Persistence Contract Check
+        run: node scripts/audit-crud-persistence.mjs --fail-on-high
 
   unit-tests:
     name: 2. Jest Unit & Integration Suite

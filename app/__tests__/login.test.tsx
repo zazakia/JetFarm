@@ -241,6 +241,17 @@ describe('LoginScreen', () => {
         expect(mockReplace).toHaveBeenCalledWith('/loading');
     });
 
+    it('displays "Click here to Login sir Jet" with admin role for cybergada@gmail.com', async () => {
+        (AuthService.getQuickLoginUsers as jest.Mock).mockResolvedValue([]);
+
+        render(<LoginScreen />);
+
+        expect(await screen.findByText('Click here to Login sir Jet')).toBeTruthy();
+        expect(screen.getByText('cybergada@gmail.com')).toBeTruthy();
+        expect(screen.getAllByText(/admin/i).length).toBeGreaterThan(0);
+        expect(screen.queryByText('admin@jetfarm.com')).toBeNull();
+    });
+
     it('handles quick login failure', async () => {
         const mockUsers = [{ id: 'mock-admin-fail', full_name: 'Admin User', role: 'admin', email: 'admin@poscursor.com' }];
         (AuthService.getQuickLoginUsers as jest.Mock).mockResolvedValue(mockUsers);

@@ -1,4 +1,5 @@
 import { getFeatureKeyForRoute } from '../featureFlags';
+import { DEFAULT_FEATURE_FLAGS } from '../../constants/configDefaults';
 
 describe('getFeatureKeyForRoute', () => {
     it('returns null for un-gated routes', () => {
@@ -28,5 +29,23 @@ describe('getFeatureKeyForRoute', () => {
         expect(getFeatureKeyForRoute('/(admin)/modules/agri-store')?.featureKey).toBe('feature.modules.agri_store.enabled');
         expect(getFeatureKeyForRoute('/(admin)/modules/pharmacy')?.featureKey).toBe('feature.modules.pharmacy.enabled');
         expect(getFeatureKeyForRoute('/(admin)/modules/transport')?.featureKey).toBe('feature.modules.transport.enabled');
+    });
+});
+
+describe('default feature flag posture', () => {
+    // Guard: loan management ships dark. If someone flips the master switch back on,
+    // every lending E2E spec and the FeatureDisabledNotice coverage needs revisiting.
+    it('ships the system.lending master switch disabled', () => {
+        const lending = DEFAULT_FEATURE_FLAGS.find(f => f.key === 'system.lending');
+        expect(lending).toBeDefined();
+        expect(lending!.enabled).toBe(false);
+    });
+
+    it('keeps non-lending modules enabled by default', () => {
+        const enabledKeys = DEFAULT_FEATURE_FLAGS.filter(f => f.enabled).map(f => f.key);
+        expect(enabledKeys).toContain('module.accounting');
+        expect(enabledKeys).toContain('module.reports');
+        expect(enabledKeys).not.toContain('system.lending');
+        expect(enabledKeys).not.toContain('module.file_cases');
     });
 });

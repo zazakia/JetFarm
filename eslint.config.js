@@ -32,6 +32,27 @@ module.exports = defineConfig([
     },
   },
   {
+    files: ["scripts/**", "*.config.js", "*.config.ts"],
+    // Node-only tooling: browser/RN globals assumptions from the Expo preset
+    // do not apply (Buffer, process, fs APIs, dynamic require paths).
+    languageOptions: {
+      globals: {
+        Buffer: "readonly",
+        process: "readonly",
+        console: "readonly",
+        __dirname: "readonly",
+        require: "readonly",
+        module: "writable",
+        exports: "writable",
+        URL: "readonly",
+        fetch: "readonly",
+      },
+    },
+    rules: {
+      "no-undef": "warn",
+    },
+  },
+  {
     files: ["**/__tests__/**", "**/*.test.ts", "**/*.test.tsx"],
     rules: {
       "@typescript-eslint/no-require-imports": "off",

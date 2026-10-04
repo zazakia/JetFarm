@@ -15,8 +15,8 @@ test.describe('New User Verification', () => {
     // Click the login button
     await page.getByText(/SIGN IN/i).first().click();
 
-    // Verification: Wait for the dashboard to load (assuming Admin role)
-    await expect(page.getByText(/Admin Portal/i)).toBeVisible({ timeout: 60000 });
+    // Verification: Wait for the agribusiness admin dashboard to load
+    await expect(page.getByTestId('admin-portal-title')).toBeVisible({ timeout: 60000 });
     
     console.log('Login successful for cybergada@gmail.com');
   });

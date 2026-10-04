@@ -48,13 +48,13 @@ export const ROLE_COLORS: Record<UserRole, string> = {
 };
 
 export const ROLE_HOME_ROUTES: Record<UserRole, string> = {
-    admin: '/(admin)',
+    admin: '/(admin)/agribusiness',
     collector: '/(collector)',
     loan_encoder: '/(loan-encoder)',
     payment_encoder: '/(payment-encoder)',
     expenses_encoder: '/(expenses-encoder)',
     borrower: '/(borrower)',
-    main_office: '/(admin)',
+    main_office: '/(admin)/agribusiness',
     branch_cashier: '/(cashier)',
     branch_manager: '/(branch-manager)',
     area_supervisor: '/(area-supervisor)',

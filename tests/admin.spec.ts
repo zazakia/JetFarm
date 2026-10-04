@@ -7,21 +7,17 @@ test.describe('Admin Module E2E', () => {
     await loginAsAdmin(page);
   });
 
-  test('should display admin dashboard with Admin Portal heading', async ({ page }) => {
+  test('should display agribusiness admin dashboard with JetFarm Agribusiness heading', async ({ page }) => {
     await expect(page.getByTestId('admin-portal-title')).toBeVisible();
+    await expect(page.getByText(/Agribusiness Dashboard|Operator Command Center/i).first()).toBeVisible();
   });
 
-  test('should display KPI stat cards', async ({ page }) => {
+  test('should display agribusiness KPI stat cards', async ({ page }) => {
     const kpis = [
-      'Active Loans',
-      'Outstanding',
-      'Total Disbursed',
-      'Collected Today',
-      'This Month',
-      'Cash on Hand',
-      'Cash on Bank',
-      'Petty Cash',
-      'Members',
+      'Managed Land',
+      'Active Cycles',
+      'Total Harvest',
+      'Settlements Paid',
     ];
 
     for (const kpi of kpis) {
@@ -29,13 +25,15 @@ test.describe('Admin Module E2E', () => {
     }
   });
 
-  test('should display quick action buttons', async ({ page }) => {
+  test('should display quick operational hub buttons', async ({ page }) => {
     const actions = [
-      'New Loan',
-      'New Borrower',
-      'Record Payment',
-      'Add Expense',
-      'Cash Vault',
+      'Weigh-in Scale',
+      'Weekly Settlements',
+      'Land Parcels',
+      'GPS Mapping',
+      'Planting Cycles',
+      'Farm Labor',
+      'Farm Expenses',
     ];
 
     for (const action of actions) {
@@ -43,27 +41,13 @@ test.describe('Admin Module E2E', () => {
     }
   });
 
-  test('should navigate to Borrowers when clicking New Borrower', async ({ page }) => {
-    // Use regex for case-insensitive and match only visible elements
-    await page.getByText(/New Borrower/i).first().click({ force: true });
-    await expect(page).toHaveURL(/.*borrowers.*/, { timeout: 30000 });
+  test('should navigate to Land Parcels when clicking Land Parcels', async ({ page }) => {
+    await page.getByText(/Land Parcels/i).first().click({ force: true });
+    await expect(page).toHaveURL(/.*parcels.*/, { timeout: 30000 });
   });
 
-  test('should navigate to Loans when clicking New Loan', async ({ page }) => {
-    await page.getByText(/New Loan/i).first().click({ force: true });
-    await expect(page).toHaveURL(/.*loans.*/, { timeout: 30000 });
-  });
-
-  test('should show Sync status in header', async ({ page }) => {
-    // Scroll to top to ensure the header (which contains SyncStatusIndicator) is visible
-    await page.evaluate(() => window.scrollTo(0, 0));
-    // Use testID for more stable identification
-    const syncIndicator = page.getByTestId('sync-status-indicator').first();
-    await expect(syncIndicator).toBeVisible({ timeout: 45000 });
-    
-    // Also verify it contains some relevant text
-    const text = await syncIndicator.innerText();
-    expect(text).toMatch(/Synced|Syncing|Sync Fail|Pend/i);
+  test('should navigate to Planting Cycles when clicking Planting Cycles', async ({ page }) => {
+    await page.getByText(/Planting Cycles/i).first().click({ force: true });
+    await expect(page).toHaveURL(/.*cycles.*/, { timeout: 30000 });
   });
 });
-

@@ -4,6 +4,9 @@ import MarketplaceStoreService from '../../../src/services/MarketplaceStoreServi
 import MarketplaceProductService from '../../../src/services/MarketplaceProductService';
 import MarketplaceStore from '../../../src/database/models/MarketplaceStore';
 import MarketplaceProduct from '../../../src/database/models/MarketplaceProduct';
+import { ModuleQuickGuide } from '../../../src/components/ModuleQuickGuide';
+import { SampleDataService } from '../../../src/services/SampleDataService';
+import { database } from '../../../src/database';
 
 export default function AdminMarketplaceManagementScreen() {
     const [pendingStores, setPendingStores] = useState<MarketplaceStore[]>([]);
@@ -57,6 +60,30 @@ export default function AdminMarketplaceManagementScreen() {
                 <Text className="text-2xl font-bold text-slate-900">POS Cursor Marketplace Operator Console</Text>
                 <Text className="text-xs text-slate-500">Manage seller applications, product compliance, and commissions</Text>
             </View>
+
+            {/* Marketplace Quick Guide */}
+            <ModuleQuickGuide
+                moduleTitle="🏪 Marketplace & Retail POS Guide"
+                description="Product catalog, inventory stock, POS registers, and audited sales returns"
+                icon="storefront"
+                badgeColor="bg-blue-900"
+                showDemoDataButton={pendingStores.length === 0 && pendingProducts.length === 0}
+                onLoadDemoData={async () => {
+                    try {
+                        await SampleDataService.enable(database);
+                        Alert.alert('Demo Data Loaded', 'Sample stores, agricultural products, stock movements, and sales returns have been populated.');
+                        loadAdminQueues();
+                    } catch (e: any) {
+                        Alert.alert('Error', e.message || 'Failed to load demo data');
+                    }
+                }}
+                steps={[
+                    { title: '1. Stores & Categories', desc: 'Approve vendor store applications and organize catalogs by product categories.' },
+                    { title: '2. Inventory & Warehouses', desc: 'Track stock balances, purchase receipts, and automatic deduction upon POS sale.' },
+                    { title: '3. Touch POS Terminal', desc: 'Ring up retail items, apply member discounts, accept cash, and issue official receipts in ₱ PHP.' },
+                    { title: '4. Audited Sales Returns (3 Steps)', desc: 'Draft reason & items -> Supervisor Approval -> Restock good items or log damaged to waste -> Customer refund.' },
+                ]}
+            />
 
             {/* Platform Financial Overview */}
             <View className="bg-blue-900 rounded-2xl p-4 mb-4 shadow-sm">

@@ -1,5 +1,10 @@
 import { test, expect } from '@playwright/test';
 import { loginAsAdmin, loginAsCollector, loginAsPaymentEncoder, safeNavigate } from './playwright-auth';
+import { LENDING_E2E_ENABLED, LENDING_SKIP_REASON } from './lending-gate';
+
+// Loan management ships dark (system.lending=false): every screen below is feature-gated.
+// Re-run with E2E_LENDING=1 against a profile that enables the flag.
+test.beforeEach(() => test.skip(!LENDING_E2E_ENABLED, LENDING_SKIP_REASON));
 
 test.describe('DatePicker Web Verification', () => {
 
@@ -7,8 +12,8 @@ test.describe('DatePicker Web Verification', () => {
     await page.setDefaultTimeout(120000);
     await loginAsAdmin(page);
 
-    await page.getByText('Record Payment').first().click();
-    await page.getByText('Add Payment').first().click();
+    // Dashboard "Record Payment" tile was removed — reach the form by direct route
+    await safeNavigate(page, '/(admin)/payments/new');
     await expect(page.locator('[data-testid="page-title"]')).toBeVisible({ timeout: 30000 });
 
     // Look for the Date of Payment label
@@ -24,7 +29,8 @@ test.describe('DatePicker Web Verification', () => {
     await page.setDefaultTimeout(120000);
     await loginAsAdmin(page);
 
-    await page.getByText('Record Payment').first().click();
+    // Dashboard "Record Payment" tile was removed — reach the list by direct route
+    await safeNavigate(page, '/(admin)/payments');
 
     const editButton = page.locator('[data-testid^="edit-payment-"]').first();
     const emptyState = page.getByText('No payments found', { exact: false });

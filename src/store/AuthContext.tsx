@@ -104,7 +104,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const matchingRole = targetRole || userBranchRoles.find(ubr => ubr.branchId === targetBranchId)?.role;
             if (matchingRole) {
                 setRole(matchingRole as UserRole);
-                const homeRoute = ROLE_HOME_ROUTES[matchingRole as UserRole] ?? '/(admin)';
+                const homeRoute = ROLE_HOME_ROUTES[matchingRole as UserRole] ?? '/(admin)/agribusiness';
                 router.replace(homeRoute as any);
             }
         } catch (e) {

@@ -106,3 +106,7 @@ supabase/.temp/
 # Allow Crispy King audit PDF
 !docs/crispyking/*.pdf
 
+# Raw large media
+/jetfarms.mp4
+assets/videos/*-raw.*
+

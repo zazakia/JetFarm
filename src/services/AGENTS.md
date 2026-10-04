@@ -6,7 +6,7 @@ Core business logic layer. 20 service classes implementing all domain operations
 ## SERVICES
 | Service | File | Role |
 |---------|------|------|
-| SyncService | `SyncService.ts` (674L) | WatermelonDB-to-Supabase sync engine |
+| SyncService | `SyncService.ts` (~1840L) | WatermelonDB-to-Supabase sync engine (table contract lives in `syncTableContract.json`) |
 | LoanService | `LoanService.ts` | Loan lifecycle (create, disburse, close) |
 | PaymentService | `PaymentService.ts` | Payment recording and validation |
 | LoanCalculatorService | `LoanCalculatorService.ts` | Loan amortization and interest computation |

@@ -15,6 +15,12 @@ interface ConfirmDialogProps {
   onCancel: () => void;
   isDestructive?: boolean;
   isDangerous?: boolean;
+  /**
+   * 'confirm' (default) renders Cancel + Confirm.
+   * 'alert' renders a single acknowledgment button — used for informational
+   * messages, because `Alert.alert` is a no-op on react-native-web.
+   */
+  mode?: 'confirm' | 'alert';
 }
 
 export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
@@ -29,9 +35,12 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   onCancel,
   isDestructive,
   isDangerous,
+  mode = 'confirm',
 }) => {
-  const destructive = isDestructive ?? isDangerous ?? true;
-  const resolvedConfirmLabel = confirmLabel ?? confirmText ?? 'Confirm';
+  const isAlert = mode === 'alert';
+  const destructive = isAlert ? false : (isDestructive ?? isDangerous ?? true);
+  const resolvedConfirmLabel =
+    confirmLabel ?? confirmText ?? (isAlert ? 'OK' : 'Confirm');
   const resolvedCancelLabel = cancelLabel ?? cancelText ?? 'Cancel';
   return (
     <Modal
@@ -40,7 +49,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
       animationType="fade"
       onRequestClose={onCancel}
     >
-      <View style={styles.overlay}>
+      <View style={styles.overlay} testID="confirm-dialog">
         <BlurView intensity={20} style={StyleSheet.absoluteFill} />
         <View style={styles.container}>
           <View style={styles.header}>
@@ -51,22 +60,26 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
                 color={destructive ? "#EF4444" : "#3B82F6"}
               />
             </View>
-            <Text style={styles.title}>{title}</Text>
+            <Text style={styles.title} testID="confirm-dialog-title">{title}</Text>
           </View>
 
-          <Text style={styles.message}>{message}</Text>
+          <Text style={styles.message} testID="confirm-dialog-message">{message}</Text>
 
           <View style={styles.footer}>
-            <TouchableOpacity
-              style={styles.button}
-              onPress={onCancel}
-            >
-              <Text style={styles.cancelText}>{resolvedCancelLabel}</Text>
-            </TouchableOpacity>
+            {!isAlert && (
+              <TouchableOpacity
+                style={styles.button}
+                onPress={onCancel}
+                testID="confirm-dialog-cancel"
+              >
+                <Text style={styles.cancelText}>{resolvedCancelLabel}</Text>
+              </TouchableOpacity>
+            )}
 
             <TouchableOpacity
               style={[styles.button, styles.confirmButton, destructive && styles.destructiveButton]}
-              onPress={onConfirm}
+              onPress={isAlert ? onCancel : onConfirm}
+              testID="confirm-dialog-confirm"
             >
               <Text style={styles.confirmText}>{resolvedConfirmLabel}</Text>
             </TouchableOpacity>

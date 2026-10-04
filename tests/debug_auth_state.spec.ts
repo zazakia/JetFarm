@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import { loginWithCredentials } from './playwright-auth';
 
 test('debug auth state and redirect', async ({ page }) => {
-  await loginWithCredentials(page, 'cresencio.junco@poscursor.com');
+  await loginWithCredentials(page, 'cresencio.junco@jetfarm.com');
   
   // Wait a bit for auth to process
   await page.waitForTimeout(5000);

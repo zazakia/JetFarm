@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, ScrollView, Pressable, ActivityIndicator, RefreshControl } from 'react-native';
+import { View, Text, ScrollView, Pressable, ActivityIndicator, RefreshControl, Alert } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { database } from '../../../src/database';
@@ -9,6 +9,8 @@ import AgriWeeklySettlement from '../../../src/database/models/AgriWeeklySettlem
 import AgriHarvestLog from '../../../src/database/models/AgriHarvestLog';
 import { formatPHP } from '../../../src/utils/currency';
 import { Q } from '@nozbe/watermelondb';
+import { ModuleQuickGuide } from '../../../src/components/ModuleQuickGuide';
+import { SampleDataService } from '../../../src/services/SampleDataService';
 
 export default function AgribusinessDashboard() {
     const router = useRouter();
@@ -122,10 +124,10 @@ export default function AgribusinessDashboard() {
                     <View>
                         <View className="flex-row items-center gap-2 mb-1">
                             <MaterialIcons name="agriculture" size={28} color="#FFFFFF" />
-                            <Text className="text-white text-2xl font-black">JetFarm Agribusiness</Text>
+                            <Text testID="admin-portal-title" className="text-white text-2xl font-black">JetFarm Agribusiness</Text>
                         </View>
                         <Text className="text-emerald-100 text-sm font-medium">
-                            Operator Command Center • Managed by Mr. Jojet Montera (Jet)
+                            Agribusiness Dashboard • Operator Command Center • Managed by Mr. Jojet Montera (Jet)
                         </Text>
                     </View>
                     <View className="bg-emerald-900/60 px-3 py-1.5 rounded-full border border-emerald-600">
@@ -171,6 +173,30 @@ export default function AgribusinessDashboard() {
                     <MaterialIcons name="chevron-right" size={24} color="#B45309" />
                 </Pressable>
             )}
+
+            {/* Agribusiness Quick Guide */}
+            <ModuleQuickGuide
+                moduleTitle="🌾 Agribusiness Quick Guide & Workflow"
+                description="How to coordinate parcels, cycles, labor, scale weigh-in, and settlements"
+                icon="agriculture"
+                badgeColor="bg-emerald-700"
+                showDemoDataButton={totalHectares === 0 && activeCyclesCount === 0}
+                onLoadDemoData={async () => {
+                    try {
+                        await SampleDataService.enable(database);
+                        Alert.alert('Demo Data Loaded', 'Sample farm parcels, crop cycles, labor logs, and harvest scale weigh-ins have been populated.');
+                        loadData();
+                    } catch (e: any) {
+                        Alert.alert('Error', e.message || 'Failed to load demo data');
+                    }
+                }}
+                steps={[
+                    { title: '1. Land Parcels & Mapping', desc: 'Register farm parcels with hectares, soil types, and GPS boundary coordinates.' },
+                    { title: '2. Launch Crop Cycles', desc: 'Schedule planting date, target harvest date, variety (KU50 Cassava, Yellow Corn), and offtake price.' },
+                    { title: '3. Farm Labor & Input Costs', desc: 'Track daily/piece-rate farm tasks and log input expenses (fertilizer, plowing, seedlings).' },
+                    { title: '4. Digital Harvest Scale & Settlements', desc: 'Record gross/tare weigh-ins at the terminal, then auto-calculate land owner and investor weekly payouts.' },
+                ]}
+            />
 
             {/* KPI Metric Cards */}
             <View className="flex-row flex-wrap gap-4 mb-6">

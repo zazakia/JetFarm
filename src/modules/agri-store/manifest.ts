@@ -42,27 +42,18 @@ export const AgriStoreModule: CoopModule = {
             sortOrder: 423
         }
     ],
-    dbTables: [
-        {
-            name: 'agri_products',
-            columns: [
-                { name: 'name', type: 'string' },
-                { name: 'category', type: 'string' },
-                { name: 'unit', type: 'string' },
-                { name: 'price', type: 'number' },
-                { name: 'stock_quantity', type: 'number' }
-            ]
-        },
-        {
-            name: 'agri_sales',
-            columns: [
-                { name: 'member_id', type: 'string', isOptional: true, isIndexed: true },
-                { name: 'total_amount', type: 'number' },
-                { name: 'payment_type', type: 'string' },
-                { name: 'sale_date', type: 'number' }
-            ]
-        }
-    ],
+    // No tables are introduced by this module yet. The previously declared
+    // `agri_products` / `agri_sales` existed in no layer at all (not in
+    // src/database/schema.ts, not in syncTableContract.json, not in any migration),
+    // which made the registry claim persistence this module does not have.
+    // The console screen still mutates useState seed data only; see
+    // docs/CRUD-PERSISTENCE-AUDIT.md M4 (task: implement on stock_movements /
+    // module_transactions, or gate the console off). Intended shape, for the record:
+    //   agri_products(name, category, unit, price, stock_quantity)
+    //   agri_sales(member_id?, total_amount, payment_type, sale_date)
+    // The generic inventory path already names this unit as a discriminator value:
+    // stock_movements.product_source = 'agri_products'.
+    dbTables: [],
     routes: [
         {
             path: '/(admin)/modules/agri-store',

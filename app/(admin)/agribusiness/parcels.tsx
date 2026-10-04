@@ -118,6 +118,7 @@ export default function ParcelsRegistryScreen() {
                 </View>
                 <Pressable
                     onPress={() => setModalVisible(true)}
+                    testID="register-parcel-button"
                     className="bg-emerald-700 px-4 py-2.5 rounded-xl flex-row items-center gap-1.5 shadow-sm active:bg-emerald-800"
                 >
                     <MaterialIcons name="add" size={20} color="#FFFFFF" />
@@ -179,6 +180,7 @@ export default function ParcelsRegistryScreen() {
                     {parcelsList.map(({ parcel, landOwner, activeCycle }: any) => (
                         <View
                             key={parcel.id}
+                            testID={`parcel-card-${parcel.id}`}
                             className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm"
                         >
                             <View className="flex-row justify-between items-start mb-2">
@@ -240,6 +242,7 @@ export default function ParcelsRegistryScreen() {
                             <View className="mt-4 flex-row gap-2 pt-2">
                                 <Pressable
                                     onPress={() => router.push(`/(admin)/agribusiness/mapping?parcelId=${parcel.id}` as any)}
+                                    testID={`parcel-mapping-link-${parcel.id}`}
                                     className="flex-1 bg-emerald-50 border border-emerald-200 py-2 rounded-xl flex-row items-center justify-center gap-1.5 active:bg-emerald-100"
                                 >
                                     <MaterialIcons name="map" size={16} color="#047857" />
@@ -276,6 +279,7 @@ export default function ParcelsRegistryScreen() {
                                 onChangeText={setParcelName}
                                 placeholder="e.g. Parcel Alpha North"
                                 placeholderTextColor="#9CA3AF"
+                                testID="parcel-name-input"
                                 className="bg-gray-50 border border-gray-300 rounded-xl p-3 text-sm text-gray-900 mb-3"
                             />
 
@@ -285,6 +289,7 @@ export default function ParcelsRegistryScreen() {
                                 onChangeText={setParcelCode}
                                 placeholder="e.g. PCL-001"
                                 placeholderTextColor="#9CA3AF"
+                                testID="parcel-code-input"
                                 className="bg-gray-50 border border-gray-300 rounded-xl p-3 text-sm text-gray-900 mb-3"
                             />
 
@@ -294,6 +299,7 @@ export default function ParcelsRegistryScreen() {
                                 onChangeText={setOwnerName}
                                 placeholder="e.g. Don Ramon Valderrama"
                                 placeholderTextColor="#9CA3AF"
+                                testID="landowner-name-input"
                                 className="bg-gray-50 border border-gray-300 rounded-xl p-3 text-sm text-gray-900 mb-3"
                             />
 
@@ -313,6 +319,7 @@ export default function ParcelsRegistryScreen() {
                                 placeholder="e.g. 3.5"
                                 keyboardType="numeric"
                                 placeholderTextColor="#9CA3AF"
+                                testID="parcel-area-input"
                                 className="bg-gray-50 border border-gray-300 rounded-xl p-3 text-sm text-gray-900 mb-3"
                             />
 
@@ -352,6 +359,7 @@ export default function ParcelsRegistryScreen() {
                             <Pressable
                                 onPress={handleCreateParcel}
                                 disabled={saving}
+                                testID="save-parcel-button"
                                 className="flex-1 py-3 bg-emerald-700 rounded-xl items-center active:bg-emerald-800"
                             >
                                 {saving ? (

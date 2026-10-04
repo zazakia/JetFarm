@@ -8,9 +8,9 @@ test.describe('Role Login Verification', () => {
     });
 
     const collectorsToTest = [
-        { name: 'Cresencio Junco', email: 'cresencio.junco@poscursor.com', id: 'cresencio' },
-        { name: 'Gerald Gera', email: 'gerald.gera@poscursor.com', id: 'gerald' },
-        { name: 'Bernie Casera', email: 'bernie.casera@poscursor.com', id: 'bernie' }
+        { name: 'Cresencio Junco', email: 'cresencio.junco@jetfarm.com', id: 'cresencio' },
+        { name: 'Gerald Gera', email: 'gerald.gera@jetfarm.com', id: 'gerald' },
+        { name: 'Bernie Casera', email: 'bernie.casera@jetfarm.com', id: 'bernie' }
     ];
 
     for (const collector of collectorsToTest) {

@@ -27,9 +27,19 @@ jest.mock('@expo/vector-icons', () => {
     };
 });
 
+// system.lending ships disabled by default (2026-10-04); lendingOnly cards
+// must be asserted as unreachable unless the flag is explicitly enabled.
+const mockLendingFlag = { enabled: false };
+jest.mock('../../../../src/hooks/useSettingsConfig', () => ({
+    useFeatureFlags: () => ({
+        isEnabled: (_key: string) => mockLendingFlag.enabled,
+    }),
+}));
+
 describe('BusinessRulesScreen', () => {
     beforeEach(() => {
         jest.clearAllMocks();
+        mockLendingFlag.enabled = true;
     });
 
     it('renders header and all settings cards', () => {
@@ -70,5 +80,16 @@ describe('BusinessRulesScreen', () => {
         const backBtn = screen.getByText('arrow-back');
         fireEvent.press(backBtn);
         expect(safeBack).toHaveBeenCalledWith(expect.any(Object), '/(admin)/settings');
+    });
+
+    it('hides lending-only cards when system.lending is disabled', () => {
+        mockLendingFlag.enabled = false;
+        render(<BusinessRulesScreen />);
+
+        expect(screen.queryByText('Loan Products')).toBeNull();
+        expect(screen.getByText('Cooperative Computations')).toBeTruthy();
+        expect(screen.getByText('Feature Flags')).toBeTruthy();
+        expect(screen.getByText('Role Access')).toBeTruthy();
+        expect(screen.getByText('Expense Categories')).toBeTruthy();
     });
 });

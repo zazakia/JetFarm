@@ -10,6 +10,7 @@ import {
     Platform,
 } from 'react-native';
 import { type AppVersionManifest } from '../services/AppUpdateService';
+import { APP_DOWNLOAD_URL } from '../constants/AppVersion';
 
 interface AppUpdateModalProps {
     visible: boolean;
@@ -53,7 +54,7 @@ export function AppUpdateModal({
         downloadedBytes > 0 ? `${(downloadedBytes / (1024 * 1024)).toFixed(1)} MB` : '0 MB';
 
     const handleOpenInBrowser = async () => {
-        const url = manifest.apkUrl || manifest.apkLatestUrl || 'https://jetfarm.pages.dev/download';
+        const url = manifest.apkUrl || manifest.apkLatestUrl || APP_DOWNLOAD_URL;
         if (Platform.OS === 'web' && typeof window !== 'undefined') {
             window.open(url, '_blank');
         } else {

@@ -42,28 +42,16 @@ export const PharmacyModule: CoopModule = {
             sortOrder: 424
         }
     ],
-    dbTables: [
-        {
-            name: 'pharmacy_medicines',
-            columns: [
-                { name: 'generic_name', type: 'string' },
-                { name: 'brand_name', type: 'string', isOptional: true },
-                { name: 'dosage', type: 'string' },
-                { name: 'unit_price', type: 'number' },
-                { name: 'stock_qty', type: 'number' },
-                { name: 'expiry_date', type: 'number' }
-            ]
-        },
-        {
-            name: 'pharmacy_sales',
-            columns: [
-                { name: 'member_id', type: 'string', isOptional: true, isIndexed: true },
-                { name: 'total_amount', type: 'number' },
-                { name: 'discount_amount', type: 'number', isOptional: true },
-                { name: 'sale_date', type: 'number' }
-            ]
-        }
-    ],
+    // No tables are introduced by this module yet. The previously declared
+    // `pharmacy_medicines` / `pharmacy_sales` existed in no layer at all (not in
+    // src/database/schema.ts, not in syncTableContract.json, not in any migration,
+    // and no model references them), which made the registry claim persistence this
+    // module does not have. The console screen mutates useState seed data only; see
+    // docs/CRUD-PERSISTENCE-AUDIT.md M4 (task: build real pharmacy tables or gate
+    // the console off). Intended shape, for the record:
+    //   pharmacy_medicines(generic_name, brand_name?, dosage, unit_price, stock_qty, expiry_date)
+    //   pharmacy_sales(member_id?, total_amount, discount_amount?, sale_date)
+    dbTables: [],
     routes: [
         {
             path: '/(admin)/modules/pharmacy',

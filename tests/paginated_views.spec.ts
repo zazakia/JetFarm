@@ -1,5 +1,10 @@
 import { test, expect, type Page } from '@playwright/test';
-import { loginAsAdmin } from './playwright-auth';
+import { loginAsAdmin, safeNavigate } from './playwright-auth';
+import { LENDING_E2E_ENABLED, LENDING_SKIP_REASON } from './lending-gate';
+
+// Loan management ships dark (system.lending=false): every screen below is feature-gated.
+// Re-run with E2E_LENDING=1 against a profile that enables the flag.
+test.beforeEach(() => test.skip(!LENDING_E2E_ENABLED, LENDING_SKIP_REASON));
 
 async function createBorrower(page: Page, fullName: string) {
   const isDashboard = await page.getByTestId('admin-portal-title').isVisible().catch(() => false);
@@ -7,8 +12,9 @@ async function createBorrower(page: Page, fullName: string) {
     await page.goto('/login');
     await expect(page.getByTestId('admin-portal-title')).toBeVisible({ timeout: 60000 });
   }
-  await page.getByText(/New Borrower/i).first().click({ force: true });
-  await expect(page.getByTestId('new-borrower-fab')).toBeVisible({ timeout: 30000 });
+  // The dashboard no longer exposes a "New Borrower" menu item — go through the
+  // borrowers list FAB instead (the list itself is reached by direct route).
+  await safeNavigate(page, '/(admin)/borrowers', '[data-testid="new-borrower-fab"]');
   await page.getByTestId('new-borrower-fab').click();
   await expect(page.getByTestId('borrower-full-name-input')).toBeVisible({ timeout: 30000 });
   await page.getByTestId('borrower-full-name-input').fill(fullName);
@@ -38,8 +44,8 @@ test.describe('Paginated Views & View Switching E2E', () => {
     const testBorrowerName = `E2E View Switcher ${Date.now()}`;
     await createBorrower(page, testBorrowerName);
 
-    // Click "Members" in the sidebar/menu
-    await page.getByText('Members').first().click();
+    // "Members" sidebar entry was removed — navigate by direct route
+    await safeNavigate(page, '/(admin)/borrowers');
     await expect(page).toHaveURL(/.*borrowers.*/, { timeout: 30000 });
 
     // Check default Table mode headers and borrower record
@@ -74,8 +80,8 @@ test.describe('Paginated Views & View Switching E2E', () => {
   });
 
   test('should navigate to Loans, display view mode toggles, and switch views (empty list)', async ({ page }) => {
-    // Click "Loans" in the sidebar/menu
-    await page.getByText('Loans').first().click();
+    // "Loans" sidebar entry was removed — navigate by direct route
+    await safeNavigate(page, '/(admin)/loans');
     await expect(page).toHaveURL(/.*loans.*/, { timeout: 30000 });
 
     // When empty, it displays "No loans found"
@@ -101,8 +107,8 @@ test.describe('Paginated Views & View Switching E2E', () => {
   });
 
   test('should navigate to Payments, display view mode toggles, and switch views (empty list)', async ({ page }) => {
-    // Click "Payments" in the sidebar/menu
-    await page.getByText('Payments').first().click();
+    // "Payments" sidebar entry was removed — navigate by direct route
+    await safeNavigate(page, '/(admin)/payments');
     await expect(page).toHaveURL(/.*payments.*/, { timeout: 30000 });
 
     // When empty, it displays "No payments found"

@@ -27,14 +27,34 @@ function parseEnvFile(contents) {
     }, {});
 }
 
+// Test fixtures that must never reach a production bundle as the AES key.
+const KNOWN_PLACEHOLDER_KEYS = new Set(['mock-primary-key', 'POSCursor_Sec_2024_Ph']);
+
+function resolveEncryptionKey(candidate, source) {
+  const key = (candidate || '').trim();
+  if (!key || KNOWN_PLACEHOLDER_KEYS.has(key)) {
+    console.error(
+      `[export-web-production] EXPO_PUBLIC_ENCRYPTION_KEY is missing or is a known test placeholder (source: ${source}).\n` +
+      '  Refusing to build: a public key would encrypt production data while appearing to succeed.\n' +
+      '  Provision a real key in .env.production (see docs/BUG-AUDIT-AND-REMEDIATION-PLAN.md, finding C1).'
+    );
+    process.exit(1);
+  }
+  return key;
+}
+
 const productionEnvPath = '.env.production';
 const localEnvPath = '.env.local';
 
 let createdSyntheticProductionEnv = false;
 if (!existsSync(productionEnvPath)) {
   if (process.env.EXPO_PUBLIC_SUPABASE_URL) {
+    const encryptionKey = resolveEncryptionKey(
+      process.env.EXPO_PUBLIC_ENCRYPTION_KEY,
+      'process.env'
+    );
     console.log('[export-web-production] Creating synthetic .env.production from environment variables...');
-    const syntheticEnv = `EXPO_PUBLIC_SUPABASE_URL=${process.env.EXPO_PUBLIC_SUPABASE_URL}\nEXPO_PUBLIC_SUPABASE_ANON_KEY=${process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || ''}\nEXPO_PUBLIC_ENCRYPTION_KEY=${process.env.EXPO_PUBLIC_ENCRYPTION_KEY || 'mock-primary-key'}\n`;
+    const syntheticEnv = `EXPO_PUBLIC_SUPABASE_URL=${process.env.EXPO_PUBLIC_SUPABASE_URL}\nEXPO_PUBLIC_SUPABASE_ANON_KEY=${process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || ''}\nEXPO_PUBLIC_ENCRYPTION_KEY=${encryptionKey}\n`;
     writeFileSync(productionEnvPath, syntheticEnv);
     createdSyntheticProductionEnv = true;
   } else {
@@ -46,6 +66,8 @@ if (!existsSync(productionEnvPath)) {
 const originalLocalEnv = existsSync(localEnvPath) ? readFileSync(localEnvPath, 'utf8') : null;
 const productionEnv = readFileSync(productionEnvPath, 'utf8');
 const productionVars = parseEnvFile(productionEnv);
+
+resolveEncryptionKey(productionVars.EXPO_PUBLIC_ENCRYPTION_KEY, productionEnvPath);
 
 try {
   writeFileSync(localEnvPath, productionEnv);

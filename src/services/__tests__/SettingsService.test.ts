@@ -116,8 +116,8 @@ describe('SettingsService', () => {
             service.getAppSetting('brand.logo_base64'),
         ]);
 
-        expect(companyName).toBe('POS Cursor');
-        expect(companyNameFull).toBe('POS Cursor');
+        expect(companyName).toBe('Agri-One');
+        expect(companyNameFull).toBe('Agri-One');
         expect(logoBase64Setting).toBe('');
     });
 

@@ -87,7 +87,9 @@ function syncDatabaseMigrations() {
     console.log(`  → Applying ${file}...`);
     const filePath = path.join(migrationsDir, file);
     try {
-      execSync(`ssh ${HETZNER_SSH} "docker exec -i supabase-db psql -U postgres -d postgres" < "${filePath}"`, {
+      const sqlContent = fs.readFileSync(filePath);
+      execSync(`ssh ${HETZNER_SSH} "docker exec -i supabase-db psql -U postgres -d postgres"`, {
+        input: sqlContent,
         stdio: ['pipe', 'pipe', 'pipe'],
       });
       execSync(
@@ -125,8 +127,11 @@ function buildWebExport() {
       fs.writeFileSync(localEnvPath, fs.readFileSync(hetznerEnvPath, 'utf8'), 'utf8');
     }
 
-    console.log('  🔨 Running npx expo export --platform web --clear...');
     const isWindows = process.platform === 'win32';
+    console.log('  🔨 Generating app updates metadata...');
+    spawnSync(isWindows ? 'node.exe' : 'node', ['scripts/generate-app-updates.mjs'], { cwd: rootDir, stdio: 'inherit' });
+
+    console.log('  🔨 Running npx expo export --platform web --clear...');
     const res = spawnSync(
       isWindows ? 'npx.cmd' : 'npx',
       ['expo', 'export', '--platform', 'web', '--clear'],
@@ -210,6 +215,13 @@ function deployToServer(archivePath) {
 // Stage 5: Edge Verification
 async function verifyEndpoints() {
   console.log('\n🔍 [Stage 5: Verification] Testing live endpoints...');
+
+  try {
+    execSync(`ssh ${HETZNER_SSH} "curl -fsS http://127.0.0.1:8088/ > /dev/null"`, { stdio: 'pipe' });
+    console.log('  ✓ In-cluster HTTP on port 8088 verified');
+  } catch (err) {
+    console.warn('  ⚠ Host probe warning:', err.message);
+  }
 
   const probe = (url) =>
     new Promise((resolve) => {

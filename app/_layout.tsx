@@ -55,8 +55,16 @@ function AppShell({ children }: { children: React.ReactNode }) {
         void SettingsService.ensureDefaults()
             .then(async () => {
                 try {
-                    const name = await SettingsService.getAppSetting('brand.company_name', 'Agri-One');
-                    const fullName = await SettingsService.getAppSetting('brand.company_name_full', 'Agri-One');
+                    let name = await SettingsService.getAppSetting('brand.company_name', 'Agri-One');
+                    let fullName = await SettingsService.getAppSetting('brand.company_name_full', 'Agri-One');
+                    if (name === 'POS Cursor') {
+                        name = 'Agri-One';
+                        void SettingsService.setAppSetting('brand.company_name', 'Agri-One').catch(() => {});
+                    }
+                    if (fullName === 'POS Cursor') {
+                        fullName = 'Agri-One';
+                        void SettingsService.setAppSetting('brand.company_name_full', 'Agri-One').catch(() => {});
+                    }
                     const logo = await SettingsService.getAppSetting('brand.logo_base64', '');
 
                     const { setBrandData } = require('../src/constants/brand');

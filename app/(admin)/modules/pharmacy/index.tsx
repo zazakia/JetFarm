@@ -3,6 +3,7 @@ import { View, Text, ScrollView, Pressable, TextInput, Alert } from 'react-nativ
 import { useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { formatPHP } from '../../../../src/utils/currency';
+import { DemoDataNotice } from '../../../../src/components/DemoDataNotice';
 
 interface MedicineItem {
     id: string;
@@ -44,7 +45,11 @@ export default function PharmacyConsoleScreen() {
         setDispensedCount(prev => prev + 1);
         setTotalRevenue(prev => prev + item.price);
 
-        Alert.alert('Dispensed', `Dispensed 1 tablet/capsule of ${item.genericName} (${item.brandName}) for ${formatPHP(item.price)}.`);
+        Alert.alert(
+            'Preview Only — Nothing Was Saved',
+            `This decremented in-memory stock for ${item.genericName} (${item.brandName}) by 1 pc. ` +
+                'No dispensing record was written and the figure resets when the page reloads.'
+        );
     };
 
     return (
@@ -56,7 +61,7 @@ export default function PharmacyConsoleScreen() {
                         <MaterialIcons name="arrow-back" size={22} color="#FFFFFF" />
                     </Pressable>
                     <View className="bg-teal-800/80 px-3 py-1 rounded-full border border-teal-700/50">
-                        <Text className="text-teal-200 text-xs font-bold uppercase tracking-wider">COA Segment: PHARM</Text>
+                        <Text className="text-teal-200 text-xs font-bold uppercase tracking-wider">COA Segment: PHARM (planned)</Text>
                     </View>
                 </View>
 
@@ -68,15 +73,17 @@ export default function PharmacyConsoleScreen() {
 
                 <View className="flex-row mt-6 gap-3">
                     <View className="flex-1 bg-teal-800/60 p-4 rounded-2xl border border-teal-700/40">
-                        <Text className="text-teal-200 text-xs font-semibold">Today's Revenue</Text>
+                        <Text className="text-teal-200 text-xs font-semibold">Preview Sales (sample)</Text>
                         <Text className="text-white text-xl font-bold mt-1">{formatPHP(totalRevenue)}</Text>
                     </View>
                     <View className="flex-1 bg-teal-800/60 p-4 rounded-2xl border border-teal-700/40">
-                        <Text className="text-teal-200 text-xs font-semibold">Dispensed Items</Text>
+                        <Text className="text-teal-200 text-xs font-semibold">Preview Dispensed</Text>
                         <Text className="text-white text-xl font-bold mt-1">{dispensedCount} units</Text>
                     </View>
                 </View>
             </View>
+
+            <DemoDataNotice moduleName="Coop Pharmacy" whatShowsNumbers />
 
             {/* Inventory List Header & Search */}
             <View className="flex-row items-center justify-between mb-4">

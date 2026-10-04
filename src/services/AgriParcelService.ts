@@ -3,11 +3,12 @@ import { database as globalDatabase } from '../database';
 import AgriParcel from '../database/models/AgriParcel';
 import AgriLandOwner from '../database/models/AgriLandOwner';
 import AgriCropCycle from '../database/models/AgriCropCycle';
+import {
+    GPSCoordinate,
+    serializeGpsCoordinates,
+} from '../utils/coordinates';
 
-export interface GPSCoordinate {
-    latitude: number;
-    longitude: number;
-}
+export type { GPSCoordinate };
 
 export interface CreateParcelInput {
     name: string;
@@ -73,7 +74,7 @@ export class AgriParcelService {
                 record.landOwnerId = input.landOwnerId;
                 record.areaHectares = input.areaHectares;
                 record.locationAddress = input.locationAddress || null;
-                record.gpsCoordinates = input.gpsCoordinates ? JSON.stringify(input.gpsCoordinates) : null;
+                record.gpsCoordinates = serializeGpsCoordinates(input.gpsCoordinates);
                 record.soilType = input.soilType || 'Loam';
                 record.status = input.status || 'available';
             });
@@ -104,7 +105,7 @@ export class AgriParcelService {
                 if (updates.areaHectares !== undefined) record.areaHectares = updates.areaHectares;
                 if (updates.locationAddress !== undefined) record.locationAddress = updates.locationAddress;
                 if (updates.gpsCoordinates !== undefined) {
-                    record.gpsCoordinates = updates.gpsCoordinates ? JSON.stringify(updates.gpsCoordinates) : null;
+                    record.gpsCoordinates = serializeGpsCoordinates(updates.gpsCoordinates);
                 }
                 if (updates.soilType !== undefined) record.soilType = updates.soilType;
                 if (updates.status !== undefined) record.status = updates.status;

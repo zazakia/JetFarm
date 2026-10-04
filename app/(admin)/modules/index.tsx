@@ -5,6 +5,9 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { ModuleRegistry } from '../../../src/modules/registry';
 import { BusinessUnitService } from '../../../src/services/BusinessUnitService';
 import { useFeatureFlags } from '../../../src/hooks/useSettingsConfig';
+import { ModuleQuickGuide } from '../../../src/components/ModuleQuickGuide';
+import { SampleDataService } from '../../../src/services/SampleDataService';
+import { database } from '../../../src/database';
 
 export default function ModuleHubScreen() {
     const router = useRouter();
@@ -80,12 +83,35 @@ export default function ModuleHubScreen() {
 
     return (
         <ScrollView className="flex-1 bg-gray-50 p-4">
-            <View className="mb-6">
+            <View className="mb-4">
                 <Text className="text-2xl font-bold text-gray-900">Cooperative Business Modules</Text>
                 <Text className="text-gray-600 mt-1">
                     Enable or disable specific business modules for your multi-purpose cooperative.
                 </Text>
             </View>
+
+            {/* Cooperative Modules Quick Guide */}
+            <ModuleQuickGuide
+                moduleTitle="🤝 Cooperative Modules & Business Units Guide"
+                description="How autonomous enterprise modules link into unified cooperative accounting"
+                icon="grid-view"
+                badgeColor="bg-purple-800"
+                showDemoDataButton={true}
+                onLoadDemoData={async () => {
+                    try {
+                        await SampleDataService.enable(database);
+                        Alert.alert('Demo Data Loaded', 'Sample records for all cooperative modules (Agri-Store, Water Station, etc.) have been populated.');
+                        loadModules();
+                    } catch (e: any) {
+                        Alert.alert('Error', e.message || 'Failed to load demo data');
+                    }
+                }}
+                steps={[
+                    { title: '1. Modular Activation', desc: 'Turn modules on or off based on your cooperative active operations (Water Station, Agri-Store, Pharmacy, Transport).' },
+                    { title: '2. Dedicated Registers', desc: 'Each business unit manages its own customer base, product inventory, and specialized workflows.' },
+                    { title: '3. Automated Accounting', desc: 'Transactions automatically post to the centralized Chart of Accounts and General Ledger with zero manual journalizing.' },
+                ]}
+            />
 
             {loading && allModules.length === 0 ? (
                 <View className="flex-1 justify-center items-center py-20">

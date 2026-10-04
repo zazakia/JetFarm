@@ -284,29 +284,35 @@ export type Database = {
       app_collectors: {
         Row: {
           auth_id: string | null
+          commission_rate: number | null
           created_at: string | null
           deleted_at: string | null
           full_name: string
           id: string
           is_active: boolean | null
+          member_id: string | null
           updated_at: string | null
         }
         Insert: {
           auth_id?: string | null
+          commission_rate?: number | null
           created_at?: string | null
           deleted_at?: string | null
           full_name: string
           id: string
           is_active?: boolean | null
+          member_id?: string | null
           updated_at?: string | null
         }
         Update: {
           auth_id?: string | null
+          commission_rate?: number | null
           created_at?: string | null
           deleted_at?: string | null
           full_name?: string
           id?: string
           is_active?: boolean | null
+          member_id?: string | null
           updated_at?: string | null
         }
         Relationships: []

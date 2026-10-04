@@ -1,92 +1,84 @@
 import React from 'react';
-import { render, fireEvent } from '@testing-library/react-native';
-import ConfirmDialog from '../ConfirmDialog';
+import { render, fireEvent, screen } from '@testing-library/react-native';
+import { ConfirmDialog } from '../ConfirmDialog';
+
+// BlurView is a native module; the jest setup mocks it, but the component is
+// irrelevant to these assertions, so keep the tree lean.
+jest.mock('expo-blur', () => ({ BlurView: () => null }));
 
 describe('ConfirmDialog', () => {
-    const mockOnConfirm = jest.fn();
-    const mockOnCancel = jest.fn();
+    const base = {
+        title: 'Unsaved Changes',
+        message: 'Discard the unsaved boundary edits?',
+        onConfirm: jest.fn(),
+        onCancel: jest.fn(),
+    };
 
     beforeEach(() => {
         jest.clearAllMocks();
     });
 
-    it('renders text content correctly', () => {
-        const { getByText } = render(
-            <ConfirmDialog 
-                visible={true}
-                title="Delete Account"
-                message="Are you sure you want to delete this account?"
-                onConfirm={mockOnConfirm}
-                onCancel={mockOnCancel}
-            />
-        );
-
-        expect(getByText('Delete Account')).toBeTruthy();
-        expect(getByText('Are you sure you want to delete this account?')).toBeTruthy();
-        expect(getByText('Confirm')).toBeTruthy();
-        expect(getByText('Cancel')).toBeTruthy();
+    it('renders nothing while hidden', () => {
+        render(<ConfirmDialog {...base} visible={false} />);
+        expect(screen.queryByTestId('confirm-dialog')).toBeNull();
     });
 
-    it('renders custom labels when provided', () => {
-        const { getByText } = render(
-            <ConfirmDialog 
-                visible={true}
-                title="Warning"
-                message="Oops!"
-                confirmLabel="Yes, Delete"
-                cancelLabel="No, Wait"
-                onConfirm={mockOnConfirm}
-                onCancel={mockOnCancel}
+    it('renders both actions in confirm mode and routes presses', () => {
+        render(
+            <ConfirmDialog
+                {...base}
+                visible
+                mode="confirm"
+                confirmLabel="Discard"
+                cancelLabel="Keep Editing"
+                isDestructive
             />
         );
+        expect(screen.getByTestId('confirm-dialog-title')).toHaveTextContent('Unsaved Changes');
+        expect(screen.getByTestId('confirm-dialog-message')).toHaveTextContent('Discard the unsaved boundary edits?');
+        expect(screen.getByTestId('confirm-dialog-cancel')).toHaveTextContent('Keep Editing');
+        expect(screen.getByTestId('confirm-dialog-confirm')).toHaveTextContent('Discard');
 
-        expect(getByText('Yes, Delete')).toBeTruthy();
-        expect(getByText('No, Wait')).toBeTruthy();
+        fireEvent.press(screen.getByTestId('confirm-dialog-confirm'));
+        expect(base.onConfirm).toHaveBeenCalledTimes(1);
+        expect(base.onCancel).not.toHaveBeenCalled();
+
+        fireEvent.press(screen.getByTestId('confirm-dialog-cancel'));
+        expect(base.onCancel).toHaveBeenCalledTimes(1);
     });
 
-    it('calls onConfirm when confirm button is pressed', () => {
-        const { getByText } = render(
-            <ConfirmDialog 
-                visible={true}
-                title="Action"
-                message="Message"
-                onConfirm={mockOnConfirm}
-                onCancel={mockOnCancel}
-            />
-        );
+    it(' collapses to a single acknowledgment that dismisses in alert mode', () => {
+        render(<ConfirmDialog {...base} visible mode="alert" title="Boundary Incomplete" />);
 
-        fireEvent.press(getByText('Confirm'));
-        expect(mockOnConfirm).toHaveBeenCalledTimes(1);
-        expect(mockOnCancel).not.toHaveBeenCalled();
+        expect(screen.queryByTestId('confirm-dialog-cancel')).toBeNull();
+        expect(screen.getByTestId('confirm-dialog-confirm')).toHaveTextContent('OK');
+
+        fireEvent.press(screen.getByTestId('confirm-dialog-confirm'));
+        // Alert mode only dismisses — it must never fire the confirm callback.
+        expect(base.onConfirm).not.toHaveBeenCalled();
+        expect(base.onCancel).toHaveBeenCalledTimes(1);
     });
 
-    it('calls onCancel when cancel button is pressed', () => {
-        const { getByText } = render(
-            <ConfirmDialog 
-                visible={true}
-                title="Action"
-                message="Message"
-                onConfirm={mockOnConfirm}
-                onCancel={mockOnCancel}
-            />
-        );
-
-        fireEvent.press(getByText('Cancel'));
-        expect(mockOnCancel).toHaveBeenCalledTimes(1);
-        expect(mockOnConfirm).not.toHaveBeenCalled();
+    it('keeps the legacy two-button behaviour when mode is omitted', () => {
+        render(<ConfirmDialog {...base} visible confirmText="Yes" cancelText="No" />);
+        expect(screen.getByTestId('confirm-dialog-cancel')).toHaveTextContent('No');
+        expect(screen.getByTestId('confirm-dialog-confirm')).toHaveTextContent('Yes');
     });
 
-    it('handles non-destructive state', () => {
-        const { getByText } = render(
-            <ConfirmDialog 
-                visible={true}
+    it('falls back to the original default labels and renders non-destructive content', () => {
+        render(
+            <ConfirmDialog
+                {...base}
+                visible
                 title="Info"
-                message="Some info."
-                onConfirm={mockOnConfirm}
-                onCancel={mockOnCancel}
+                message="Nothing to worry about."
                 isDestructive={false}
             />
         );
-        expect(getByText('Info')).toBeTruthy();
+        // Pre-existing contract: 'Confirm' / 'Cancel' when no labels are passed.
+        expect(screen.getByTestId('confirm-dialog-confirm')).toHaveTextContent('Confirm');
+        expect(screen.getByTestId('confirm-dialog-cancel')).toHaveTextContent('Cancel');
+        expect(screen.getByTestId('confirm-dialog-title')).toHaveTextContent('Info');
+        expect(screen.getByTestId('confirm-dialog-message')).toHaveTextContent('Nothing to worry about.');
     });
 });

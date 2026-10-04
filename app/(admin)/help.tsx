@@ -1,8 +1,11 @@
-import React, { useState } from 'react';
-import { View, Text, ScrollView, SafeAreaView, Pressable, Image, LayoutAnimation, Platform, UIManager } from 'react-native';
+import React, { useState, useEffect, useMemo } from 'react';
+import { View, Text, ScrollView, SafeAreaView, Pressable, Image, LayoutAnimation, Platform, UIManager, TextInput, Alert, ActivityIndicator } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { HelpStepCard } from '../../src/components/HelpStepCard';
+import { SampleDataService, SampleStatus } from '../../src/services/SampleDataService';
+import { database } from '../../src/database';
+import { useOnboardingTour } from '../../src/context/OnboardingTourContext';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
     UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -34,11 +37,15 @@ function Accordion({ title, icon, children, defaultOpen = false }: any) {
     );
 }
 
-function HelpNote({ title, body }: { title: string; body: string }) {
+function HelpNote({ title, body, variant = 'indigo' }: { title: string; body: string; variant?: 'indigo' | 'emerald' | 'amber' }) {
+    const bgClass = variant === 'emerald' ? 'bg-emerald-50 border-emerald-100' : variant === 'amber' ? 'bg-amber-50 border-amber-100' : 'bg-indigo-50 border-indigo-100';
+    const titleClass = variant === 'emerald' ? 'text-emerald-900' : variant === 'amber' ? 'text-amber-900' : 'text-indigo-900';
+    const bodyClass = variant === 'emerald' ? 'text-emerald-700' : variant === 'amber' ? 'text-amber-700' : 'text-indigo-700';
+
     return (
-        <View className="bg-indigo-50 border border-indigo-100 rounded-2xl p-4 mb-5">
-            <Text className="text-indigo-900 font-black text-xs uppercase tracking-[2px] mb-1">{title}</Text>
-            <Text className="text-indigo-700 text-sm leading-6">{body}</Text>
+        <View className={`${bgClass} border rounded-2xl p-4 mb-5`}>
+            <Text className={`${titleClass} font-black text-xs uppercase tracking-[2px] mb-1`}>{title}</Text>
+            <Text className={`${bodyClass} text-sm leading-6`}>{body}</Text>
         </View>
     );
 }
@@ -49,130 +56,347 @@ function BulletList({ items }: { items: string[] }) {
             {items.map((item) => (
                 <View key={item} className="flex-row items-start mb-2.5">
                     <View className="w-1.5 h-1.5 rounded-full bg-blue-900 mt-2.5 mr-3" />
-                    <Text className="flex-1 text-gray-600 text-sm leading-6">{item}</Text>
+                    <Text className="flex-1 text-gray-700 text-sm leading-6">{item}</Text>
                 </View>
             ))}
         </View>
     );
 }
 
+const CATEGORIES = [
+    { id: 'all', label: 'All Guides', icon: 'apps' },
+    { id: 'agri', label: '🌾 Agribusiness', icon: 'eco' },
+    { id: 'market', label: '🏪 Marketplace & POS', icon: 'storefront' },
+    { id: 'water', label: '💧 Water Station', icon: 'water-drop' },
+    { id: 'lending', label: '💳 Lending & Credit', icon: 'payments' },
+    { id: 'accounting', label: '💰 Accounting & Vault', icon: 'menu-book' },
+    { id: 'hr', label: '👥 HR & Payroll', icon: 'badge' },
+    { id: 'sync', label: '🔄 Offline & Sync', icon: 'sync' },
+];
+
 export default function AdminHelpScreen() {
+    const [searchQuery, setSearchQuery] = useState('');
+    const [selectedCategory, setSelectedCategory] = useState('all');
+    const [sampleStatus, setSampleStatus] = useState<SampleStatus | null>(null);
+    const [loadingSampleAction, setLoadingSampleAction] = useState(false);
+    const tour = useOnboardingTour();
+
+    const loadSampleStatus = async () => {
+        try {
+            const status = await SampleDataService.getStatus(database);
+            setSampleStatus(status);
+        } catch (err) {
+            console.warn('[AdminHelp] Could not load sample status:', err);
+        }
+    };
+
+    useEffect(() => {
+        loadSampleStatus();
+    }, []);
+
+    const handleToggleDemoData = async () => {
+        setLoadingSampleAction(true);
+        try {
+            if (sampleStatus?.enabled) {
+                await SampleDataService.disable(database);
+                Alert.alert('Demo Data Hidden', 'Mock records have been temporarily hidden. You can re-enable them anytime.');
+            } else {
+                await SampleDataService.enable(database);
+                Alert.alert('Demo Data Loaded!', 'Realistic mock data across all modules (Agribusiness, Store, Water Station, Lending, Accounting, and Employees) has been seeded into your local database.');
+            }
+            await loadSampleStatus();
+        } catch (err: any) {
+            Alert.alert('Action Failed', err.message || 'Unable to update demo data.');
+        } finally {
+            setLoadingSampleAction(false);
+        }
+    };
+
+    const q = searchQuery.toLowerCase().trim();
+
+    const matchesSearch = (tags: string[], text: string) => {
+        if (!q) return true;
+        return tags.some(t => t.toLowerCase().includes(q)) || text.toLowerCase().includes(q);
+    };
+
+    const showCategory = (catId: string) => {
+        if (selectedCategory === 'all') return true;
+        return selectedCategory === catId;
+    };
+
     return (
         <SafeAreaView className="flex-1 bg-slate-50">
+            {/* Header */}
             <LinearGradient colors={['#1E3A8A', '#065F46']} className="pt-12 pb-6 px-6 rounded-b-[40px] shadow-sm">
-                <Text className="text-white/90 text-xs font-bold uppercase tracking-[3px] mb-1">Help & Guide</Text>
-                <Text className="text-white text-3xl font-black">Admin Help</Text>
-                <Text className="text-white/70 text-sm font-medium mt-2">Detailed operating guide based on the current app modules and screens.</Text>
+                <Text className="text-white/90 text-xs font-bold uppercase tracking-[3px] mb-1">Interactive User Guide & Walkthrough</Text>
+                <Text className="text-white text-3xl font-black">Help & Operating Guide</Text>
+                <Text className="text-white/80 text-sm font-medium mt-2">
+                    Master all modules, field workflows, offline operations, and financial features.
+                </Text>
+
+                {/* Real-time Search Input */}
+                <View className="mt-4 flex-row items-center bg-white rounded-2xl px-4 py-2.5 shadow-sm">
+                    <MaterialIcons name="search" size={20} color="#9CA3AF" />
+                    <TextInput
+                        value={searchQuery}
+                        onChangeText={setSearchQuery}
+                        placeholder="Search modules, workflows, or instructions..."
+                        placeholderTextColor="#9CA3AF"
+                        className="flex-1 ml-2.5 text-gray-900 text-sm font-medium"
+                    />
+                    {searchQuery ? (
+                        <Pressable onPress={() => setSearchQuery('')} className="p-1">
+                            <MaterialIcons name="close" size={18} color="#9CA3AF" />
+                        </Pressable>
+                    ) : null}
+                </View>
             </LinearGradient>
 
             <ScrollView className="flex-1 p-6" showsVerticalScrollIndicator={false}>
-                <Accordion title="Getting Started & Navigation" icon="home" defaultOpen={true}>
-                    <Text className="text-gray-600 mb-4 leading-6">The admin portal is your control center for borrowers, loans, collections, remittances, reports, cash tracking, and system maintenance.</Text>
-                    <HelpNote
-                        title="What this role can access"
-                        body="From the current codebase, admins can open the dashboard, borrowers, loans, payments, expenses, users, collectors, remittances, reports, cash on hand, bank accounts, deleted items, audit tools, updates, and settings."
-                    />
-                    <BulletList
-                        items={[
-                            'Use the dashboard as your daily start page. Pull down to refresh local metrics and trigger a manual sync when needed.',
-                            'Use the menu button to open the full sidebar. The sidebar groups modules into Main, Admin, Daily Reports, Weekly Reports, Monthly Reports, Financials, and Support.',
-                            'Tap the sync status badge in the header whenever you want to monitor sync health or open the Sync Center.',
-                            'Use Support > Updates to review in-app release notes, and Support > Help & Guide whenever staff need process guidance.',
-                            'If a module appears empty, first confirm you are online or run a manual sync, then refresh the page again.'
-                        ]}
-                    />
-                    <HelpStepCard stepNumber={1} icon="dashboard" title="Start on Dashboard" description="Review KPIs, charts, overdue alerts, recent payments, and the quick action ribbon before moving into data-entry screens." />
-                    <HelpStepCard stepNumber={2} icon="menu" title="Open the Sidebar" description="Use the menu to jump directly to Borrowers, Loans, Payments, Reports, Cash on Hand, Settings, and audit tools." />
-                    <HelpStepCard stepNumber={3} icon="sync" title="Watch Sync Status" description="The sync indicator and Sync Center show whether the device is online, which table is syncing, and whether any errors need attention." />
-                </Accordion>
+                {/* Interactive Guided Tour Hero Card */}
+                <View className="bg-gray-900 border border-gray-700 rounded-3xl p-5 mb-6 shadow-sm">
+                    <View className="flex-row items-center justify-between mb-2">
+                        <View className="flex-row items-center flex-1 mr-3">
+                            <View className="w-10 h-10 rounded-2xl bg-blue-600 items-center justify-center mr-3 shadow-sm">
+                                <MaterialIcons name="explore" size={22} color="#FFFFFF" />
+                            </View>
+                            <View className="flex-1">
+                                <Text className="font-extrabold text-white text-base">Interactive Platform Tour</Text>
+                                <Text className="text-gray-400 text-xs">60-second guided onboarding walkthrough</Text>
+                            </View>
+                        </View>
+                        <View className="px-2.5 py-1 rounded-full bg-blue-900 border border-blue-500">
+                            <Text className="text-blue-300 font-bold text-[10px] uppercase tracking-wider">Guided</Text>
+                        </View>
+                    </View>
 
-                <Accordion title="Dashboard, KPIs & Quick Actions" icon="dashboard-customize">
-                    <Text className="text-gray-600 mb-4 leading-6">The dashboard combines operational metrics with one-tap shortcuts so you can move from oversight into action quickly.</Text>
-                    <Image
-                        source={require('../../assets/help/admin_dashboard.png')}
-                        className="w-full h-80 rounded-2xl border border-gray-200 mb-5 bg-gray-100"
-                        resizeMode="cover"
-                    />
-                    <BulletList
-                        items={[
-                            'KPI tiles currently include Active Loans, Weekly Target, Outstanding, Total Disbursed, Overdue (PAR>30), Collected Today, This Month, Cash on Hand, and Borrowers.',
-                            'Several KPI cards are drill-down entry points. For example, Weekly Target and Collected Today open collection reporting, while Cash on Hand opens the cash ledger module.',
-                            'The quick action ribbon below the header jumps to frequently used modules such as remittances, new loan, new payment, new expense, disbursements, efficiency reports, and the cash box.',
-                            'The overdue watchlist includes quick call, SMS, WhatsApp, and direct collect actions so you can resolve overdue accounts without leaving the dashboard.',
-                            'Recent Payments gives a fast audit trail of the latest borrower payments and links back to borrower profiles.'
-                        ]}
-                    />
-                    <HelpStepCard stepNumber={1} icon="insights" title="Review Live KPIs" description="Use the top metric grid to monitor growth, liquidity, and collection performance before approving new activity." />
-                    <HelpStepCard stepNumber={2} icon="touch-app" title="Use Quick Actions" description="Tap the action ribbon to jump straight into common admin jobs like remittance review, loan release, payment entry, expense entry, or cash review." />
-                    <HelpStepCard stepNumber={3} icon="warning" title="Work the Overdue Watchlist" description="Open late accounts, contact borrowers, or record collections directly from the dashboard when PAR starts increasing." />
-                </Accordion>
+                    <Text className="text-gray-300 text-xs leading-5 mb-4">
+                        Need a refresher or onboarding a new teammate? Replay the 6-step guided walkthrough to explore Agribusiness, Touch POS, Lending, and Offline-First Sync.
+                    </Text>
 
-                <Accordion title="Borrowers, Collectors, Users & Assignments" icon="people">
-                    <Text className="text-gray-600 mb-4 leading-6">These modules define who is in the system and which collector is responsible for each borrower or loan.</Text>
-                    <BulletList
-                        items={[
-                            'Borrowers can be created and searched from the Borrowers module. Borrower records include identifying details, address, and collector assignment.',
-                            'The schema supports area and route index, so assigned borrowers can be ordered by route for field collection efficiency.',
-                            'Collectors are managed separately and can be reviewed from the Collectors module. Their performance is also reflected in the dashboard and reports.',
-                            'Users can be created with role-based access. The current codebase includes admin, collector, loan encoder, payment encoder, expenses encoder, and borrower roles.',
-                            'Deleted Items and Audit Trail help you investigate changes instead of losing operational history.'
-                        ]}
-                    />
-                    <HelpStepCard stepNumber={1} icon="person-add" title="Register Clean Borrower Records" description="Create the borrower first before releasing a loan so schedules, reports, and collector routing stay accurate." />
-                    <HelpStepCard stepNumber={2} icon="directions-walk" title="Keep Collector Assignments Current" description="Borrower assignment, area, and route order affect field lists and collection sheets used by collectors." />
-                    <HelpStepCard stepNumber={3} icon="manage-accounts" title="Manage Staff Access" description="Use the Users module to give the right role to each staff member and to keep collector-linked profiles in sync with auth access." />
-                </Accordion>
+                    <Pressable
+                        testID="help-launch-tour-button"
+                        onPress={() => tour?.startTour()}
+                        className="py-3 px-4 rounded-2xl bg-blue-600 active:bg-blue-700 items-center flex-row justify-center"
+                    >
+                        <MaterialIcons name="play-arrow" size={18} color="#FFFFFF" />
+                        <Text className="text-white font-bold text-xs ml-2">
+                            Launch Guided Tour
+                        </Text>
+                    </Pressable>
+                </View>
 
-                <Accordion title="Loans, Payments, Expenses & Cash Flow" icon="payments">
-                    <Text className="text-gray-600 mb-4 leading-6">Core daily operations revolve around creating loans, recording payments, tracking expenses, and keeping cash balances accurate.</Text>
-                    <HelpStepCard stepNumber={1} icon="receipt-long" title="Create New Loans" description="From New Loan, choose a registered borrower, enter principal, interest, term, and frequency, then review the generated schedule before disbursing." />
-                    <HelpStepCard stepNumber={2} icon="calculate" title="Review Loan Calculations" description="The loan form computes installment amount and maturity date so you can verify repayment terms before release." />
-                    <HelpStepCard stepNumber={3} icon="payments" title="Record or Edit Payments" description="Use the Payments module to enter collections manually, including cases linked from overdue actions or borrower records." />
-                    <HelpStepCard stepNumber={4} icon="account-balance-wallet" title="Track Cash Movement" description="Cash on Hand reflects explicit cash ledger movement. Approved remittances increase admin cash, while expenses and other cash activity reduce it." />
-                    <HelpStepCard stepNumber={5} icon="receipt" title="Capture Expenses" description="Use the Expenses module for operating costs, then review category-based reporting from the expense reports and settings." />
-                    <BulletList
-                        items={[
-                            'Loan details screens expose borrower links, collector assignment, payment schedules, and related records such as previous loans or passbook access where applicable.',
-                            'The remittance review module is where pending collector cash submissions are approved or rejected. Approval moves the money into the admin cash position.',
-                            'Bank Accounts and Savings Portfolio are grouped under Financials for broader cash and portfolio monitoring.',
-                            'Because payment schedules can be pending, late, partial, or paid, always verify the latest status before editing a payment record.'
-                        ]}
-                    />
-                </Accordion>
+                {/* One-Tap Demo Data Card */}
+                <View className="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-3xl p-5 mb-6 shadow-sm">
+                    <View className="flex-row items-center justify-between mb-2">
+                        <View className="flex-row items-center flex-1 mr-3">
+                            <View className="w-10 h-10 rounded-2xl bg-emerald-600 items-center justify-center mr-3 shadow-sm">
+                                <MaterialIcons name="auto-fix-high" size={22} color="#FFFFFF" />
+                            </View>
+                            <View className="flex-1">
+                                <Text className="text-emerald-950 font-black text-base">Quick Start: Mock Data</Text>
+                                <Text className="text-emerald-800 text-xs font-semibold">
+                                    {sampleStatus?.enabled
+                                        ? `Active Demo Data: ${sampleStatus.active} records populated across all modules`
+                                        : 'No demo data loaded yet — load with 1 tap'}
+                                </Text>
+                            </View>
+                        </View>
+                    </View>
 
-                <Accordion title="Reports, Analytics & Monthly Controls" icon="bar-chart">
-                    <Text className="text-gray-600 mb-4 leading-6">The reporting area is organized by operational cadence so you can move from daily monitoring into weekly and monthly financial review.</Text>
-                    <BulletList
-                        items={[
-                            'Daily and real-time reporting includes the reports overview and expense breakdown.',
-                            'Weekly operations include consolidated collection sheets, active loan collection views, and weekly collection reporting.',
-                            'Monthly performance includes Financial Summary, Collector Efficiency, Portfolio Aging, MFI Metrics, Income Statement, Balance Sheet, Disbursement History, and Savings.',
-                            'The MFI metrics screens help track sustainability and risk indicators, while Portfolio Aging highlights overdue buckets used for PAR analysis.',
-                            'Monthly Financial Closing is available from Settings when you need to lock in a financial snapshot for a reporting period.'
-                        ]}
-                    />
-                    <HelpStepCard stepNumber={1} icon="assessment" title="Use Reports Overview" description="Start with the overview screen to choose the correct report family before drilling into deeper financial analysis." />
-                    <HelpStepCard stepNumber={2} icon="assignment-late" title="Review Portfolio Aging" description="Track overdue buckets, late accounts, and PAR-related exposure to catch deterioration early." />
-                    <HelpStepCard stepNumber={3} icon="trending-up" title="Monitor Collector Efficiency" description="Compare collector performance, collection rates, and cash handling using the current reporting screens." />
-                </Accordion>
+                    <Text className="text-emerald-900/80 text-xs leading-5 mb-4">
+                        Populate the entire system with realistic Philippine agricultural parcels, crop cycles, farm harvests, store inventory, sales returns, water station orders, and loans to immediately test and explore every screen.
+                    </Text>
 
-                <Accordion title="Sync, Backup, Restore & Data Safety" icon="sync">
-                    <Text className="text-gray-600 mb-4 leading-6">The app is offline-first. Every device works locally first, then exchanges updates with the Supabase backend when online.</Text>
-                    <HelpStepCard stepNumber={1} icon="cloud-download" title="Pull Latest Cloud Changes" description="Manual sync downloads new or updated data from the server, including work submitted by other devices or staff." />
-                    <HelpStepCard stepNumber={2} icon="cloud-upload" title="Push Local Changes" description="Records created or updated locally are uploaded during sync so the rest of the team receives current data." />
-                    <HelpStepCard stepNumber={3} icon="history" title="Review Sync Logs" description="Open Sync Center to inspect per-table progress, row counts, timestamps, current model, and the last sync error if something fails." />
-                    <HelpStepCard stepNumber={4} icon="backup" title="Protect Critical Data" description="Settings includes local backup export, restore from file, cloud backup, cloud merge, audit tools, and last-resort local database reset controls." />
-                    <BulletList
-                        items={[
-                            'Manual backup exports local data. Restore can merge data or wipe local data first, depending on the option you choose.',
-                            'Cloud backup and cloud merge affect the live Supabase database for all users, so use them carefully and only with the right admin authority.',
-                            'Deleted records are soft-deleted rather than permanently removed, which helps preserve history and supports audit tools.',
-                            'Use Data Integrity Audit and Audit Trail before doing destructive maintenance, especially if staff report missing or inconsistent figures.'
-                        ]}
-                    />
-                </Accordion>
+                    <View className="flex-row items-center gap-3">
+                        <Pressable
+                            onPress={handleToggleDemoData}
+                            disabled={loadingSampleAction}
+                            className={`flex-1 py-3 px-4 rounded-2xl items-center flex-row justify-center ${sampleStatus?.enabled ? 'bg-amber-600 active:bg-amber-700' : 'bg-emerald-600 active:bg-emerald-700'}`}
+                        >
+                            {loadingSampleAction ? (
+                                <ActivityIndicator size="small" color="#FFFFFF" />
+                            ) : (
+                                <>
+                                    <MaterialIcons name={sampleStatus?.enabled ? 'visibility-off' : 'cloud-download'} size={18} color="#FFFFFF" />
+                                    <Text className="text-white font-bold text-xs ml-2">
+                                        {sampleStatus?.enabled ? 'Hide All Demo Data' : 'Load All Modules Demo Data'}
+                                    </Text>
+                                </>
+                            )}
+                        </Pressable>
+                    </View>
+                </View>
 
-                <View className="h-10" />
+                {/* Category Pills */}
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-6 -mx-6 px-6">
+                    <View className="flex-row gap-2">
+                        {CATEGORIES.map(cat => {
+                            const active = selectedCategory === cat.id;
+                            return (
+                                <Pressable
+                                    key={cat.id}
+                                    onPress={() => setSelectedCategory(cat.id)}
+                                    className={`py-2 px-3.5 rounded-2xl border flex-row items-center ${active ? 'bg-blue-900 border-blue-900' : 'bg-white border-gray-200 active:bg-gray-100'}`}
+                                >
+                                    <Text className={`text-xs font-bold ${active ? 'text-white' : 'text-gray-700'}`}>
+                                        {cat.label}
+                                    </Text>
+                                </Pressable>
+                            );
+                        })}
+                    </View>
+                </ScrollView>
+
+                {/* 1. Getting Started & Dashboard */}
+                {(showCategory('all') || selectedCategory === 'all') && matchesSearch(['dashboard', 'start', 'navigation', 'sidebar', 'sync'], 'Getting Started & Navigation') && (
+                    <Accordion title="1. Getting Started & App Navigation" icon="home" defaultOpen={true}>
+                        <Text className="text-gray-600 mb-4 leading-6">
+                            JetFarm is an offline-first enterprise management, POS, and agricultural operations system. It runs completely offline using local persistence and synchronizes seamlessly with the cloud when internet is available.
+                        </Text>
+                        <HelpNote
+                            title="Multi-Role Architecture"
+                            body="Admins have full oversight across all modules. Collectors use mobile route lists. Cashiers operate the Touch POS and Till. Branch managers oversee store receiving and stock audits."
+                        />
+                        <BulletList
+                            items={[
+                                'Daily Start: Pull down to refresh your dashboard metrics and trigger an instant background sync with Supabase.',
+                                'Full Navigation: Tap the Menu icon in the top left to open the sidebar with organized operational groups.',
+                                'Branch & Warehouse Switcher: Use the branch switcher chip in the header to switch active branch context.',
+                                'Sync Status Badge: Located at the top right. Green indicates fully synchronized; orange indicates pending sync; red indicates offline queue.',
+                                'Super User-Friendly: Every screen supports drill-downs and clean modal details with zero learning curve.'
+                            ]}
+                        />
+                        <HelpStepCard stepNumber={1} icon="dashboard" title="Review Live Dashboard KPIs" description="Monitor outstanding balances, daily collections, crop hectarage, and cash balances before taking action." />
+                        <HelpStepCard stepNumber={2} icon="menu" title="Open the Sidebar Menu" description="Browse modules categorized into Agribusiness, Crispy King POS, Lending, Accounting, and Business Units." />
+                        <HelpStepCard stepNumber={3} icon="sync" title="Monitor Sync Convergence" description="All records created locally are encrypted, saved offline immediately, and synced automatically when connected." />
+                    </Accordion>
+                )}
+
+                {/* 2. 🌾 Agribusiness Outgrower Platform */}
+                {(showCategory('agri') || selectedCategory === 'all') && matchesSearch(['agri', 'agribusiness', 'farm', 'parcel', 'crop', 'cycle', 'harvest', 'labor', 'settlement'], 'Agribusiness & Farm Operations') && (
+                    <Accordion title="2. 🌾 Agribusiness & Farm Operations" icon="eco" defaultOpen={selectedCategory === 'agri'}>
+                        <Text className="text-gray-600 mb-4 leading-6">
+                            The JetFarm Agribusiness platform coordinates outgrower farmers, crop cycles (e.g. High-Starch Cassava KU50 and Hybrid Yellow Corn), farm inputs, labor tracking, harvest scale weigh-ins, and weekly land settlements.
+                        </Text>
+                        <HelpNote
+                            title="Core Agricultural Flow"
+                            variant="emerald"
+                            body="1. Register Land Parcel -> 2. Create Crop Cycle -> 3. Record Labor & Input Expenses -> 4. Harvest Weigh-in Scale -> 5. Generate Land Owner & Investor Weekly Settlements."
+                        />
+                        <HelpStepCard stepNumber={1} icon="landscape" title="Land Parcels Registry & Mapping" description="Register farm land parcels with total hectares, soil type (Sandy Loam, Clay Loam), land owner association, and GPS boundary markers." />
+                        <HelpStepCard stepNumber={2} icon="grass" title="Crop Cycles Management" description="Start a crop cycle with target planting date, target harvest date, variety (KU50 Cassava, Pioneer Corn), expected yield, and offtake price in ₱/kg." />
+                        <HelpStepCard stepNumber={3} icon="engineering" title="Farm Labor & Input Expenses" description="Log daily labor (weeding, plowing, spraying, transplanting) with daily rates or piece rates, and track input costs (organic fertilizer, seeds)." />
+                        <HelpStepCard stepNumber={4} icon="scale" title="Digital Harvest Scale Terminal" description="Record truck weigh-ins: gross weight, tare weight, net weight in kg, quality grade (Grade A/B), moisture levels, and truck plate number." />
+                        <HelpStepCard stepNumber={5} icon="receipt-long" title="Land Owner & Investor Settlements" description="Automatically compute net payouts using guaranteed minimums, per-kilo rate sharing, and offtake revenue with audit-ready statements." />
+                        <BulletList
+                            items={[
+                                'Command Center: View real-time active hectares, ongoing crop cycles, total harvest yield in kg, and settlement status.',
+                                'Yield & P&L Analytics: Track cost per hectare, gross margin per crop cycle, and compare planned vs actual harvest yields.',
+                                'Offline Field Friendly: Record labor tasks and harvest weigh-ins out in rural fields with zero internet connectivity.'
+                            ]}
+                        />
+                    </Accordion>
+                )}
+
+                {/* 3. 🏪 Marketplace, Retail POS & Sales Returns */}
+                {(showCategory('market') || selectedCategory === 'all') && matchesSearch(['market', 'marketplace', 'pos', 'store', 'return', 'refund', 'inventory', 'warehouse'], 'Marketplace, POS & Sales Returns') && (
+                    <Accordion title="3. 🏪 Marketplace, Retail POS & Sales Returns" icon="storefront" defaultOpen={selectedCategory === 'market'}>
+                        <Text className="text-gray-600 mb-4 leading-6">
+                            Manage retail agricultural supplies, cooperative stores, product listings, stock inventory across warehouses, touch POS sales, and audited sales returns.
+                        </Text>
+                        <HelpNote
+                            title="Sales Return Workflow (Strict 3-Step Compliance)"
+                            variant="amber"
+                            body="Step 1 (Draft): Customer gives reason and item list. Step 2 (Approve): Supervisor reviews and approves. Step 3 (Complete): Good items are restocked onto warehouse shelves with stock movement logged; Damaged items are routed to waste log; POS sale is reversed and refund issued in cash or credit."
+                        />
+                        <HelpStepCard stepNumber={1} icon="inventory-2" title="Product Catalog & Warehousing" description="Maintain inventory SKUs, categories (Seeds, Fertilizers, Produce), barcodes, base units, and stock quantities across warehouses." />
+                        <HelpStepCard stepNumber={2} icon="point-of-sale" title="Touch POS & Daily Till Register" description="Fast counter checkout with item search, discounts, official receipts, and opening/closing cash float reconciliation." />
+                        <HelpStepCard stepNumber={3} icon="assignment-return" title="Sales Returns & Restocking" description="Process customer returns safely. System verifies original receipt, checks item condition (good vs damaged), and automatically updates warehouse stock balances." />
+                        <BulletList
+                            items={[
+                                'Stock Movements: Every inbound purchase, retail sale, transfer, and return generates an unalterable stock ledger record.',
+                                'Multi-Warehouse: Support for Central Warehouse, Transit Silo, and Cold Storage with cross-warehouse transfers.',
+                                'Currency Standard: All product prices, discounts, and sales figures are strictly handled in Philippine Peso (₱ PHP).'
+                            ]}
+                        />
+                    </Accordion>
+                )}
+
+                {/* 4. 💧 Water Refilling Station Module */}
+                {(showCategory('water') || selectedCategory === 'all') && matchesSearch(['water', 'station', 'gallon', 'container', 'bottle', 'delivery'], 'Water Station Module') && (
+                    <Accordion title="4. 💧 Water Refilling Station Module" icon="water-drop" defaultOpen={selectedCategory === 'water'}>
+                        <Text className="text-gray-600 mb-4 leading-6">
+                            Dedicated business unit module for operating community water refilling stations with customer container tracking, delivery routing, and payment logging.
+                        </Text>
+                        <HelpStepCard stepNumber={1} icon="people" title="Customer Profiles & Special Rates" description="Register household and commercial customers (bakeries, schools, barangay halls) with default gallon rates and delivery addresses." />
+                        <HelpStepCard stepNumber={2} icon="local-drink" title="Bottle & Container Asset Tracking" description="Track Round 5-Gallon and Slim 5-Gallon containers. Record bottles owned by the customer vs loaned from the station to prevent asset loss." />
+                        <HelpStepCard stepNumber={3} icon="local-shipping" title="Deliveries & Payment Collection" description="Dispatch delivery runs, mark orders delivered, and accept payments via Cash or GCash with instant receipt generation." />
+                        <HelpStepCard stepNumber={4} icon="build" title="Station Maintenance & Operating Expenses" description="Record operating expenses such as replacement sediment filters, activated carbon cartridges, and delivery vehicle fuel." />
+                    </Accordion>
+                )}
+
+                {/* 5. 💳 Microfinance & Lending Management */}
+                {(showCategory('lending') || selectedCategory === 'all') && matchesSearch(['lending', 'loan', 'borrower', 'collector', 'payment', 'penalty', 'cic'], 'Lending & Credit Operations') && (
+                    <Accordion title="5. 💳 Microfinance & Lending Operations" icon="payments" defaultOpen={selectedCategory === 'lending'}>
+                        <Text className="text-gray-600 mb-4 leading-6">
+                            Comprehensive microfinance engine supporting member registration, loan products, amortization calculation, field collection sheets, and delinquency management.
+                        </Text>
+                        <HelpStepCard stepNumber={1} icon="person-add" title="Member KYC & Area Route Assignment" description="Register borrowers with co-maker details, ID photos, and assign them to collector routes and geographical areas." />
+                        <HelpStepCard stepNumber={2} icon="receipt-long" title="Loan Application & Approval" description="Configure loan products (Standard, Petty Cash, Livelihood, Emergency) with flat interest calculation, terms, and approval workflows." />
+                        <HelpStepCard stepNumber={3} icon="calendar-today" title="Payment Schedules & Field Collections" description="Generate installment schedules (daily/weekly/monthly). Collectors use mobile collection sheets with live offline receipting." />
+                        <HelpStepCard stepNumber={4} icon="gavel" title="Portfolio Aging & File Cases" description="Track Portfolio at Risk (PAR>30 days), automatic delinquency flags, and legal case file logging for defaulted accounts." />
+                    </Accordion>
+                )}
+
+                {/* 6. 💰 Vault, Cash on Hand & Accounting */}
+                {(showCategory('accounting') || selectedCategory === 'all') && matchesSearch(['accounting', 'vault', 'cash', 'bank', 'journal', 'ledger', 'coa'], 'Accounting & Financial Vault') && (
+                    <Accordion title="6. 💰 Accounting, Vault & General Ledger" icon="menu-book" defaultOpen={selectedCategory === 'accounting'}>
+                        <Text className="text-gray-600 mb-4 leading-6">
+                            Enterprise double-entry accounting with strict PostgreSQL balance triggers. Manages vault cash, petty cash funds, bank accounts, and certified books of accounts.
+                        </Text>
+                        <HelpNote
+                            title="Strict Double-Entry Rule"
+                            variant="indigo"
+                            body="Every journal entry must be balanced: Total Debits must exactly equal Total Credits. The database enforces this at both client and database trigger levels."
+                        />
+                        <HelpStepCard stepNumber={1} icon="account-balance-wallet" title="Cash Vault & Petty Cash Float" description="Track physical vault movements. Approved collector remittances increase vault cash, while expenses and disbursements decrease it." />
+                        <HelpStepCard stepNumber={2} icon="account-balance" title="Bank Accounts & Reconciliations" description="Manage multiple corporate bank accounts (e.g. LandBank, BDO) with opening balances, deposit records, and fund transfers." />
+                        <HelpStepCard stepNumber={3} icon="format-list-numbered" title="Chart of Accounts & Journal Entries" description="Standard Cooperative Chart of Accounts (COA). View Cash Receipts Journal (CRJ), Cash Disbursements (CDJ), and General Ledger." />
+                        <HelpStepCard stepNumber={4} icon="assessment" title="Audited Financial Statements" description="Generate on-demand Balance Sheets, Income Statements, Statements of Cash Flows, and Cooperative Annual Statutory Reserve Reports." />
+                    </Accordion>
+                )}
+
+                {/* 7. 👥 Employees, HR & Philippine Payroll */}
+                {(showCategory('hr') || selectedCategory === 'all') && matchesSearch(['hr', 'employee', 'payroll', 'sss', 'philhealth', 'pagibig', 'tin'], 'HR & Staff Payroll') && (
+                    <Accordion title="7. 👥 HR & Philippine Statutory Payroll" icon="badge" defaultOpen={selectedCategory === 'hr'}>
+                        <Text className="text-gray-600 mb-4 leading-6">
+                            Manage staff records and automate Philippine statutory contributions (SSS, PhilHealth, Pag-IBIG, Withholding Tax) with semi-monthly payroll runs.
+                        </Text>
+                        <HelpStepCard stepNumber={1} icon="assignment-ind" title="201 Employee Masterlist" description="Store employee profiles, positions, daily/monthly salary rates, branch assignment, and government ID numbers (SSS, PhilHealth, Pag-IBIG, TIN)." />
+                        <HelpStepCard stepNumber={2} icon="calculate" title="Statutory Deductions Engine" description="Accurately compute employee and employer share contributions in accordance with current Philippine statutory tables." />
+                        <HelpStepCard stepNumber={3} icon="monetization-on" title="Payroll Processing & Payslips" description="Run semi-monthly payroll, review gross pay, overtime, deductions, and net pay in ₱ PHP with downloadable payslips." />
+                    </Accordion>
+                )}
+
+                {/* 8. 🔄 Offline-First & Cloud Sync */}
+                {(showCategory('sync') || selectedCategory === 'all') && matchesSearch(['sync', 'offline', 'backup', 'restore', 'cloud', 'supabase'], 'Offline Resilience & Cloud Sync') && (
+                    <Accordion title="8. 🔄 Offline-First Architecture & Cloud Sync" icon="sync" defaultOpen={selectedCategory === 'sync'}>
+                        <Text className="text-gray-600 mb-4 leading-6">
+                            JetFarm is engineered from the ground up for Philippine rural conditions where connectivity is intermittent or unavailable.
+                        </Text>
+                        <HelpNote
+                            title="Zero-Lag Local First"
+                            variant="emerald"
+                            body="All transactions (loans, harvest weigh-ins, POS sales, payments) write to local WatermelonDB instantly in less than 5ms. No spinners or waiting for internet."
+                        />
+                        <HelpStepCard stepNumber={1} icon="cloud-download" title="Automatic Two-Way Sync" description="When internet is detected, the sync engine exchanges changes with Supabase using Last-Write-Wins and strict relational dependency order." />
+                        <HelpStepCard stepNumber={2} icon="sync" title="Sync Status Indicators" description="Green badge = All data safely synced to cloud; Amber badge = Syncing in progress; Red badge = Offline changes queued on device." />
+                        <HelpStepCard stepNumber={3} icon="backup" title="Local Backup & Cloud Archival" description="Create complete encrypted JSON database backups in Settings > Backup, and restore on replacement devices anytime." />
+                    </Accordion>
+                )}
+
+                <View className="h-14" />
             </ScrollView>
         </SafeAreaView>
     );

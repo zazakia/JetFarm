@@ -1,5 +1,10 @@
 import { test, expect } from '@playwright/test';
 import { loginWithCredentials } from './playwright-auth';
+import { LENDING_E2E_ENABLED, LENDING_SKIP_REASON } from './lending-gate';
+
+// Loan management ships dark (system.lending=false): every screen below is feature-gated.
+// Re-run with E2E_LENDING=1 against a profile that enables the flag.
+test.beforeEach(() => test.skip(!LENDING_E2E_ENABLED, LENDING_SKIP_REASON));
 
 test.describe('Collector field workflow UI', () => {
   test.describe.configure({ retries: 0, timeout: 60000 });
@@ -7,7 +12,7 @@ test.describe('Collector field workflow UI', () => {
   test.beforeEach(async ({ page }) => {
     await page.setDefaultTimeout(90000);
     page.on('dialog', async (dialog) => dialog.accept());
-    await loginWithCredentials(page, 'cresencio.junco@poscursor.com');
+    await loginWithCredentials(page, 'cresencio.junco@jetfarm.com');
     await expect(page.getByText(/Collector Portal/i).first()).toBeVisible({ timeout: 60000 });
   });
 

@@ -61,7 +61,14 @@ const feature = (
 });
 
 export const DEFAULT_FEATURE_FLAGS: DefaultFeatureFlag[] = [
-    feature('system.lending', 'Lending & Credit System', 'Master switch for all lending features (Loans, Calculator, Applications, Approvals, Borrowers, Field Collections, CIC, and Lending Reports).', 1, true, 'Core Systems'),
+    // Shipped dark: all loan-management surfaces (Borrowers, Loans, Payments, Remittances,
+    // Collectors, File Cases, CIC, lending reports & loan-products settings) are hidden by
+    // default via this master switch — routes render FeatureDisabledNotice and dependent
+    // lending flags are forced off (see useFeatureFlags.isEnabled). Re-enable in
+    // Settings > Feature Flags. NOTE: ensureFeatureFlags() only seeds rows that do not
+    // exist yet, so databases seeded before this change keep lending enabled until the
+    // flag is turned off there.
+    feature('system.lending', 'Lending & Credit System', 'Master switch for all lending features (Loans, Calculator, Applications, Approvals, Borrowers, Field Collections, CIC, and Lending Reports).', 1, false, 'Core Systems'),
     feature('module.borrowers', 'Borrowers', 'Borrower management and profiles.', 10),
     feature('module.loans', 'Loans', 'Loan creation, approval, and account management.', 20),
     feature('module.payments', 'Payments', 'Payment encoding and receipts.', 30),
@@ -79,9 +86,16 @@ export const DEFAULT_FEATURE_FLAGS: DefaultFeatureFlag[] = [
     feature('module.cic', 'CIC Reporting', 'Credit Information Corporation (CIC) compliance reporting.', 140),
     feature('module.accounting', 'Accounting', 'General Ledger, Journal Entries, and Chart of Accounts.', 150),
     feature('feature.modules.water_station.enabled', 'Water Station Module', 'Water refilling station tracking, refill orders, and deliveries.', 160, true, 'Coop Business Units'),
-    feature('feature.modules.agri_store.enabled', 'Agri-Store Module', 'Agricultural store supply inventory and member credit purchasing.', 170, true, 'Coop Business Units'),
-    feature('feature.modules.pharmacy.enabled', 'Pharmacy Module', 'Medicine inventory, prescription logs, and senior/PWD discounts.', 180, true, 'Coop Business Units'),
-    feature('feature.modules.transport.enabled', 'Transport Module', 'Cooperative transport fleet, boundary collection, and fuel logs.', 190, true, 'Coop Business Units'),
+    // Shipped dark: these three units have no tables of their own and their consoles render
+    // useState seed data, so turning them on would present sample figures as live books.
+    // Re-enable per module when it is actually wired to stock_movements / module_transactions
+    // (docs/CRUD-PERSISTENCE-AUDIT.md M3/M4, guarded by modulePersistenceGuards.test.ts).
+    // NOTE: SettingsService.ensureFeatureFlags() only seeds a row that does not exist yet, so an
+    // installation that already has these rows stays enabled until the flag is turned off in
+    // Settings > Feature Flags (or via scripts/seed). This default governs fresh databases.
+    feature('feature.modules.agri_store.enabled', 'Agri-Store Module', 'Preview: agricultural store supply inventory and member credit purchasing. Not yet wired to inventory tables.', 170, false, 'Coop Business Units'),
+    feature('feature.modules.pharmacy.enabled', 'Pharmacy Module', 'Preview: medicine inventory, prescription logs, and senior/PWD discounts. Not yet wired to inventory tables.', 180, false, 'Coop Business Units'),
+    feature('feature.modules.transport.enabled', 'Transport Module', 'Preview: cooperative transport fleet, boundary collection, and fuel logs. Not yet wired to fleet tables.', 190, false, 'Coop Business Units'),
 ];
 
 export const CONFIGURABLE_PERMISSION_KEYS = [
@@ -247,7 +261,7 @@ export const DEFAULT_COOP_SETTINGS: DefaultCoopSetting[] = [
     {
         id: 'setting-brand-company-name',
         key: 'brand.company_name',
-        value: 'POS Cursor',
+        value: 'Agri-One',
         valueType: 'string',
         scope: 'global',
         isActive: true,
@@ -255,7 +269,7 @@ export const DEFAULT_COOP_SETTINGS: DefaultCoopSetting[] = [
     {
         id: 'setting-brand-company-name-full',
         key: 'brand.company_name_full',
-        value: 'POS Cursor',
+        value: 'Agri-One',
         valueType: 'string',
         scope: 'global',
         isActive: true,

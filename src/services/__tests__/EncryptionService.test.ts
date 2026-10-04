@@ -89,4 +89,43 @@ describe('EncryptionService', () => {
             );
         });
     });
+
+    describe('placeholder key rejection outside the test runtime', () => {
+        const originalNodeEnv = process.env.NODE_ENV;
+
+        afterEach(() => {
+            process.env.NODE_ENV = originalNodeEnv;
+        });
+
+        // The module reads NODE_ENV at load time, so each case needs a fresh instance.
+        const loadServiceWithKey = (key: string) => {
+            process.env.NODE_ENV = 'production';
+            process.env.EXPO_PUBLIC_ENCRYPTION_KEY = key;
+            let service;
+            jest.isolateModules(() => {
+                service = require('../EncryptionService').EncryptionService;
+            });
+            return service;
+        };
+
+        it.each(['mock-primary-key', 'POSCursor_Sec_2024_Ph'])(
+            'refuses to encrypt with the committed fixture %s',
+            (fixtureKey) => {
+                const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+                const service = loadServiceWithKey(fixtureKey);
+
+                expect(service.encrypt('SecretPassword123')).toBeNull();
+                expect(consoleSpy).toHaveBeenCalled();
+                consoleSpy.mockRestore();
+            }
+        );
+
+        it('still encrypts with an operator-provisioned key', () => {
+            const service = loadServiceWithKey('an-operator-provisioned-key-32');
+            const encrypted = service.encrypt('SecretPassword123');
+
+            expect(encrypted).toMatch(/^AES::v1::/);
+            expect(service.decrypt(encrypted)).toBe('SecretPassword123');
+        });
+    });
 });

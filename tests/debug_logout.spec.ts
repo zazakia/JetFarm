@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import { loginWithCredentials } from './playwright-auth';
 
 test('debug logout button', async ({ page }) => {
-  await loginWithCredentials(page, 'cresencio.junco@poscursor.com');
+  await loginWithCredentials(page, 'cresencio.junco@jetfarm.com');
   
   // Wait for dashboard
   await expect(page.getByText(/Collector Portal/i).first()).toBeVisible({ timeout: 30000 });

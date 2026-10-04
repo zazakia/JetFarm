@@ -20,6 +20,8 @@ jobs:
         env:
           EXPO_PUBLIC_SUPABASE_URL: https://example.supabase.co
           EXPO_PUBLIC_SUPABASE_ANON_KEY: dummy-key
+      - name: CRUD + persistence contract gate (static, no credentials)
+        run: node scripts/audit-crud-persistence.mjs --fail-on-high
       - uses: actions/upload-artifact@v4
         if: always()
         with:

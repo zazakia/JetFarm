@@ -1,5 +1,10 @@
 import { test, expect } from '@playwright/test';
 import { loginAsAdmin, safeNavigate } from './playwright-auth';
+import { LENDING_E2E_ENABLED, LENDING_SKIP_REASON } from './lending-gate';
+
+// Loan management ships dark (system.lending=false): every screen below is feature-gated.
+// Re-run with E2E_LENDING=1 against a profile that enables the flag.
+test.beforeEach(() => test.skip(!LENDING_E2E_ENABLED, LENDING_SKIP_REASON));
 
 test.describe('Cooperative Computations Settings', () => {
     test.beforeEach(async ({ page }) => {

@@ -1,8 +1,10 @@
 import React from 'react';
+import { Linking } from 'react-native';
 import { render, fireEvent } from '@testing-library/react-native';
 import { AppUpdateModal } from '../AppUpdateModal';
 import { AutoUpdateController } from '../AutoUpdateController';
 import { type AppVersionManifest } from '../../services/AppUpdateService';
+import { APP_DOWNLOAD_URL } from '../../constants/AppVersion';
 
 describe('AppUpdateModal & AutoUpdateController Components', () => {
     const sampleManifest: AppVersionManifest = {
@@ -67,6 +69,36 @@ describe('AppUpdateModal & AutoUpdateController Components', () => {
 
         fireEvent.press(getByText('Remind Me Later'));
         expect(onDismissMock).toHaveBeenCalled();
+    });
+
+    it('falls back to the resolved download URL when the manifest omits an APK link', async () => {
+        const openURL = jest.spyOn(Linking, 'openURL').mockResolvedValue(undefined);
+
+        const manifestWithoutApkUrl: AppVersionManifest = { ...sampleManifest, apkUrl: undefined };
+
+        const { getByText } = render(
+            <AppUpdateModal
+                visible={true}
+                manifest={manifestWithoutApkUrl}
+                currentVersion="0.1.3"
+                isForced={false}
+                isDownloading={false}
+                downloadProgress={0}
+                downloadedBytes={0}
+                totalExpectedBytes={0}
+                errorMessage={null}
+                onUpdatePress={jest.fn()}
+                onDismissPress={jest.fn()}
+            />
+        );
+
+        fireEvent.press(getByText('🌐 Open Download Link in Browser'));
+        await Promise.resolve();
+
+        expect(openURL).toHaveBeenCalledWith(APP_DOWNLOAD_URL);
+        expect(openURL.mock.calls[0][0]).not.toContain('jetfarm.pages.dev');
+
+        openURL.mockRestore();
     });
 
     it('renders pre-fetched ready-to-install state with single click button', () => {

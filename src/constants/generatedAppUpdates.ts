@@ -2,6 +2,24 @@ import type { AppUpdateEntry } from './appUpdates';
 
 export const GENERATED_APP_UPDATES: AppUpdateEntry[] = [
     {
+        "id": "35bef44bfc5df52e6b47005c66067d51202f2ff8",
+        "version": "35bef44",
+        "versionLabel": "Commit",
+        "date": "2026-09-26",
+        "title": "Complete B7-Ultra quality gate, enterprise accounting, and deployment hardening",
+        "category": "feature",
+        "icon": "new-releases",
+        "summary": "Complete B7-Ultra quality gate, enterprise accounting, and deployment hardening",
+        "changes": [
+            "Complete B7-Ultra quality gate, enterprise accounting, and deployment hardening"
+        ],
+        "codeChanges": [
+            "Updated app.json",
+            "Updated app/(admin)/_layout.tsx",
+            "Updated app/(admin)/accounting/index.tsx"
+        ]
+    },
+    {
         "id": "97c0bb9cdc20398a178fd9246a65028b07bed020",
         "version": "97c0bb9",
         "versionLabel": "Commit",

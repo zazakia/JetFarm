@@ -62,6 +62,8 @@ jobs:
         run: npm ci
       - name: TypeScript Compiler Check
         run: npx tsc --noEmit
+      - name: CRUD + Persistence Contract Check
+        run: node scripts/audit-crud-persistence.mjs --fail-on-high
 
   unit-tests:
     if: ${{ inputs.run-unit-tests }}

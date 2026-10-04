@@ -3,6 +3,7 @@ import { View, Text, ScrollView, Pressable, TextInput, Alert } from 'react-nativ
 import { useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { formatPHP } from '../../../../src/utils/currency';
+import { DemoDataNotice } from '../../../../src/components/DemoDataNotice';
 
 interface ProductItem {
     id: string;
@@ -21,6 +22,10 @@ const INITIAL_PRODUCTS: ProductItem[] = [
     { id: '5', name: 'Insecticide Spray 1L', category: 'Chemicals', unit: 'bottle', price: 650, stock: 80 }
 ];
 
+// Preview state. Nothing below reaches WatermelonDB, so nothing syncs and no journal entry is
+// posted; the seed figures and the counters reset on reload. See src/components/DemoDataNotice.tsx
+// and docs/CRUD-PERSISTENCE-AUDIT.md M4 for the wiring this console still needs
+// (stock_movements + InventoryJournalService.recordMovement, CoA 1210/5130 are already mapped).
 export default function AgriStoreConsoleScreen() {
     const router = useRouter();
     const [products, setProducts] = useState<ProductItem[]>(INITIAL_PRODUCTS);
@@ -40,7 +45,11 @@ export default function AgriStoreConsoleScreen() {
         setSalesCount(prev => prev + 1);
         setTotalRevenue(prev => prev + product.price);
 
-        Alert.alert('Sale Recorded', `Recorded sale of 1 ${product.unit} ${product.name} for ${formatPHP(product.price)}.`);
+        Alert.alert(
+            'Preview Only — Nothing Was Saved',
+            `This decremented in-memory stock for ${product.name} by 1 ${product.unit}. ` +
+                'No sale record was written, no stock movement was journaled, and the figure resets when the page reloads.'
+        );
     };
 
     return (
@@ -52,7 +61,7 @@ export default function AgriStoreConsoleScreen() {
                         <MaterialIcons name="arrow-back" size={22} color="#FFFFFF" />
                     </Pressable>
                     <View className="bg-emerald-800/80 px-3 py-1 rounded-full border border-emerald-700/50">
-                        <Text className="text-emerald-200 text-xs font-bold uppercase tracking-wider">COA Segment: AGRI</Text>
+                        <Text className="text-emerald-200 text-xs font-bold uppercase tracking-wider">COA Segment: AGRI (planned)</Text>
                     </View>
                 </View>
 
@@ -64,15 +73,17 @@ export default function AgriStoreConsoleScreen() {
 
                 <View className="flex-row mt-6 gap-3">
                     <View className="flex-1 bg-emerald-800/60 p-4 rounded-2xl border border-emerald-700/40">
-                        <Text className="text-emerald-200 text-xs font-semibold">Today's Sales</Text>
+                        <Text className="text-emerald-200 text-xs font-semibold">Preview Sales (sample)</Text>
                         <Text className="text-white text-xl font-bold mt-1">{formatPHP(totalRevenue)}</Text>
                     </View>
                     <View className="flex-1 bg-emerald-800/60 p-4 rounded-2xl border border-emerald-700/40">
-                        <Text className="text-emerald-200 text-xs font-semibold">Transactions</Text>
+                        <Text className="text-emerald-200 text-xs font-semibold">Preview Transactions</Text>
                         <Text className="text-white text-xl font-bold mt-1">{salesCount} items</Text>
                     </View>
                 </View>
             </View>
+
+            <DemoDataNotice moduleName="Agri-Store" whatShowsNumbers />
 
             {/* Inventory List Header & Search */}
             <View className="flex-row items-center justify-between mb-4">

@@ -20,11 +20,14 @@ test.describe('Global sync button', () => {
     await expect(page.getByTestId('global-sync-button')).toHaveCount(0);
   });
 
-  test('uses the admin header sync control instead of the floating global button after admin login', async ({ page }) => {
+  test('hides all sync chrome after admin login', async ({ page }) => {
     await loginAsAdmin(page);
 
+    // Current product design: the floating GlobalSyncButton is hidden for admin
+    // roles, and no SyncStatusIndicator is rendered inside the (admin) shell
+    // (it only appears on collector/encoder/borrower portals).
     await expect(page.getByTestId('global-sync-button')).toHaveCount(0);
-    await expect(page.getByTestId('sync-status-indicator')).toBeVisible({ timeout: 60000 });
+    await expect(page.getByTestId('sync-status-indicator')).toHaveCount(0);
   });
 
   for (const [role, login] of [

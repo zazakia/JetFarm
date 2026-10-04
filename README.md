@@ -1,13 +1,16 @@
 # JetFarm
 
-React Native Expo enterprise management and POS system for offline-first operations.
+React Native Expo agribusiness outgrower operations, contract farming management, and agri-finance platform for offline-first rural agricultural cooperatives.
 
 ## Key Features
-- Multi-role support: admin, collector, borrower, loan encoder, payment encoder, expenses encoder.
-- Offline-first workflow: local WatermelonDB writes first, Supabase sync when online.
-- Financial reporting: KPIs, collection summaries, portfolio monitoring, and remittance workflows.
-- Employee management & Payroll: Base salary management, monthly staff payroll runs, and payout history.
-- Local-first reliability: native uses SQLite through WatermelonDB; web and tests use LokiJS.
+- **Outgrower & Contract Farming**: Farmer master profiles, land parcel geolocation, crop cycle scheduling, and planting season commitments.
+- **Agricultural Input Disbursements**: Track advances of certified seeds, fertilizers, and crop protection chemicals with loan repayment offset agreements.
+- **Harvest Intake & Buying Station**: Digital weighbridge scale integration, moisture/quality grading, receiving receipts, and gross payout calculations.
+- **Net Harvest Settlement**: Automatic deduction of input loans, cash advances, and cooperative development fees from crop delivery gross proceeds.
+- **Multi-Role Support**: Admin, Field Technician, Agronomist, Buying Station Operator, Cashier, and Outgrower Farmer Portal.
+- **Offline-First Persistence**: Local WatermelonDB writes in remote farm locations; bidirectional Supabase sync when mobile network or Wi-Fi is available.
+- **Enterprise Accounting**: Accounts Receivable, Accounts Payable, General Ledger, and Agricultural Crop Cycle Financial Statements in Philippine Peso (`₱` / `PHP`).
+- **Quality Gates (B7-Ultra)**: 206 test suites, 1635 unit/parity tests (100% pass), and zero arbitrary NativeWind hex colors.
 
 ## Tech Stack
 | Component | Technology |

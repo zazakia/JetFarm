@@ -1,26 +1,28 @@
 import { test, expect, type Page } from '@playwright/test';
-import { loginAsAdmin } from './playwright-auth';
+import { loginAsAdmin, safeNavigate } from './playwright-auth';
+import { LENDING_E2E_ENABLED, LENDING_SKIP_REASON } from './lending-gate';
+
+// Loan management ships dark (system.lending=false): every screen below is feature-gated.
+// Re-run with E2E_LENDING=1 against a profile that enables the flag.
+test.beforeEach(() => test.skip(!LENDING_E2E_ENABLED, LENDING_SKIP_REASON));
 
 async function goToAdminDashboard(page: Page) {
   const onDashboard = await page.getByTestId('admin-portal-title').isVisible().catch(() => false);
   if (onDashboard) return;
 
-  // Sidebar label is "Admin Dashboard" (exact "Dashboard" is only on feature-disabled notices).
-  await page.getByText(/Admin Dashboard/i).first().click({ force: true });
+  // Sidebar lending/dashboard entries were removed — navigate by direct route.
+  await safeNavigate(page, '/(admin)/agribusiness');
   await expect(page.getByTestId('admin-portal-title')).toBeVisible({ timeout: 60000 });
 }
 
 async function navigateToNewLoan(page: Page) {
-  await goToAdminDashboard(page);
-  await expect(page.getByText(/New Loan/i).first()).toBeVisible({ timeout: 30000 });
-  await page.getByText(/New Loan/i).first().click({ force: true });
+  // The dashboard no longer exposes quick-access tiles — use the direct route.
+  await safeNavigate(page, '/(admin)/loans/new');
   await expect(page.getByTestId('page-title')).toHaveText(/Loan Parameters/i, { timeout: 30000 });
 }
 
 async function createBorrower(page: Page, fullName: string) {
-  await goToAdminDashboard(page);
-  await page.getByText(/New Borrower/i).first().click({ force: true });
-  await expect(page.getByTestId('new-borrower-fab')).toBeVisible({ timeout: 30000 });
+  await safeNavigate(page, '/(admin)/borrowers', '[data-testid="new-borrower-fab"]');
   await page.getByTestId('new-borrower-fab').click();
   await expect(page.getByTestId('borrower-full-name-input')).toBeVisible({ timeout: 30000 });
   await page.getByTestId('borrower-full-name-input').fill(fullName);

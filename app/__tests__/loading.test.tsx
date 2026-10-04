@@ -196,4 +196,36 @@ describe('LoadingScreen', () => {
         expect(SyncService.checkAndSync).toHaveBeenCalledWith({ force: true });
         expect(mockReplace).toHaveBeenCalledWith('/(collector)');
     });
+
+    it('redirects admin to agribusiness dashboard when last route is legacy /(admin) or null', async () => {
+        const { useSyncStore } = require('../../src/stores/syncStore');
+        const { useAuth } = require('../../src/store/AuthContext');
+        const AsyncStorage = require('@react-native-async-storage/async-storage');
+
+        useSyncStore.mockReturnValue({
+            status: 'completed',
+            currentModel: '',
+            progress: 1,
+        });
+
+        useAuth.mockReturnValue({
+            initialized: true,
+            user: { id: 'admin1' },
+            role: 'admin',
+            roleResolved: true,
+            initializationError: null,
+        });
+
+        AsyncStorage.getItem.mockResolvedValue('/(admin)');
+
+        render(<LoadingScreen />);
+
+        await act(async () => {
+            jest.advanceTimersByTime(1000);
+            await Promise.resolve();
+        });
+
+        expect(mockReplace).toHaveBeenCalledWith('/(admin)/agribusiness');
+    });
 });
+

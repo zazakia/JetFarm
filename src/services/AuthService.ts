@@ -10,7 +10,7 @@ console.log('[AuthService] Module loaded V3');
 const E2E_AUTH_STORAGE_KEY = 'jetfarm:e2e-auth-user';
 // Keep in sync with supabase/seed.sql login users + login quick-access aliases.
 const E2E_TEST_USERS: Record<string, { id: string; role: string; full_name: string }> = {
-    'cybergada@gmail.com': { id: 'cybergada', role: 'admin', full_name: 'Cybergada Master' },
+    'cybergada@gmail.com': { id: 'cybergada', role: 'admin', full_name: 'Click here to Login sir Jet' },
     'admin@jetfarm.com': { id: 'admin', role: 'admin', full_name: 'Admin User' },
     'collector@jetfarm.com': { id: 'master_collector', role: 'collector', full_name: 'Master Collector' },
     // Alias used by login quick-access UI; seed canonical is loan_encoder@...

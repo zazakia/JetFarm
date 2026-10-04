@@ -3,6 +3,13 @@ import { createTestDatabase, closeTestDatabase } from '../../__tests__/test-util
 import Loan from '../../database/models/Loan';
 import Expense from '../../database/models/Expense';
 import FileCase from '../../database/models/FileCase';
+import AgriParcel from '../../database/models/AgriParcel';
+import AgriCropCycle from '../../database/models/AgriCropCycle';
+import MarketplaceProduct from '../../database/models/MarketplaceProduct';
+import SalesReturn from '../../database/models/SalesReturn';
+import WsCustomer from '../../database/models/WsCustomer';
+import BankAccount from '../../database/models/BankAccount';
+import Employee from '../../database/models/Employee';
 import { SampleDataService } from '../SampleDataService';
 import { LOAN_PRODUCT_PRESETS } from '../../utils/loanProducts';
 
@@ -46,6 +53,27 @@ describe('SampleDataService', () => {
         expect(expenses.every(expense => expense.description.includes(SampleDataService.marker))).toBe(true);
         expect(fileCases).toHaveLength(1);
         expect(fileCases[0].status).toBe('open');
+    });
+
+    it('seeds mock data across all modules (Agribusiness, Marketplace, Water Station, Banking, Employees)', async () => {
+        await SampleDataService.enable(database);
+
+        const parcels = await database.get<AgriParcel>('agri_parcels').query(Q.where('deleted_at', null)).fetch();
+        const cycles = await database.get<AgriCropCycle>('agri_crop_cycles').query(Q.where('deleted_at', null)).fetch();
+        const products = await database.get<MarketplaceProduct>('marketplace_products').query(Q.where('deleted_at', null)).fetch();
+        const returns = await database.get<SalesReturn>('sales_returns').query(Q.where('deleted_at', null)).fetch();
+        const wsCustomers = await database.get<WsCustomer>('ws_customers').query(Q.where('deleted_at', null)).fetch();
+        const banks = await database.get<BankAccount>('bank_accounts').query(Q.where('deleted_at', null)).fetch();
+        const employees = await database.get<Employee>('employees').query(Q.where('deleted_at', null)).fetch();
+
+        expect(parcels.length).toBeGreaterThanOrEqual(2);
+        expect(cycles.length).toBeGreaterThanOrEqual(2);
+        expect(products.length).toBeGreaterThanOrEqual(3);
+        expect(returns.length).toBeGreaterThanOrEqual(1);
+        expect(returns[0].status).toBe('completed');
+        expect(wsCustomers.length).toBeGreaterThanOrEqual(2);
+        expect(banks.length).toBeGreaterThanOrEqual(2);
+        expect(employees.length).toBeGreaterThanOrEqual(2);
     });
 
     it('can hide, restore, and purge sample data without touching unrelated loans', async () => {
@@ -101,6 +129,18 @@ describe('SampleDataService', () => {
                 loans: 0,
                 expenses: 0,
                 fileCases: 0,
+                payments: 0,
+                agriParcels: 0,
+                agriCropCycles: 0,
+                agriFarmWorkers: 0,
+                agriHarvestLogs: 0,
+                marketplaceProducts: 0,
+                marketplaceStores: 0,
+                salesReturns: 0,
+                waterCustomers: 0,
+                waterDeliveries: 0,
+                bankAccounts: 0,
+                employees: 0,
             },
         });
     });

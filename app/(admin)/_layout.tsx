@@ -11,6 +11,8 @@ import { COMPANY_NAME } from '../../src/constants/brand';
 import { useFeatureFlags, useRolePermissions } from '../../src/hooks/useSettingsConfig';
 import { getFeatureKeyForRoute } from '../../src/utils/featureFlags';
 import { isCrispyKing } from '../../src/config/deployment';
+import { OnboardingTourProvider } from '../../src/context/OnboardingTourContext';
+import { OnboardingTourModal } from '../../src/components/onboarding/OnboardingTourModal';
 
 function FeatureDisabledNotice({ featureName }: { featureName: string }) {
     const router = useRouter();
@@ -28,7 +30,7 @@ function FeatureDisabledNotice({ featureName }: { featureName: string }) {
                 </Text>
                 <View className="flex-row gap-3 w-full">
                     <Pressable
-                        onPress={() => router.push('/(admin)' as any)}
+                        onPress={() => router.push('/(admin)/agribusiness' as any)}
                         className="flex-1 py-3 px-4 rounded-xl bg-gray-100 active:bg-gray-200 items-center"
                     >
                         <Text className="text-sm font-semibold text-gray-800">Dashboard</Text>
@@ -111,128 +113,135 @@ export default function AdminShellLayout() {
     // Desktop Layout
     if (isDesktop) {
         return (
-            <View className="flex-1 flex-row bg-gray-50">
-                <View className="w-64 border-r border-gray-200 shadow-sm z-10">
-                    <SidebarContent />
+            <OnboardingTourProvider>
+                <View className="flex-1 flex-row bg-gray-50">
+                    <View className="w-64 border-r border-gray-200 shadow-sm z-10">
+                        <SidebarContent />
+                    </View>
+                    <View className="flex-1 bg-gray-50">
+                        {!isCurrentRouteFeatureEnabled ? (
+                            <FeatureDisabledNotice featureName={routeFeature?.label || 'Feature'} />
+                        ) : (
+                            <Slot />
+                        )}
+                    </View>
                 </View>
-                <View className="flex-1 bg-gray-50">
+                <OnboardingTourModal />
+            </OnboardingTourProvider>
+        );
+    }
+
+    // Mobile Layout
+    return (
+        <OnboardingTourProvider>
+            <View className="flex-1 bg-gray-50">
+                {/* Header - Hidden on dashboard index because it has its own header */}
+                {!pathname.endsWith('/(admin)') && !pathname.endsWith('/(admin)/') && (() => {
+                    const isSubScreen = (path: string) => {
+                        const clean = path.replace('/(admin)', '').replace(/\/$/, '');
+                        if (!clean || clean === '/') return false;
+                        
+                        const topLevelPaths = [
+                            '/agribusiness',
+                            '/borrowers',
+                            '/loans',
+                            '/payments',
+                            '/expenses',
+                            '/payroll',
+                            '/users',
+                            '/collectors',
+                            '/reports/dashboard',
+                            '/settings'
+                        ];
+                        return !topLevelPaths.includes(clean);
+                    };
+
+                    const showBackButton = isSubScreen(pathname) && router.canGoBack();
+
+                    return (
+                        <SafeAreaView className="bg-blue-900 shadow-sm z-10">
+                            <View className="flex-row items-center justify-between p-4">
+                                <View className="flex-row items-center">
+                                    {showBackButton ? (
+                                        <Pressable onPress={() => router.back()} className="mr-4 p-1 active:bg-white/10 rounded-full">
+                                            <MaterialIcons name="arrow-back" size={28} color="#FFFFFF" />
+                                        </Pressable>
+                                    ) : (
+                                        <Pressable onPress={() => setDrawerOpen(true)} className="mr-4 p-1 active:bg-white/10 rounded-full">
+                                            <MaterialIcons name="menu" size={28} color="#FFFFFF" />
+                                        </Pressable>
+                                    )}
+                                    <Text className="text-white text-lg font-bold tracking-wide">{currentTitle}</Text>
+                                </View>
+                                <View className="flex-row items-center">
+                                    <SyncStatusBadge />
+                                    <Pressable className="bg-white/10 p-2 rounded-full active:bg-white/20 ml-2">
+                                        <MaterialIcons name="notifications-none" size={24} color="#FFFFFF" />
+                                    </Pressable>
+                                </View>
+                            </View>
+                        </SafeAreaView>
+                    );
+                })()}
+
+                {/* Main Content */}
+                <View className="flex-1">
                     {!isCurrentRouteFeatureEnabled ? (
                         <FeatureDisabledNotice featureName={routeFeature?.label || 'Feature'} />
                     ) : (
                         <Slot />
                     )}
                 </View>
-            </View>
-        );
-    }
 
-    // Mobile Layout
-    return (
-        <View className="flex-1 bg-gray-50">
-            {/* Header - Hidden on dashboard index because it has its own header */}
-            {!pathname.endsWith('/(admin)') && !pathname.endsWith('/(admin)/') && (() => {
-                const isSubScreen = (path: string) => {
-                    const clean = path.replace('/(admin)', '').replace(/\/$/, '');
-                    if (!clean || clean === '/') return false;
-                    
-                    const topLevelPaths = [
-                        '/borrowers',
-                        '/loans',
-                        '/payments',
-                        '/expenses',
-                        '/payroll',
-                        '/users',
-                        '/collectors',
-                        '/reports/dashboard',
-                        '/settings'
-                    ];
-                    return !topLevelPaths.includes(clean);
-                };
-
-                const showBackButton = isSubScreen(pathname) && router.canGoBack();
-
-                return (
-                    <SafeAreaView className="bg-blue-900 shadow-sm z-10">
-                        <View className="flex-row items-center justify-between p-4">
-                            <View className="flex-row items-center">
-                                {showBackButton ? (
-                                    <Pressable onPress={() => router.back()} className="mr-4 p-1 active:bg-white/10 rounded-full">
-                                        <MaterialIcons name="arrow-back" size={28} color="#FFFFFF" />
-                                    </Pressable>
-                                ) : (
-                                    <Pressable onPress={() => setDrawerOpen(true)} className="mr-4 p-1 active:bg-white/10 rounded-full">
-                                        <MaterialIcons name="menu" size={28} color="#FFFFFF" />
-                                    </Pressable>
-                                )}
-                                <Text className="text-white text-lg font-bold tracking-wide">{currentTitle}</Text>
-                            </View>
-                            <View className="flex-row items-center">
-                                <SyncStatusBadge />
-                                <Pressable className="bg-white/10 p-2 rounded-full active:bg-white/20 ml-2">
-                                    <MaterialIcons name="notifications-none" size={24} color="#FFFFFF" />
+                {/* Bottom Navigation (First 4 items) */}
+                <SafeAreaView className="bg-white border-t border-gray-200">
+                    <View className="flex-row justify-around py-2">
+                        {[AGRIBUSINESS_MENU[0], ...MAIN_MENU].filter(item => isEnabled(item.featureKey) && isAllowed(item.permissionKey ?? item.featureKey)).slice(0, 4).map(item => {
+                            const isActive = pathname.replace('/(admin)', '').startsWith(item.route.replace('/(admin)', ''));
+                            return (
+                                <Pressable
+                                    key={item.route}
+                                    onPress={() => router.push(item.route as any)}
+                                    className="items-center justify-center p-2 flex-1"
+                                >
+                                    <MaterialIcons
+                                        name={item.icon}
+                                        size={24}
+                                        color={isActive ? '#1E3A8A' : '#9CA3AF'}
+                                        className="mb-1"
+                                    />
+                                    <Text className={`text-[10px] font-medium ${isActive ? 'text-blue-900' : 'text-gray-700'}`}>
+                                        {item.label}
+                                    </Text>
                                 </Pressable>
-                            </View>
-                        </View>
-                    </SafeAreaView>
-                );
-            })()}
-
-            {/* Main Content */}
-            <View className="flex-1">
-                {!isCurrentRouteFeatureEnabled ? (
-                    <FeatureDisabledNotice featureName={routeFeature?.label || 'Feature'} />
-                ) : (
-                    <Slot />
-                )}
-            </View>
-
-            {/* Bottom Navigation (First 4 items) */}
-            <SafeAreaView className="bg-white border-t border-gray-200">
-                <View className="flex-row justify-around py-2">
-                    {MAIN_MENU.filter(item => isEnabled(item.featureKey) && isAllowed(item.permissionKey ?? item.featureKey)).slice(0, 4).map(item => {
-                        const isActive = pathname.replace('/(admin)', '').startsWith(item.route.replace('/(admin)', ''));
-                        return (
-                            <Pressable
-                                key={item.route}
-                                onPress={() => router.push(item.route as any)}
-                                className="items-center justify-center p-2 flex-1"
-                            >
-                                <MaterialIcons
-                                    name={item.icon}
-                                    size={24}
-                                    color={isActive ? '#1E3A8A' : '#9CA3AF'}
-                                    className="mb-1"
-                                />
-                                <Text className={`text-[10px] font-medium ${isActive ? 'text-blue-900' : 'text-gray-700'}`}>
-                                    {item.label}
-                                </Text>
-                            </Pressable>
-                        );
-                    })}
-                </View>
-            </SafeAreaView>
-
-            {/* Mobile Drawer Overflow Modal */}
-            <Modal
-                visible={drawerOpen}
-                animationType="fade"
-                transparent={true}
-                onRequestClose={() => setDrawerOpen(false)}
-            >
-                <View className="flex-1 flex-row">
-                    {/* Dark overlay backdrop */}
-                    <Pressable
-                        className="absolute inset-0 bg-black/50"
-                        onPress={() => setDrawerOpen(false)}
-                    />
-
-                    {/* Drawer Content */}
-                    <View className="w-72 bg-blue-900 h-full shadow-2xl">
-                        <SidebarContent onClose={() => setDrawerOpen(false)} />
+                            );
+                        })}
                     </View>
-                </View>
-            </Modal>
-        </View>
+                </SafeAreaView>
+
+                {/* Mobile Drawer Overflow Modal */}
+                <Modal
+                    visible={drawerOpen}
+                    animationType="fade"
+                    transparent={true}
+                    onRequestClose={() => setDrawerOpen(false)}
+                >
+                    <View className="flex-1 flex-row">
+                        {/* Dark overlay backdrop */}
+                        <Pressable
+                            className="absolute inset-0 bg-black/50"
+                            onPress={() => setDrawerOpen(false)}
+                        />
+
+                        {/* Drawer Content */}
+                        <View className="w-72 bg-blue-900 h-full shadow-2xl">
+                            <SidebarContent onClose={() => setDrawerOpen(false)} />
+                        </View>
+                    </View>
+                </Modal>
+            </View>
+            <OnboardingTourModal />
+        </OnboardingTourProvider>
     );
 }
 

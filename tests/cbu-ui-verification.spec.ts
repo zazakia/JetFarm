@@ -1,5 +1,10 @@
 import { test, expect } from '@playwright/test';
-import { loginAsAdmin } from './playwright-auth';
+import { loginAsAdmin, safeNavigate } from './playwright-auth';
+import { LENDING_E2E_ENABLED, LENDING_SKIP_REASON } from './lending-gate';
+
+// Loan management ships dark (system.lending=false): every screen below is feature-gated.
+// Re-run with E2E_LENDING=1 against a profile that enables the flag.
+test.beforeEach(() => test.skip(!LENDING_E2E_ENABLED, LENDING_SKIP_REASON));
 
 test.describe('CBU and Share Capital UI/UX E2E Tests', () => {
     test.beforeEach(async ({ page }) => {
@@ -8,8 +13,8 @@ test.describe('CBU and Share Capital UI/UX E2E Tests', () => {
     });
 
     test('should navigate to CBU Report and verify search/back navigation', async ({ page }) => {
-        // Click the CBU Report link in the sidebar menu
-        await page.getByText('CBU Report').first().click();
+        // The reports sidebar section was removed — navigate by direct route
+        await safeNavigate(page, '/(admin)/reports/cbu');
 
         // Check if back button is visible
         const backButton = page.getByTestId('back-button');
@@ -28,8 +33,8 @@ test.describe('CBU and Share Capital UI/UX E2E Tests', () => {
     });
 
     test('should navigate to Share Capital Report and verify search/back navigation', async ({ page }) => {
-        // Click the Share Capital link in the sidebar menu
-        await page.getByText('Share Capital').first().click();
+        // The reports sidebar section was removed — navigate by direct route
+        await safeNavigate(page, '/(admin)/reports/share-capital');
 
         // Check if back button is visible
         const backButton = page.getByTestId('back-button');

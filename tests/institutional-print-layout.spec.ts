@@ -1,6 +1,11 @@
 import { test, expect, type Page } from '@playwright/test';
 import { buildLoanComputationSlipHtml, buildLoanContractFormsHtml } from '../src/services/institutionalPrintHtml';
 import { institutionalPrintFixtures } from './fixtures/institutionalLoans';
+import { LENDING_E2E_ENABLED, LENDING_SKIP_REASON } from './lending-gate';
+
+// Loan management ships dark (system.lending=false): every screen below is feature-gated.
+// Re-run with E2E_LENDING=1 against a profile that enables the flag.
+test.beforeEach(() => test.skip(!LENDING_E2E_ENABLED, LENDING_SKIP_REASON));
 
 async function renderPrintHtml(page: Page, html: string) {
   await page.setViewportSize({ width: 794, height: 1123 });

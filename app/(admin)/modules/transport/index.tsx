@@ -3,6 +3,7 @@ import { View, Text, ScrollView, Pressable, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { formatPHP } from '../../../../src/utils/currency';
+import { DemoDataNotice } from '../../../../src/components/DemoDataNotice';
 
 interface VehicleUnit {
     id: string;
@@ -36,7 +37,11 @@ export default function TransportConsoleScreen() {
         setVehicles(prev => prev.map(v => v.id === unit.id ? { ...v, collectedToday: unit.dailyBoundary } : v));
         setTotalCollections(prev => prev + unit.dailyBoundary);
 
-        Alert.alert('Boundary Collected', `Collected ${formatPHP(unit.dailyBoundary)} daily boundary from Driver ${unit.assignedDriver} (${unit.plateNumber}).`);
+        Alert.alert(
+            'Preview Only — Nothing Was Saved',
+            `This marked the ${formatPHP(unit.dailyBoundary)} boundary for ${unit.plateNumber} as collected in memory. ` +
+                'No collection record was written and the figure resets when the page reloads.'
+        );
     };
 
     return (
@@ -48,7 +53,7 @@ export default function TransportConsoleScreen() {
                         <MaterialIcons name="arrow-back" size={22} color="#FFFFFF" />
                     </Pressable>
                     <View className="bg-indigo-800/80 px-3 py-1 rounded-full border border-indigo-700/50">
-                        <Text className="text-indigo-200 text-xs font-bold uppercase tracking-wider">COA Segment: TRANS</Text>
+                        <Text className="text-indigo-200 text-xs font-bold uppercase tracking-wider">COA Segment: TRANS (planned)</Text>
                     </View>
                 </View>
 
@@ -60,7 +65,7 @@ export default function TransportConsoleScreen() {
 
                 <View className="flex-row mt-6 gap-3">
                     <View className="flex-1 bg-indigo-800/60 p-4 rounded-2xl border border-indigo-700/40">
-                        <Text className="text-indigo-200 text-xs font-semibold">Today's Collections</Text>
+                        <Text className="text-indigo-200 text-xs font-semibold">Preview Collections (sample)</Text>
                         <Text className="text-white text-xl font-bold mt-1">{formatPHP(totalCollections)}</Text>
                     </View>
                     <View className="flex-1 bg-indigo-800/60 p-4 rounded-2xl border border-indigo-700/40">
@@ -69,6 +74,8 @@ export default function TransportConsoleScreen() {
                     </View>
                 </View>
             </View>
+
+            <DemoDataNotice moduleName="Transport Fleet" whatShowsNumbers />
 
             {/* Vehicle List Header */}
             <View className="flex-row items-center justify-between mb-4">

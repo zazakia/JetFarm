@@ -1,10 +1,10 @@
 ---
-description: Complete global end-to-end software development, testing, build, and deployment workflow for POSCursor / POS Cursor
+description: Complete global end-to-end software development, testing, build, and deployment workflow for JetFarm
 ---
 
 # End-to-End Software Development Pipeline
 
-This document defines the global end-to-end software development lifecycle (SDLC) workflow for POSCursor / POS Cursor.
+This document defines the global end-to-end software development lifecycle (SDLC) workflow for JetFarm.
 
 ## Workflow Overview
 
@@ -29,16 +29,17 @@ Before submitting code changes, run the global end-to-end verification pipeline 
 npm run workflow:e2e
 ```
 
-To include Cloudflare Pages deployment in the local run:
+To include a deployment step in the local run (`pipeline-e2e.mjs --deploy`):
 ```bash
 npm run workflow:e2e -- --deploy
 ```
+> ⚠ Deployment is human-triggered only. AI agents must not run `--deploy`, `deploy:hetzner`, or `deploy:cloudflare` autonomously (see `AGENTS.md` → AI Automation Policy).
 
 ---
 
 ## Stage 2: Automated CI/CD Pipeline
 
-When code is pushed to `main` or a pull request is opened, GitHub Actions automatically executes [`.github/workflows/ci-cd.yml`](file:///e:/GitHub/POS Cursor/.github/workflows/ci-cd.yml):
+When code is pushed to `main` or a pull request is opened, GitHub Actions executes `.github/workflows/ci-cd.yml` (see also `jest.yml`, `playwright.yml`):
 
 1. **Static Analysis & Type Check**:
    - Executes `npx tsc --noEmit`
@@ -49,9 +50,9 @@ When code is pushed to `main` or a pull request is opened, GitHub Actions automa
 3. **Playwright E2E Suite**:
    - Executes `npx playwright test`
    - Uploads Playwright HTML test reports
-4. **Build & Production Deployment**:
-   - Executes `npm run export:web:production`
-   - Deploys static build output (`dist/`) directly to Cloudflare Pages (`jetfarm.pages.dev`)
+4. **Build & Deployment**:
+   - `npm run export:web:production` builds the static bundle.
+   - **Live deployment is Hetzner-only**: `npm run deploy:hetzner` publishes to `https://jetfarm.818.quest`. The Cloudflare path (`jetfarm.pages.dev`) is a dead placeholder with no credentials and must not be used as a deploy target. Deploys are **human-triggered only** per `AGENTS.md` → AI Automation Policy.
 
 ---
 
@@ -59,7 +60,7 @@ When code is pushed to `main` or a pull request is opened, GitHub Actions automa
 
 Verify live production deployment:
 
-1. **URL**: `https://jetfarm.pages.dev`
+1. **URL**: `https://jetfarm.818.quest`
 2. **Key Checkpoints**:
    - Application loads without SPA routing errors (`_redirects` active)
    - Supabase sync initializes clean local WatermelonDB instance

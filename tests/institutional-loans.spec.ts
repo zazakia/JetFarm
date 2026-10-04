@@ -1,5 +1,10 @@
 import { test, expect, type Page } from '@playwright/test';
-import { loginAsAdmin } from './playwright-auth';
+import { loginAsAdmin, safeNavigate } from './playwright-auth';
+import { LENDING_E2E_ENABLED, LENDING_SKIP_REASON } from './lending-gate';
+
+// Loan management ships dark (system.lending=false): every screen below is feature-gated.
+// Re-run with E2E_LENDING=1 against a profile that enables the flag.
+test.beforeEach(() => test.skip(!LENDING_E2E_ENABLED, LENDING_SKIP_REASON));
 
 type InstitutionalScenario = {
   loanType: 'petty_cash' | 'livelihood' | 'salary' | 'emergency';
@@ -45,22 +50,19 @@ async function goToAdminDashboard(page: Page) {
   const onDashboard = await page.getByTestId('admin-portal-title').isVisible().catch(() => false);
   if (onDashboard) return;
 
-  // Sidebar label is "Admin Dashboard" (exact "Dashboard" is only on feature-disabled notices).
-  await page.getByText(/Admin Dashboard/i).first().click({ force: true });
+  // Sidebar lending/dashboard entries were removed — navigate by direct route.
+  await safeNavigate(page, '/(admin)/agribusiness');
   await expect(page.getByTestId('admin-portal-title')).toBeVisible({ timeout: 60000 });
 }
 
 async function navigateToNewLoan(page: Page) {
-  await goToAdminDashboard(page);
-  await expect(page.getByText(/New Loan/i).first()).toBeVisible({ timeout: 30000 });
-  await page.getByText(/New Loan/i).first().click({ force: true });
+  // The dashboard no longer exposes quick-access tiles — use the direct route.
+  await safeNavigate(page, '/(admin)/loans/new');
   await expect(page.getByTestId('page-title')).toHaveText(/Loan Parameters/i, { timeout: 30000 });
 }
 
 async function createBorrower(page: Page, fullName: string) {
-  await goToAdminDashboard(page);
-  await page.getByText(/New Borrower/i).first().click({ force: true });
-  await expect(page.getByTestId('new-borrower-fab')).toBeVisible({ timeout: 30000 });
+  await safeNavigate(page, '/(admin)/borrowers', '[data-testid="new-borrower-fab"]');
   await page.getByTestId('new-borrower-fab').click();
   await expect(page.getByTestId('borrower-full-name-input')).toBeVisible({ timeout: 30000 });
   await page.getByTestId('borrower-full-name-input').fill(fullName);
@@ -92,17 +94,20 @@ async function chooseBorrowerByName(page: Page, fullName: string) {
 async function saveDraftAndOpenNewestLoan(page: Page) {
   await page.getByTestId('save-draft-loan-button').click();
 
-  const saveOutcome = await Promise.race([
-    page.getByText(/Proceed Anyway/i).waitFor({ state: 'visible', timeout: 30000 }).then(() => 'audit' as const).catch(() => null),
-    page.getByTestId('admin-portal-title').waitFor({ state: 'visible', timeout: 30000 }).then(() => 'dashboard' as const).catch(() => null),
-  ]);
-
-  if (saveOutcome === 'audit') {
-    await page.getByText(/Proceed Anyway/i).click();
+  // The auto-audit dialog can intercept the save; click through if it appears.
+  const proceed = page.getByText(/Proceed Anyway/i);
+  const auditShown = await proceed.waitFor({ state: 'visible', timeout: 30000 })
+    .then(() => true).catch(() => false);
+  if (auditShown) {
+    await proceed.click();
   }
 
-  await expect(page.getByTestId('admin-portal-title')).toBeVisible({ timeout: 60000 });
-  await page.getByText(/^Loans$/).first().click({ force: true });
+  // After a successful save the form calls safeBack(), which pops to whatever
+  // page preceded loans/new (dashboard OR borrowers list) — the agribusiness
+  // admin-portal-title is no longer a reliable landing signal. Treat "URL left
+  // loans/new" as save-complete, then go to the loans list by direct route.
+  await expect(page).not.toHaveURL(/loans\/new/, { timeout: 60000 });
+  await safeNavigate(page, '/(admin)/loans');
 
   await page.getByText('Card', { exact: true }).first().click();
 

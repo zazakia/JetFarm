@@ -14,10 +14,34 @@ export async function loginWithCredentials(page: Page, email: string, password =
   await expect(page).not.toHaveURL(/.*\/login.*/, { timeout: 30000 });
 }
 
+/**
+ * The first-run onboarding tour renders a full-screen spotlight Modal that
+ * intercepts every pointer event, so nothing on an admin screen is clickable
+ * until it is dismissed. Skipping persists ONBOARDING_STORAGE_KEY, so one
+ * dismissal covers the rest of the test.
+ */
+export async function dismissOnboardingTour(page: Page) {
+  // Welcome modal exposes onboarding-skip-button; in-progress tour steps expose
+  // onboarding-close-button. Dismiss whichever is present so neither variant
+  // leaves a full-screen spotlight Modal intercepting pointer events.
+  const close = page.getByTestId('onboarding-close-button');
+  const skip = page.getByTestId('onboarding-skip-button');
+  if (await close.isVisible().catch(() => false)) {
+    await close.click();
+  } else if (await skip.isVisible().catch(() => false)) {
+    await skip.click();
+  } else {
+    return false;
+  }
+  await expect(page.getByTestId('onboarding-tour-card')).toHaveCount(0);
+  return true;
+}
+
 export async function loginAsAdmin(page: Page) {
   await loginWithCredentials(page, 'admin@jetfarm.com');
   // Wait for the admin portal to be visible, potentially handling a redirect
   await expect(page.getByTestId('admin-portal-title')).toBeVisible({ timeout: 60000 });
+  await dismissOnboardingTour(page);
 }
 
 export async function loginAsCollector(page: Page) {
@@ -80,7 +104,12 @@ export async function safeNavigate(page: Page, url: string, targetSelectorOrText
         await expect(page.getByText(targetSelectorOrText).first()).toBeVisible({ timeout: 30000 });
       }
     } else {
-      await page.waitForLoadState('networkidle');
+      // NOTE: never wait for 'networkidle' here — the app keeps Supabase
+      // realtime WebSockets/polling open, so it never goes idle and every
+      // call would burn the full 60s timeout. DOM-ready plus a short settle
+      // is enough for the client-side route swap.
+      await page.waitForLoadState('domcontentloaded');
+      await page.waitForTimeout(1500);
     }
   } catch (e) {
     // If we were redirected to login, the test will likely fail anyway

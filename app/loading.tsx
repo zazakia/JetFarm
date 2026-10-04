@@ -165,7 +165,8 @@ export default function LoadingScreen() {
                 AsyncStorage.getItem(LAST_AUTHORIZED_ROUTE_KEY)
                     .then((lastRoute) => {
                         const fallbackRoute = ROLE_HOME_ROUTES[role as UserRole];
-                        const nextRoute = isRouteAllowedForRole(lastRoute, role) ? lastRoute : fallbackRoute;
+                        const isOldAdminHome = !lastRoute || lastRoute === '/(admin)' || lastRoute === '/(admin)/' || lastRoute === '/';
+                        const nextRoute = (!isOldAdminHome && isRouteAllowedForRole(lastRoute, role)) ? lastRoute : fallbackRoute;
                         router.replace(nextRoute as any);
                     })
                     .catch((error) => {

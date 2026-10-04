@@ -1,11 +1,11 @@
 ---
 name: deploy-jetfarm
-description: Master skill for QA verification, building, and deploying the JetFarm app to Cloudflare Pages.
+description: Master skill for QA verification, building, and deploying both the JetFarm Web App (Cloudflare Pages) and Android APK Installer (Supabase Storage CDN) with automated version bumping and branding synchronization on every deploy.
 ---
 
-# JetFarm QA & Cloudflare Pages Deployment (Expo Router + NativeWind v4)
+# JetFarm Deployment Guide: Web App & Android APK Installer
 
-Master guide for zero-regression verification, asset pipeline compilation, and automated deployment of JetFarm to Cloudflare Pages (`https://jetfarm.pages.dev`) and Supabase Storage CDN.
+Master guide for zero-regression verification, automated version bumping, branding synchronization, and simultaneous deployment of **both** the **Web App** (Cloudflare Pages `https://jetfarm.pages.dev`) and the **Android APK Installer** (Supabase CDN `https://jetfarm.pages.dev/download`) on every deploy.
 
 ---
 
@@ -27,15 +27,13 @@ Before starting the build or running quality gates:
    ```
 
 3. **Repository Cleanliness**:
-   Ensure no untracked artifacts or files are cluttering the project root (follow the Clean Root Policy).
+   Ensure no untracked artifacts or temporary files are cluttering the project root (follow Clean Root Policy).
 
 ---
 
 ## 2. Zero-Regression Quality Assurance Gates
 
-All steps below must pass cleanly (100% green). If any check fails, stop and fix the underlying issue before proceeding.
-
-**Automation preference:** For a single evidence-backed pass of tsc → Jest buckets → full Jest → Playwright → export smoke, run `systematic-test-matrix` (`node .agents/skills/systematic-test-matrix/scripts/run_matrix.mjs`) and read the newest `tmp/systematic-test-matrix/*/summary.json`. Still run lint and any production-only gates below when shipping. For writing/fixing individual Jest tests, use the `testing` skill.
+All steps below must pass cleanly (100% green). If any check fails, fix the underlying issue before proceeding.
 
 ### Gate 2.1: Static Type Check
 Verify TypeScript types compile without errors:
@@ -56,19 +54,17 @@ npx expo-doctor
 ```
 
 ### Gate 2.4: Jest Unit & Integration Test Suite
-Run the complete unit test matrix (~193 suites, ~1554 tests):
+Run the complete unit test matrix:
 ```powershell
-# Full run
-npm run test
-
 # Fast run (skips coverage overhead)
 npx jest --no-coverage
 ```
 
 ### Gate 2.5: Design & A11y Standards Check
-- **No Arbitrary Hex Colors**: Confirm all styling uses standard Tailwind classes (e.g. `bg-blue-900`, `text-red-500`). Arbitrary hex colors (`bg-[#...]`) break NativeWind v4 on web/native.
+- **No Arbitrary Hex Colors**: Confirm all styling uses standard Tailwind classes (e.g. `bg-blue-900`, `text-emerald-500`). Arbitrary hex colors (`bg-[#...]`) break NativeWind v4 on web/native.
 - **TextInput Contrast**: Confirm `<TextInput>` components have explicit `placeholderTextColor="#9CA3AF"` and dark text classes (`text-gray-900`) to prevent white-on-white text bugs.
 - **PHP Currency Compliance**: Ensure currency display strictly uses `formatPHP()` or `₱` format across all screens.
+- **Branding & Version Number Display**: Confirm `AppLogo`, `SidebarContent`, `login.tsx`, and download CTAs display the live application version (`v{getAppVersion()}`).
 
 ### Gate 2.6: WatermelonDB ↔ Supabase Sync Contract
 Verify sync schema registration and production table mapping:
@@ -82,111 +78,135 @@ node scripts/verify-sync-integrity.mjs --production
 
 ### Gate 2.7: Double-Entry Accounting & Financial Parity
 - Verify that `chart_of_accounts`, `journal_entries`, and `journal_entry_lines` are mapped in `src/services/syncTableContract.json`.
-- Ensure all business unit operations (Cash on Hand, Bank, CBU Share Capital, Savings, Expenses, Loans, Payments, Sales Returns) trigger balanced debit/credit entries.
-- Verify that the PostgreSQL database trigger `trg_enforce_balanced_journal` is active on Supabase to reject unbalanced journals.
-- Check that live financial reports (Balance Sheet, Income Statement, Trial Balance, Cash Flows) accurately reflect all reconciled entries.
+- Ensure all business unit operations trigger balanced debit/credit entries.
+- Verify PostgreSQL database trigger `trg_enforce_balanced_journal` is active on Supabase to reject unbalanced journals.
 
 ### Gate 2.8: Playwright E2E Test Suite
-Run automated browser tests simulating real multi-role operations:
+Run automated browser tests simulating real operations:
 ```powershell
 npm run test:e2e
 ```
 
 ---
 
-## 3. Local Production Build Check
+## 3. Production Deployment: Web App + Android APK Installer
 
-Test web bundling locally to ensure Metro bundler, tree-shaking, and NativeWind CSS extraction succeed:
-```powershell
-npm run export:web:production
-```
-*(This script temporarily mounts `.env.production` into the Metro bundler environment and outputs to `dist/`).*
+On **every deploy**, the pipeline compiles and deploys **both** the Web App and the Android APK Installer, and synchronizes the version number across all files and branding components.
 
----
+### Execute Deployment
 
-## 4. Cloudflare Pages & CDN Deployment
-
-### Deployment Options
-
-#### Option A: Full Release (Web + Android APK + Supabase CDN)
-Bumps patch version in `package.json`, compiles Android Release APK, uploads APK to Supabase CDN `downloads` bucket, generates routing configs, and deploys web to Cloudflare Pages:
 ```powershell
 npm run deploy:cloudflare
 ```
 
-#### Option B: Fast Web-Only Deployment (Skip Android Build)
-When changes only affect the web application or documentation, skip the local Android Gradle compilation to deploy within seconds:
-```powershell
-node scripts/deploy-cloudflare.mjs --skip-apk-build
-```
+### Automated Steps Executed on Every Deploy
 
-### What Happens During Deployment (`scripts/deploy-cloudflare.mjs`)
-1. **Web Export**: Executes `npm run export:web:production` targeting `dist/`.
-2. **APK Compilation & CDN Upload**:
-   - Compiles APK via Gradle (`android:production`).
-   - Uploads binary to Supabase Storage bucket `downloads` as `jetfarm.apk` (latest only) and deletes obsolete `jetfarm-v*.apk` objects.
-3. **SPA Client-Side Routing**:
-   - Generates `dist/_redirects` mapping `/* /index.html 200`.
-   - Adds 302 redirects for `/download`, `/download/latest`, `/download/apk`, and `/jetfarm.apk` pointing to the Supabase CDN URL.
-   - Generates static fallback download page at `dist/download/index.html`.
-4. **Security & CSP Headers**:
-   - Generates `dist/_headers` with Content-Security-Policy (whitelisting production Supabase and `wss://...`), strict frame options, and MIME guards.
-5. **Asset Name Sanitization**:
-   - Renames `dist/assets/node_modules/` to `dist/assets/vendor_modules/` and updates bundle references. (Cloudflare Pages ignores folders named `node_modules`, which would otherwise break vector icons and fonts).
-6. **Wrangler Deploy**:
-   - Deploys `dist/` to Cloudflare Pages project `jetfarm` on branch `main`.
+1. **Automated Version Increment & Synchronization (`scripts/sync-version.mjs --bump`)**:
+   - Bumps the semantic patch version (e.g. `0.1.0` → `0.1.1`).
+   - Increments Android `versionCode` (e.g. `1` → `2`).
+   - Synchronizes `package.json`, `app.json`, and `src/constants/AppVersion.ts` atomically.
+   - Refreshes in-app release updates via `scripts/generate-app-updates.mjs`.
+
+2. **Android APK Compilation (`scripts/build-android-production.mjs`)**:
+   - Runs `expo prebuild --platform android --no-install`.
+   - Compiles production release binary via Gradle: `gradlew app:assembleRelease`.
+   - Outputs APK artifact under `android/app/build/outputs/apk/release/`.
+
+3. **Supabase Storage CDN APK Upload**:
+   - Locates compiled release APK binary.
+   - Uploads binary directly to Supabase Storage bucket `downloads` as `jetfarm.apk`.
+   - Cleans up historical obsolete versioned APKs in the bucket to prevent storage bloat.
+   - Obtains public direct download URL: `${EXPO_PUBLIC_SUPABASE_URL}/storage/v1/object/public/downloads/jetfarm.apk`.
+
+4. **Web Application Export (`scripts/export-web-production.mjs`)**:
+   - Bundles the React Native web application into `dist/`.
+   - Bakes in the freshly updated version number, ensuring all branding components (`AppLogo`, `SidebarContent`, `login.tsx`) display the new version number.
+
+5. **SPA Client-Side Routing & Download Page Generation**:
+   - Generates `dist/_redirects` mapping:
+     - `/download` → Supabase CDN APK URL (302)
+     - `/download/latest` → Supabase CDN APK URL (302)
+     - `/download/apk` → Supabase CDN APK URL (302)
+     - `/download/v*` → Supabase CDN APK URL (302)
+     - `/jetfarm.apk` → Supabase CDN APK URL (302)
+     - `/* /index.html 200`
+   - Generates a static HTML fallback download page at `dist/download/index.html` displaying `JetFarm Mobile App`, version badge, release details, and direct APK download button.
+
+6. **In-App Updater Manifest Generation**:
+   - Generates `dist/version.json` with `latestVersion`, `versionCode`, `releaseTag`, `apkUrl`, and `releaseNotes`.
+   - Uploads fallback `version.json` to Supabase Storage `downloads` bucket.
+
+7. **Security & CSP Headers (`dist/_headers`)**:
+   - Writes Content Security Policy and anti-clickjacking security headers.
+
+8. **Asset Name Sanitization**:
+   - Renames `dist/assets/node_modules/` to `dist/assets/vendor_modules/` to bypass Cloudflare Pages' ignore filter for vector icons and fonts.
+
+9. **Cloudflare Pages Edge Deployment**:
+   - Executes `npx wrangler pages deploy dist --project-name jetfarm --branch main --commit-dirty=true`.
+
+---
+
+## 4. Branding & Version Number Display
+
+The version number is automatically updated on every deploy and displayed across key branding locations:
+
+1. **`src/components/AppLogo.tsx`**:
+   - Renders company name `JetFarm` alongside a prominent emerald badge `v{getAppVersion()}` (e.g. `v0.1.1`).
+   - Displayed in the Admin Sidebar, Borrower Portal Header, and Dialogs.
+
+2. **`src/components/SidebarContent.tsx`**:
+   - Top Header: Displays `AppLogo` with live version badge.
+   - Bottom Footer: Displays `JetFarm v{getAppVersion()} • Build {APP_BUILD_NUMBER}` with a direct **"Download Latest APK"** link.
+
+3. **`app/login.tsx`**:
+   - Hero Header: Displays `JetFarm AGRIBUSINESS OS • v{getAppVersion()}`.
+   - Download Button: Displays `Download Android APK (v{getAppVersion()})` linking to `APP_DOWNLOAD_URL`.
+   - Login Footer: Displays `JetFarm v{getAppVersion()} - SECURE ACCESS`.
+
+4. **`app/(admin)/settings/updates.tsx`**:
+   - In-app update manager showing current installed version, build number, and checks for updates.
 
 ---
 
 ## 5. Post-Deployment Verification & Smoke Testing
 
-Perform these live health checks immediately after deployment:
+Immediately after running `npm run deploy:cloudflare`:
 
-1. **Live Web Endpoint**:
-   - Visit `https://jetfarm.pages.dev`
-   - Check browser devtools console for missing assets (0 console 404s, vector icons load cleanly).
-2. **APK Download Endpoint**:
-   - Visit `https://jetfarm.pages.dev/download`
-   - Confirm automatic redirect or download prompt for the latest Android APK.
-3. **Admin Authentication**:
+1. **Verify Live Web Endpoint**:
+   - Navigate to `https://jetfarm.pages.dev`
+   - Check that the branding shows the newly deployed version badge (e.g. `v0.1.1`).
+   - Check browser console for 0 errors/404s.
+
+2. **Verify APK Installer Download Endpoint**:
+   - Navigate to `https://jetfarm.pages.dev/download`
+   - Confirm automatic redirect or download prompt for `jetfarm.apk`.
+   - Inspect fallback download page to confirm displayed version matches.
+
+3. **Verify Version Manifest**:
+   - Navigate to `https://jetfarm.pages.dev/version.json`
+   - Verify `latestVersion` and `versionCode` match the deployed build.
+
+4. **Verify Admin Authentication**:
    - Log in with production admin user: `cybergada@gmail.com`.
    - Verify dashboard metrics render correctly with `₱` currency.
-4. **WatermelonDB Sync Engine**:
-   - Open Sync Center.
-   - Trigger a manual sync to verify push/pull connectivity with production Supabase.
+   - Verify sidebar displays the updated version number in the branding and footer.
+
+5. **Verify WatermelonDB Sync Engine**:
+   - Open Sync Center and perform a sync test.
 
 ---
 
-## 6. Rollback & Troubleshooting Runbook
+## 6. Team Notification
 
-- **Instant Rollback via Cloudflare Pages**:
-  If a critical bug is discovered in production:
-  1. Open Cloudflare Dashboard -> Workers & Pages -> `jetfarm` -> Deployments.
-  2. Locate the previous healthy deployment and click **Rollback to this deployment**.
-  3. Alternatively, use Wrangler:
-     ```powershell
-     npx wrangler pages deployment list --project-name jetfarm
-     ```
-- **Vector Icons / Fonts Missing**:
-  Confirm that `scripts/deploy-cloudflare.mjs` successfully executed the `assets/node_modules` -> `assets/vendor_modules` renaming step.
-- **Supabase Storage Upload Failure**:
-  Ensure `SUPABASE_SERVICE_ROLE_KEY` in `.env.production` has write permissions to the `downloads` bucket.
-  Only `jetfarm.apk` is retained; deploy deletes obsolete `jetfarm-v*.apk` objects automatically.
+Once verification passes, post deployment summary:
 
----
-
-## 7. Team Notification
-
-Once smoke verification passes, post an update to the active release issue or team thread:
-
-- **Notification Ping**: `Deploy na Mimi at [Current Date]`
-- **Deployment Summary**:
-  ```markdown
-  ### 🚀 Production Deployment Successful
-  - **Environment**: Cloudflare Pages (`https://jetfarm.pages.dev`)
-  - **Version**: v[VERSION]
-  - **Commit**: [GIT_HASH]
-  - **APK Download**: https://jetfarm.pages.dev/download
-  - **Quality Gates**: All green (TSC, Lint, Jest, E2E, Sync Contracts, Accounting Parity)
-  - **Status**: Deploy na Mimi at [Current Date]
-  ```
+```markdown
+### 🚀 JetFarm Production Deployment (Web & Android APK)
+- **Web App**: https://jetfarm.pages.dev (Version: v[VERSION], Build: [BUILD_NUMBER])
+- **APK Installer Download**: https://jetfarm.pages.dev/download
+- **Version Manifest**: https://jetfarm.pages.dev/version.json
+- **Branding**: Version badge v[VERSION] active across Web App and Mobile APK
+- **Commit**: [GIT_HASH]
+- **Status**: Deploy na Mimi at [Current Date]
+```

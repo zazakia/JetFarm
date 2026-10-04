@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable, ScrollView, SafeAreaView, TextInput } from 'react-native';
+import { View, Text, Pressable, ScrollView, SafeAreaView, TextInput, Linking } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useAuth } from '../store/AuthContext';
 import { AppLogo } from './AppLogo';
 import { useFeatureFlags, useRolePermissions } from '../hooks/useSettingsConfig';
+import { COMPANY_NAME } from '../constants/brand';
+import { getAppVersion, APP_BUILD_NUMBER, APP_DOWNLOAD_URL } from '../constants/AppVersion';
+import { useOnboardingTour } from '../context/OnboardingTourContext';
 
 export type MenuItem = {
     icon: keyof typeof MaterialIcons.glyphMap;
@@ -71,7 +74,6 @@ export const LENDING_MENU: MenuItem[] = [
 // 4. GENERAL DASHBOARD & CORE OPERATIONS
 // ==========================================
 export const MAIN_MENU: MenuItem[] = [
-    { icon: 'dashboard', label: 'Admin Dashboard', route: '/(admin)' },
     { icon: 'account-balance-wallet', label: 'Operating Expenses', route: '/(admin)/expenses', featureKey: 'module.expenses' },
     { icon: 'monetization-on', label: 'Staff Payroll', route: '/(admin)/payroll', featureKey: 'module.payroll' },
     { icon: 'store', label: 'Community Marketplace', route: '/(admin)/marketplace', featureKey: 'module.marketplace' },
@@ -203,6 +205,7 @@ export function SidebarContent({ onClose }: { onClose?: () => void }) {
     const { signOut, role } = useAuth();
     const { isEnabled } = useFeatureFlags();
     const { isAllowed } = useRolePermissions(role);
+    const tour = useOnboardingTour();
     const [searchQuery, setSearchQuery] = useState('');
 
     const normalizePath = (p: string) => {
@@ -284,11 +287,30 @@ export function SidebarContent({ onClose }: { onClose?: () => void }) {
                     {renderMenuSection('Agribusiness Outgrower Platform', AGRIBUSINESS_MENU, true)}
 
                     {/* General Operations */}
-                    {renderMenuSection('Core Dashboard', MAIN_MENU)}
+                    {renderMenuSection('Core Operations', MAIN_MENU)}
 
                     {/* System Administration */}
                     {renderMenuSection('System Administration', ADMIN_MENU)}
                     {renderMenuSection('Support & Guides', SUPPORT_MENU)}
+
+                    {/* Interactive Guided Tour Quick-Launcher */}
+                    <View className="px-4 py-2 mb-2">
+                        <Pressable
+                            testID="sidebar-start-tour-button"
+                            onPress={() => {
+                                if (onClose) onClose();
+                                tour?.startTour();
+                            }}
+                            className="flex-row items-center p-3 rounded-xl bg-blue-800/80 active:bg-blue-700 border border-blue-600/40"
+                        >
+                            <MaterialIcons name="explore" size={20} color="#60A5FA" className="mr-2.5" />
+                            <View className="flex-1">
+                                <Text className="text-white font-bold text-xs">Take Guided Tour</Text>
+                                <Text className="text-blue-200 text-[10px]">60-sec platform walkthrough</Text>
+                            </View>
+                            <MaterialIcons name="chevron-right" size={18} color="#93C5FD" />
+                        </Pressable>
+                    </View>
                 </ScrollView>
 
                 <View className="p-4 border-t border-white/10">
@@ -300,6 +322,20 @@ export function SidebarContent({ onClose }: { onClose?: () => void }) {
                         <MaterialIcons name="logout" size={20} color="#EF5350" className="mr-3" />
                         <Text className="text-red-400 font-bold text-sm">Sign Out</Text>
                     </Pressable>
+                    <View className="mt-3 items-center">
+                        <Text className="text-white/60 text-xs font-semibold">
+                            {COMPANY_NAME} v{getAppVersion()} • Build {APP_BUILD_NUMBER}
+                        </Text>
+                        <Pressable
+                            onPress={() => Linking.openURL(APP_DOWNLOAD_URL)}
+                            className="mt-1"
+                            accessibilityRole="link"
+                        >
+                            <Text className="text-emerald-400 text-xs font-bold">
+                                Download Latest APK
+                            </Text>
+                        </Pressable>
+                    </View>
                 </View>
             </SafeAreaView>
         </View>

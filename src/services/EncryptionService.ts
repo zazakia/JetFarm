@@ -11,13 +11,30 @@ import * as Crypto from 'expo-crypto';
 import CryptoJS from 'crypto-js';
 import { ErrorService } from "./ErrorService";
 
+// Values that exist only as test fixtures. A build carrying one of these as its
+// AES key encrypts nothing usefully while still returning an AES::v1:: prefix.
+const KNOWN_PLACEHOLDER_KEYS = new Set(['mock-primary-key', 'POSCursor_Sec_2024_Ph']);
+const isTestRuntime = process.env.NODE_ENV === 'test';
+
+const resolveSecret = (raw: string | undefined, label: string): string => {
+    const value = (raw || '').trim();
+    if (!value) return '';
+    if (!isTestRuntime && KNOWN_PLACEHOLDER_KEYS.has(value)) {
+        console.error(
+            `[EncryptionService] ${label} is a known test placeholder. Encryption is disabled to avoid false assurance.`
+        );
+        return '';
+    }
+    return value;
+};
+
 // The primary encryption key is now loaded securely from environment variables
 const getAppSecret = (): string => {
-    return process.env.EXPO_PUBLIC_ENCRYPTION_KEY || '';
+    return resolveSecret(process.env.EXPO_PUBLIC_ENCRYPTION_KEY, 'EXPO_PUBLIC_ENCRYPTION_KEY');
 };
 
 const getLegacySecret = (): string => {
-    return process.env.EXPO_PUBLIC_LEGACY_ENCRYPTION_KEY || '';
+    return resolveSecret(process.env.EXPO_PUBLIC_LEGACY_ENCRYPTION_KEY, 'EXPO_PUBLIC_LEGACY_ENCRYPTION_KEY');
 };
 
 const AES_PREFIX = 'AES::v1::';

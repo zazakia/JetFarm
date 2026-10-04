@@ -41,7 +41,23 @@ export default function SettingsScreen() {
         try {
             const status = await SampleDataService.getStatus();
             setSampleDataEnabled(status.enabled);
-            setSampleDataSummary(`${status.active} active, ${status.deleted} deleted`);
+            const t = status.totals;
+            const moduleBreakdown = [
+                t.agriParcels > 0 ? `${t.agriParcels} parcels` : '',
+                t.agriCropCycles > 0 ? `${t.agriCropCycles} cycles` : '',
+                t.marketplaceProducts > 0 ? `${t.marketplaceProducts} products` : '',
+                t.waterCustomers > 0 ? `${t.waterCustomers} water clients` : '',
+                t.loans > 0 ? `${t.loans} loans` : '',
+                t.employees > 0 ? `${t.employees} staff` : '',
+            ].filter(Boolean).join(' • ');
+
+            setSampleDataSummary(
+                status.active > 0
+                    ? `${status.active} active records: ${moduleBreakdown}`
+                    : status.deleted > 0
+                        ? `${status.deleted} records hidden/deleted`
+                        : 'No sample records'
+            );
         } catch (error) {
             console.warn('[Settings] Unable to load sample data status:', error);
             setSampleDataEnabled(false);
@@ -380,7 +396,7 @@ export default function SettingsScreen() {
 
                     <View className="bg-gray-50 p-4 rounded-2xl border border-gray-100">
                         <Text className="text-xs text-gray-700 leading-4">
-                            Adds reversible sample borrowers, every loan product type, pending approval, expenses, cash advances, delinquent accounts, and one file case.
+                            Populates reversible mock data across all modules: Agribusiness (Parcels, Crop Cycles, Farm Workers, Harvest Scales), Marketplace & POS (Products, Inventory, Stock Movements, Returns), Water Station (Customers, Containers, Deliveries), Lending, Banking, and Staff Directory.
                         </Text>
                     </View>
 
