@@ -84,6 +84,7 @@ import AgriFarmWorker from '../database/models/AgriFarmWorker';
 import AgriLaborLog from '../database/models/AgriLaborLog';
 import AgriWeeklySettlement from '../database/models/AgriWeeklySettlement';
 import AgriInvestorLedger from '../database/models/AgriInvestorLedger';
+import MeetingAttendance from '../database/models/MeetingAttendance';
 
 export const modelClasses = [
     UserProfile,
@@ -168,6 +169,7 @@ export const modelClasses = [
     AgriLaborLog,
     AgriWeeklySettlement,
     AgriInvestorLedger,
+    MeetingAttendance,
 ];
 
 export function createTestLokiAdapter(schema = mySchema) {
