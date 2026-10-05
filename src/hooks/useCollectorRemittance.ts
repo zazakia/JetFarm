@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { Q } from '@nozbe/watermelondb';
 import { combineLatest, Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
@@ -8,6 +8,8 @@ import { database } from '../database';
 import Payment from '../database/models/Payment';
 import Remittance from '../database/models/Remittance';
 import { coerceMoneyAmount } from '../utils/currency';
+import { columnTime } from '../utils/dates';
+import { useObservedRecords } from './useObservedRecords';
 
 const RECENT_LIMIT = 10;
 
@@ -15,17 +17,12 @@ interface UseCollectorRemittanceOptions {
     collectorId?: string | null;
 }
 
-/** WDB @date columns surface as epoch-ms or Date depending on the adapter and app version. */
-function toTimestamp(value: Date | number): number {
-    return value instanceof Date ? value.getTime() : Number(value);
-}
-
 function sumAmounts(records: Array<{ amount: number }>): number {
     return records.reduce((sum, record) => sum + coerceMoneyAmount(record.amount), 0);
 }
 
 function isSameDay(value: Date | number, start: number, end: number): boolean {
-    const ts = toTimestamp(value);
+    const ts = columnTime(value);
     return ts >= start && ts <= end;
 }
 
@@ -34,6 +31,8 @@ interface RemittanceLedger {
     approved: Remittance[];
     all: Remittance[];
 }
+
+const EMPTY_LEDGER: RemittanceLedger = { payments: [], approved: [], all: [] };
 
 /**
  * Cash held and the recent remittance list as observed queries. Every live payment minus
@@ -72,16 +71,12 @@ function buildLedger$(collectorId: string): Observable<RemittanceLedger> {
 /** Newest first, so the collector sees what they handed in most recently. */
 function recentFirst(remittances: Remittance[]): Remittance[] {
     return [...remittances].sort(
-        (a, b) => toTimestamp(b.remittanceDate) - toTimestamp(a.remittanceDate),
+        (a, b) => columnTime(b.remittanceDate) - columnTime(a.remittanceDate),
     );
 }
 
 export function useCollectorRemittance(options: UseCollectorRemittanceOptions = {}) {
     const { collectorId } = options;
-    const [todayCollection, setTodayCollection] = useState(0);
-    const [balance, setBalance] = useState(0);
-    const [remittances, setRemittances] = useState<Remittance[]>([]);
-    const [loading, setLoading] = useState(true);
 
     // Fixed when the screen mounts, matching the daily collection figure on it.
     const { start, end } = useMemo(() => {
@@ -89,42 +84,30 @@ export function useCollectorRemittance(options: UseCollectorRemittanceOptions = 
         return { start: startOfDay(now).getTime(), end: endOfDay(now).getTime() };
     }, []);
 
-    const ledger$ = useMemo(() => (collectorId ? buildLedger$(collectorId) : null), [collectorId]);
+    const records$ = useMemo(
+        () => (collectorId ? buildLedger$(collectorId) : null),
+        [collectorId],
+    );
 
-    useEffect(() => {
-        if (!ledger$) {
-            setTodayCollection(0);
-            setBalance(0);
-            setRemittances([]);
-            setLoading(false);
-            return;
-        }
+    const { records, loading } = useObservedRecords<RemittanceLedger>({
+        records$,
+        empty: EMPTY_LEDGER,
+        label: 'useCollectorRemittance',
+    });
 
-        const subscription = ledger$.subscribe({
-            next: ({ payments, approved, all }) => {
-                const collectedToday = sumAmounts(
-                    payments.filter((payment) => isSameDay(payment.paymentDate, start, end)),
-                );
+    const totals = useMemo(() => {
+        const todayCollection = sumAmounts(
+            records.payments.filter((payment) => isSameDay(payment.paymentDate, start, end)),
+        );
+        const balance = sumAmounts(records.payments) - sumAmounts(records.approved);
 
-                setTodayCollection(collectedToday);
-                setBalance(sumAmounts(payments) - sumAmounts(approved));
-                setRemittances(recentFirst(all).slice(0, RECENT_LIMIT));
-                setLoading(false);
-            },
-            error: (error) => {
-                console.error('[useCollectorRemittance] Observation failed', error);
-                setLoading(false);
-            },
-        });
+        return {
+            todayCollection,
+            balance,
+            remittances: recentFirst(records.all).slice(0, RECENT_LIMIT),
+            suggestedAmount: balance > 0 ? balance : todayCollection,
+        };
+    }, [records, start, end]);
 
-        return () => subscription.unsubscribe();
-    }, [ledger$, start, end]);
-
-    return {
-        todayCollection,
-        balance,
-        remittances,
-        suggestedAmount: balance > 0 ? balance : todayCollection,
-        loading,
-    };
+    return { ...totals, loading };
 }

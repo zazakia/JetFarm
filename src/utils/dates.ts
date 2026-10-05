@@ -46,6 +46,15 @@ export function toTimestamp(date: Date | null | undefined): number {
     return date.getTime();
 }
 
+/**
+ * Epoch-ms for a WatermelonDB @date column, which surfaces as a Date or a number depending on
+ * the adapter and app version. Unlike `toTimestamp`, a missing value stays missing (NaN) rather
+ * than becoming "now", so callers cannot silently compare against the current time.
+ */
+export function columnTime(value: Date | number): number {
+    return value instanceof Date ? value.getTime() : Number(value);
+}
+
 export function startOfToday(): Date {
     return startOfDay(new Date());
 }

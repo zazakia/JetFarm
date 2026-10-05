@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { Q } from '@nozbe/watermelondb';
 import { combineLatest, Observable, of } from 'rxjs';
 import { map, switchMap } from 'rxjs/operators';
@@ -10,6 +10,8 @@ import Loan from '../database/models/Loan';
 import Payment from '../database/models/Payment';
 import PaymentSchedule from '../database/models/PaymentSchedule';
 import { coerceMoneyAmount } from '../utils/currency';
+import { columnTime } from '../utils/dates';
+import { useObservedRecords } from './useObservedRecords';
 
 export interface CollectorStats {
     todayCollection: number;
@@ -19,19 +21,13 @@ export interface CollectorStats {
     targetToday: number;
 }
 
-const EMPTY_STATS: CollectorStats = {
-    todayCollection: 0,
-    outstanding: 0,
-    activeClients: 0,
-    efficiency: 0,
-    targetToday: 0,
-};
-
 interface DashboardRecords {
     borrowers: Borrower[];
     payments: Payment[];
     schedules: PaymentSchedule[];
 }
+
+const EMPTY_RECORDS: DashboardRecords = { borrowers: [], payments: [], schedules: [] };
 
 interface UseCollectorDashboardOptions {
     collectorId?: string | null;
@@ -39,13 +35,8 @@ interface UseCollectorDashboardOptions {
     onRefresh?: () => void | Promise<void>;
 }
 
-/** WDB @date columns surface as epoch-ms or Date depending on the adapter and app version. */
-function toTimestamp(value: Date | number): number {
-    return value instanceof Date ? value.getTime() : Number(value);
-}
-
 function isDueOn(value: Date | number, start: number, end: number): boolean {
-    const ts = toTimestamp(value);
+    const ts = columnTime(value);
     return ts >= start && ts <= end;
 }
 
@@ -101,10 +92,6 @@ function buildRecords$(collectorId: string, start: number, end: number): Observa
  */
 export function useCollectorDashboard(options: UseCollectorDashboardOptions = {}) {
     const { collectorId, onRefresh } = options;
-    const [borrowers, setBorrowers] = useState<Borrower[]>([]);
-    const [stats, setStats] = useState<CollectorStats>(EMPTY_STATS);
-    const [loading, setLoading] = useState(true);
-    const [refreshing, setRefreshing] = useState(false);
 
     // Fixed when the dashboard mounts, matching the daily-goal window on screen.
     const { start, end } = useMemo(startOfTodayRange, []);
@@ -114,60 +101,39 @@ export function useCollectorDashboard(options: UseCollectorDashboardOptions = {}
         [collectorId, start, end],
     );
 
-    useEffect(() => {
-        if (!records$) {
-            setBorrowers([]);
-            setStats(EMPTY_STATS);
-            setLoading(false);
-            return;
-        }
+    const {
+        records: { borrowers, payments, schedules },
+        loading,
+        refreshing,
+        refresh,
+    } = useObservedRecords<DashboardRecords>({
+        records$,
+        empty: EMPTY_RECORDS,
+        label: 'useCollectorDashboard',
+        onRefresh,
+    });
 
-        const subscription = records$.subscribe({
-            next: ({ borrowers: assigned, payments, schedules }) => {
-                const todayCollection = payments.reduce(
-                    (sum, payment) => sum + coerceMoneyAmount(payment.amount),
-                    0,
-                );
-                const outstanding = schedules.reduce(
-                    (sum, schedule) => sum + coerceMoneyAmount(schedule.scheduledAmount),
-                    0,
-                );
-                const targetToday = schedules
-                    .filter((schedule) => isDueOn(schedule.dueDate, start, end))
-                    .reduce((sum, schedule) => sum + coerceMoneyAmount(schedule.scheduledAmount), 0);
+    const stats = useMemo<CollectorStats>(() => {
+        const todayCollection = payments.reduce(
+            (sum, payment) => sum + coerceMoneyAmount(payment.amount),
+            0,
+        );
+        const outstanding = schedules.reduce(
+            (sum, schedule) => sum + coerceMoneyAmount(schedule.scheduledAmount),
+            0,
+        );
+        const targetToday = schedules
+            .filter((schedule) => isDueOn(schedule.dueDate, start, end))
+            .reduce((sum, schedule) => sum + coerceMoneyAmount(schedule.scheduledAmount), 0);
 
-                setBorrowers(assigned);
-                setStats({
-                    todayCollection,
-                    outstanding,
-                    activeClients: assigned.length,
-                    efficiency: targetToday > 0 ? (todayCollection / targetToday) * 100 : 0,
-                    targetToday,
-                });
-                setLoading(false);
-                setRefreshing(false);
-            },
-            error: (error) => {
-                console.error('[useCollectorDashboard] Observation failed', error);
-                setLoading(false);
-                setRefreshing(false);
-            },
-        });
-
-        return () => subscription.unsubscribe();
-    }, [records$, start, end]);
-
-    // Reads are reactive, so pull-to-refresh only drives the sync pass a caller attaches.
-    const refresh = useCallback(async () => {
-        setRefreshing(true);
-        try {
-            await onRefresh?.();
-        } catch (error) {
-            console.error('[useCollectorDashboard] Refresh task failed', error);
-        } finally {
-            setRefreshing(false);
-        }
-    }, [onRefresh]);
+        return {
+            todayCollection,
+            outstanding,
+            activeClients: borrowers.length,
+            efficiency: targetToday > 0 ? (todayCollection / targetToday) * 100 : 0,
+            targetToday,
+        };
+    }, [borrowers, payments, schedules, start, end]);
 
     return { borrowers, stats, loading, refreshing, refresh };
 }
