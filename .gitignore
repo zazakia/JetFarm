@@ -110,3 +110,6 @@ supabase/.temp/
 /jetfarms.mp4
 assets/videos/*-raw.*
 
+
+# Root build/deploy archives (Clean Root Policy — see AGENTS.md)
+*.tar.gz
