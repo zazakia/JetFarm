@@ -1,18 +1,11 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { View, Text, ScrollView, RefreshControl, ActivityIndicator, SafeAreaView, StatusBar, TextInput, useWindowDimensions, Pressable , Alert } from 'react-native';
 import Animated, { FadeInRight, FadeInDown } from 'react-native-reanimated';
-import { database } from '../../src/database';
-import Borrower from '../../src/database/models/Borrower';
-import Loan from '../../src/database/models/Loan';
-import Payment from '../../src/database/models/Payment';
-import PaymentSchedule from '../../src/database/models/PaymentSchedule';
 import { useAuth } from '../../src/store/AuthContext';
 import { SyncStatusBadge } from '../../src/components/SyncStatusBadge';
 import { MaterialIcons } from '@expo/vector-icons';
-import { Q } from '@nozbe/watermelondb';
 import { SyncStatusIndicator } from '../../src/components/SyncStatusIndicator';
 import { useRouter } from 'expo-router';
-import { startOfDay, endOfDay } from 'date-fns';
 import { AuthService } from '../../src/services/AuthService';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Linking from 'expo-linking';
@@ -21,102 +14,20 @@ import { AnimatedPressable } from '../../src/components/AnimatedPressable';
 import { CollectorKpiCard } from '../../src/components/CollectorKpiCard';
 import { ReminderService } from '../../src/services/ReminderService';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useCollectorDashboard } from '../../src/hooks/useCollectorDashboard';
+import { SyncService } from '../../src/services/SyncService';
 
 export default function CollectorDashboard() {
     const { user, collectorId, sunlightMode, toggleSunlightMode, signOut } = useAuth();
     const router = useRouter();
     const { width, height } = useWindowDimensions();
     const insets = useSafeAreaInsets();
-    const [loading, setLoading] = useState(true);
-    const [refreshing, setRefreshing] = useState(false);
-    const [borrowers, setBorrowers] = useState<Borrower[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
-    const [stats, setStats] = useState({
-        todayCollection: 0,
-        outstanding: 0,
-        activeClients: 0,
-        efficiency: 0,
-        targetToday: 0
+
+    const { borrowers, stats, loading, refreshing, refresh } = useCollectorDashboard({
+        collectorId: collectorId || user?.id,
+        onRefresh: () => SyncService.sync(),
     });
-
-    const fetchData = async () => {
-        if (!user) {
-            console.log('[CollectorDashboard] No user yet, skipping fetch');
-            setLoading(false);
-            return;
-        }
-        
-        try {
-            const currentCollectorId = collectorId || user.id;
-
-            const assignedBorrowers = await database.collections.get<Borrower>('borrowers')
-                .query(Q.where('collector_id', currentCollectorId))
-                .fetch();
-
-            setBorrowers(assignedBorrowers);
-
-            const borrowerIds = assignedBorrowers.map(b => b.id);
-            if (borrowerIds.length === 0) {
-                setStats({ todayCollection: 0, outstanding: 0, activeClients: 0, efficiency: 0, targetToday: 0 });
-                return;
-            }
-
-            const activeLoans = await database.collections.get<Loan>('loans')
-                .query(Q.where('borrower_id', Q.oneOf(borrowerIds)), Q.where('status', 'active'))
-                .fetch();
-
-            const activeLoanIds = activeLoans.map(l => l.id);
-
-            const today = new Date();
-            const start = startOfDay(today).getTime();
-            const end = endOfDay(today).getTime();
-
-            const todayPayments = await database.collections.get<Payment>('payments')
-                .query(
-                    Q.where('collector_id', currentCollectorId),
-                    Q.where('payment_date', Q.between(start, end))
-                )
-                .fetch();
-
-            const collectedToday = todayPayments.reduce((s, p) => s + p.amount, 0);
-
-            const unpaidSchedules = await database.collections.get<PaymentSchedule>('payment_schedules')
-                .query(
-                    Q.where('loan_id', Q.oneOf(activeLoanIds)),
-                    Q.where('status', Q.notEq('paid'))
-                )
-                .fetch();
-
-            const totalOutstanding = unpaidSchedules.reduce((s, sch) => s + sch.scheduledAmount, 0);
-
-            const dueTodaySchedules = await database.collections.get<PaymentSchedule>('payment_schedules')
-                .query(
-                    Q.where('loan_id', Q.oneOf(activeLoanIds)),
-                    Q.where('due_date', Q.between(start, end))
-                )
-                .fetch();
-
-            const targetToday = dueTodaySchedules.reduce((s, sch) => s + sch.scheduledAmount, 0);
-            const efficiency = targetToday > 0 ? (collectedToday / targetToday) * 100 : 0;
-
-            setStats({
-                todayCollection: collectedToday,
-                outstanding: totalOutstanding,
-                activeClients: assignedBorrowers.length,
-                efficiency: efficiency,
-                targetToday: targetToday
-            });
-        } catch (error) {
-            console.error('Failed to fetch collector data', error);
-        } finally {
-            setLoading(false);
-            setRefreshing(false);
-        }
-    };
-
-    useEffect(() => {
-        fetchData();
-    }, [user, collectorId]);
 
     const filteredBorrowers = useMemo(() => {
         if (!searchQuery.trim()) return borrowers;
@@ -124,11 +35,6 @@ export default function CollectorDashboard() {
             b.fullName.toLowerCase().includes(searchQuery.toLowerCase())
         );
     }, [borrowers, searchQuery]);
-
-    const onRefresh = () => {
-        setRefreshing(true);
-        fetchData();
-    };
 
     const isSmallPhone = width < 390;
     const isCompactHeight = height < 780;
@@ -154,7 +60,7 @@ export default function CollectorDashboard() {
             <StatusBar barStyle={sunlightMode ? 'dark-content' : 'light-content'} />
             <ScrollView
                 className="flex-1"
-                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={sunlightMode ? '#000' : '#FFF'} />}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={sunlightMode ? '#000' : '#FFF'} />}
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{ paddingBottom: 24 + insets.bottom + 76 }}
             >

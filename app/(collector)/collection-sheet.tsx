@@ -1,18 +1,14 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { View, Text, ScrollView, Pressable, RefreshControl, ActivityIndicator, SafeAreaView, StatusBar, Alert, TextInput, Modal } from 'react-native';
 import { database } from '../../src/database';
-import Borrower from '../../src/database/models/Borrower';
-import Loan from '../../src/database/models/Loan';
 import Payment from '../../src/database/models/Payment';
-import PaymentSchedule from '../../src/database/models/PaymentSchedule';
 import Collector from '../../src/database/models/Collector';
 import { useAuth } from '../../src/store/AuthContext';
 import { SyncStatusIndicator } from '../../src/components/SyncStatusIndicator';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { formatPHP } from '../../src/utils/currency';
-import { Q } from '@nozbe/watermelondb';
 import { useRouter } from 'expo-router';
-import { startOfDay, endOfDay, isPast, isToday, format, parseISO } from 'date-fns';
+import { isPast, isToday, format, parseISO, startOfDay } from 'date-fns';
 import { LinearGradient } from 'expo-linear-gradient';
 import { safeBack } from '../../src/utils/navigation';
 import { PhpCurrencyText } from '../../src/components/PhpCurrencyText';
@@ -22,20 +18,12 @@ import { AnimatedPressable } from '../../src/components/AnimatedPressable';
 import { DatePicker } from '../../src/components/DatePicker';
 import { PaymentService } from '../../src/services/PaymentService';
 import * as Linking from 'expo-linking';
-
-
-interface CollectionItem {
-    borrower: Borrower;
-    loan: Loan;
-    schedule: PaymentSchedule;
-}
+import { useCollectionSheet, CollectionItem } from '../../src/hooks/useCollectionSheet';
+import { SyncService } from '../../src/services/SyncService';
 
 export default function CollectionSheetScreen() {
     const { user, collectorId, sunlightMode } = useAuth();
     const router = useRouter();
-    const [loading, setLoading] = useState(true);
-    const [refreshing, setRefreshing] = useState(false);
-    const [items, setItems] = useState<CollectionItem[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [collectionDate, setCollectionDate] = useState(format(new Date(), 'yyyy-MM-dd'));
     const [processingId, setProcessingId] = useState<string | null>(null);
@@ -43,6 +31,13 @@ export default function CollectionSheetScreen() {
     const [selectedItemForPayment, setSelectedItemForPayment] = useState<CollectionItem | null>(null);
     const [paymentMethod, setPaymentMethod] = useState('cash');
     const [referenceNumber, setReferenceNumber] = useState('');
+
+    const { items, loading, refreshing, refresh } = useCollectionSheet({
+        collectorId: collectorId || user?.id,
+        asOfDate: parseISO(collectionDate),
+        searchQuery,
+        onRefresh: () => SyncService.sync(),
+    });
 
     const sheetTotals = useMemo(() => {
         const selectedDate = parseISO(collectionDate);
@@ -58,107 +53,6 @@ export default function CollectionSheetScreen() {
             { amount: 0, count: 0, overdue: 0 }
         );
     }, [items, collectionDate]);
-
-    const fetchData = useCallback(async (query: string = '') => {
-        if (!user) {
-            console.log('[CollectionSheet] No user or collectorId yet, skipping fetch');
-            setLoading(false);
-            setRefreshing(false);
-            return;
-        }
-
-        setLoading(true);
-        try {
-            const selectedDate = parseISO(collectionDate);
-            const endOfSelected = endOfDay(selectedDate).getTime();
-
-            // Use the globally resolved collectorId from AuthContext
-            const currentCollectorId = collectorId || user.id;
-
-            // 1. Get borrowers assigned to this collector
-            let borrowersQuery = database.collections.get<Borrower>('borrowers')
-                .query(Q.where('collector_id', currentCollectorId));
-
-            if (query.trim()) {
-                borrowersQuery = database.collections.get<Borrower>('borrowers')
-                    .query(
-                        Q.where('collector_id', currentCollectorId),
-                        Q.where('full_name', Q.like(`%${query}%`))
-                    );
-            }
-
-            const assignedBorrowers = await borrowersQuery.fetch();
-
-            const borrowerIds = assignedBorrowers.map(b => b.id);
-            if (borrowerIds.length === 0) {
-                setItems([]);
-                return;
-            }
-
-            // 2. Get active loans for these borrowers
-            const activeLoans = await database.collections.get<Loan>('loans')
-                .query(Q.where('borrower_id', Q.oneOf(borrowerIds)), Q.where('status', 'active'))
-                .fetch();
-
-            const activeLoanIds = activeLoans.map(l => l.id);
-            if (activeLoanIds.length === 0) {
-                setItems([]);
-                return;
-            }
-
-            // 3. Get schedules due today or earlier that are still pending/partial
-            const dueSchedules = await database.collections.get<PaymentSchedule>('payment_schedules')
-                .query(
-                    Q.where('loan_id', Q.oneOf(activeLoanIds)),
-                    Q.where('due_date', Q.lte(endOfSelected)),
-                    Q.where('status', Q.notEq('paid'))
-                )
-                .fetch();
-
-            // 4. Map them together
-            const collectionItems: CollectionItem[] = dueSchedules.map(sch => {
-                const loan = activeLoans.find(l => l.id === sch.loanId)!;
-                const borrower = assignedBorrowers.find(b => b.id === loan.borrowerId)!;
-                return { borrower, loan, schedule: sch };
-            });
-
-            // 5. Sort: Overdue first, then by route_index, then area
-            collectionItems.sort((a, b) => {
-                const isOverdueA = isPast(new Date(a.schedule.dueDate)) && !isToday(new Date(a.schedule.dueDate));
-                const isOverdueB = isPast(new Date(b.schedule.dueDate)) && !isToday(new Date(b.schedule.dueDate));
-
-                if (isOverdueA && !isOverdueB) return -1;
-                if (!isOverdueA && isOverdueB) return 1;
-
-                if (a.borrower.routeIndex !== b.borrower.routeIndex) {
-                    return (a.borrower.routeIndex || 0) - (b.borrower.routeIndex || 0);
-                }
-                const areaA = a.borrower.area || '';
-                const areaB = b.borrower.area || '';
-                return areaA.localeCompare(areaB);
-            });
-
-            setItems(collectionItems);
-        } catch (error) {
-            console.error('Failed to fetch collection sheet', error);
-        } finally {
-            setLoading(false);
-            setRefreshing(false);
-        }
-    }, [user, collectorId, collectionDate]);
-
-    useEffect(() => {
-        fetchData(searchQuery);
-    }, [user, collectionDate]);
-
-    const handleSearch = () => {
-        fetchData(searchQuery);
-    };
-
-    const onRefresh = () => {
-        setRefreshing(true);
-        fetchData(searchQuery);
-    };
 
     const handleQuickCollect = async (item: CollectionItem, pType: string = 'cash', rNumber: string = '') => {
         setProcessingId(item.schedule.id);
@@ -178,7 +72,7 @@ export default function CollectionSheetScreen() {
             
             // Success Haptic is handled by AnimatedPressable if used, 
             // but we can add an extra flourish or just rely on state update
-            setItems(prev => prev.filter(i => i.schedule.id !== item.schedule.id));
+            // The settled schedule drops out of the reactive sheet on its own.
             setPaymentModalVisible(false);
             setReferenceNumber('');
             setPaymentMethod('cash');
@@ -205,8 +99,6 @@ export default function CollectionSheetScreen() {
         }
         Linking.openURL(`${mode === 'call' ? 'tel' : 'sms'}:${phone}`);
     };
-
-    const isSearching = loading && !!searchQuery;
 
     return (
         <SafeAreaView className={`flex-1 ${sunlightMode ? 'bg-white' : 'bg-slate-50'}`}>
@@ -254,11 +146,7 @@ export default function CollectionSheetScreen() {
                         <View className="flex-1 ml-3">
                             <TextInput
                                 value={searchQuery}
-                                onChangeText={(text) => {
-                                    setSearchQuery(text);
-                                    if (!text) fetchData('');
-                                }}
-                                onSubmitEditing={handleSearch}
+                                onChangeText={setSearchQuery}
                                 returnKeyType="search"
                                 placeholder="Find borrower..."
                                 placeholderTextColor="#333"
@@ -268,10 +156,7 @@ export default function CollectionSheetScreen() {
                             />
                         </View>
                         {searchQuery.length > 0 ? (
-                            <Pressable onPress={() => {
-                                setSearchQuery('');
-                                fetchData('');
-                            }} className="p-1">
+                            <Pressable onPress={() => setSearchQuery('')} className="p-1">
                                 <Ionicons name="close-circle" size={20} color="#000" />
                             </Pressable>
                         ) : null}
@@ -324,11 +209,7 @@ export default function CollectionSheetScreen() {
                         <View className="flex-1 ml-3">
                             <TextInput
                                 value={searchQuery}
-                                onChangeText={(text) => {
-                                    setSearchQuery(text);
-                                    if (!text) fetchData('');
-                                }}
-                                onSubmitEditing={handleSearch}
+                                onChangeText={setSearchQuery}
                                 returnKeyType="search"
                                 placeholder="Find borrower..."
                                 placeholderTextColor="#CCFBF1"
@@ -338,10 +219,7 @@ export default function CollectionSheetScreen() {
                             />
                         </View>
                         {searchQuery.length > 0 ? (
-                            <Pressable onPress={() => {
-                                setSearchQuery('');
-                                fetchData('');
-                            }} className="p-1">
+                            <Pressable onPress={() => setSearchQuery('')} className="p-1">
                                 <Ionicons name="close-circle" size={20} color="#CCFBF1" />
                             </Pressable>
                         ) : null}
@@ -351,7 +229,7 @@ export default function CollectionSheetScreen() {
 
             <ScrollView
                 className="flex-1 -mt-6"
-                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={sunlightMode ? "#000" : "#0D9488"} />}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={sunlightMode ? "#000" : "#0D9488"} />}
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 100, paddingTop: 10 }}
             >
@@ -389,12 +267,7 @@ export default function CollectionSheetScreen() {
                     </View>
                 </Animated.View>
 
-                {isSearching ? (
-                    <Animated.View entering={FadeInDown} className="bg-white p-12 rounded-[40px] items-center border border-teal-50 shadow-sm mt-4 justify-center">
-                        <ActivityIndicator size="large" color="#0D9488" />
-                        <Text className="text-gray-900 font-bold mt-4">Filtering list...</Text>
-                    </Animated.View>
-                ) : items.length === 0 ? (
+                {items.length === 0 ? (
                     <Animated.View entering={FadeInDown} className="bg-white p-12 rounded-[40px] items-center border border-gray-100 shadow-sm mt-4">
                         <View className="w-20 h-20 bg-teal-50 rounded-full items-center justify-center mb-6">
                             <MaterialIcons name={searchQuery ? "search-off" : "check-circle"} size={48} color="#0D9488" />
