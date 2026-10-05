@@ -209,3 +209,31 @@ Wire the tiers into automation:
 | Loose TS (`strict:false`) hides type bugs in AI code | Long-term: enable `strict` per-directory incrementally with AI-drafted fixes; near-term: rely on test gates |
 | Root/`.agents` clutter degrades context quality | Housekeeping in Phase 0; `file-organization` skill enforced by pre-commit |
 | Unattended agent reaches a deploy/env path | Denylist in AGENTS.md + guard script + CI has no production credentials |
+
+---
+
+## 9. Implementation Status (as of 2026-10-04)
+
+### Delivered artifacts
+
+| Item | Where | Verified by |
+|---|---|---|
+| Tier classifier + gate runner (L0–L5, TIER_GATES, human-only denylist) | `scripts/changed-files-gate.mjs`, `npm run gate` / `gate:base` | Classified a real 139-file working tree; report fallback fixed to `git diff` + `ls-files`; evidence logs under `tmp/systematic-test-matrix/` |
+| Local git gates | `.husky/pre-commit`, `.husky/pre-push` | Blocked a root-clutter commit (exit 2, HEAD unchanged) and an eslint error; full pre-push path (eslint + tsc + 134 related suites / 1061 tests) passed end-to-end |
+| AI automation policy (risk tiers, human-only commands, RED-first evidence) | `AGENTS.md` §"AI AUTOMATION POLICY" | Committed with Phase 0 (`7d219fc`) |
+| Workflow-doc reconciliation | `.agents/workflows/end-to-end-dev-pipeline.md` (POS Cursor → JetFarm, Hetzner deploy target, human-triggered `--deploy` warning) | Part of Phase 0 commit |
+| CI tier-gate workflow | `.github/workflows/tier-gate.yml` — classifies PR diff, posts tier to step summary, labels `tier:Lx`, warns on L5, uploads evidence artifact | Tier parsing smoke-tested locally against a commit range; YAML validated. First real run needs an open PR |
+| Phase 1 trial suites (AI-authored, zero production changes) | `CicFormatterService` (20), `BusinessUnitService` (8), `DividendService` (9), `business-rules` lending-flag guard | 36/37 first-run pass (~97%); 2/3 suites zero-revision; full regression green at time of commit (`8dc5a52`) |
+| Marketplace sales posting coverage + L4 parity guard | `src/services/__tests__/MarketplaceSalesPostingService.test.ts` (12 tests): DR 1500/CR 4130 and DR 1010/CR 1500 contracts, skip-on-nonzero, fiscal stamping, COA inactive rejection, and a sale→payment lifecycle asserting every journal entry balances (header === line sums, trial balance balanced) | 12/12 passing first run |
+
+### Not session artifacts (calendar / human processes)
+
+- **Phase 1 exit metric** (≥90% acceptance over a sustained period) needs more trial weeks; current sample is the single gate run above.
+- **Phase 2** (one assisted feature/week, trending review time, scheduled read-only agents) and **Phase 3** (20 consecutive clean L3+ PRs, golden round-trip fixtures) are elapsed-time programs; the tooling they depend on (tier labels, evidence, parity tests) is now in place.
+- **Phase 4** unattended backlog workers: not started; requires CI tier-gate soak plus per-tier review history first.
+- Human-only commands remain exactly that — the tier-gate workflow classifies and reports; it never runs deploys, migrations, or prod data paths.
+
+### Known loose ends
+
+- `dist_update.tar.gz` sits untracked at the repo root (build artifact — delete or move; the pre-commit root policy would block committing it).
+- The `tier-gate` workflow's label step needs the `tier:*` labels once — `gh label create --force` in the workflow handles that on first run.

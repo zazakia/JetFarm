@@ -1,0 +1,73 @@
+name: Tier Gate (Risk Classification)
+
+# Classifies every PR diff against the L0–L5 path tiers from
+# docs/AI-ASSISTED-DEV-workflow-plan.md via scripts/changed-files-gate.mjs,
+# labels the PR with its top risk tier, and uploads the evidence log.
+# This workflow never runs gates that need a local stack or credentials —
+# it only classifies and reports. Heavier gates live in jest.yml / ci-cd.yml.
+
+on:
+  pull_request:
+    branches: [ main, master ]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  tier-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve base ref
+        run: |
+          git fetch origin "+refs/heads/${{ github.base_ref }}:refs/remotes/origin/${{ github.base_ref }}"
+
+      - name: Classify PR diff by risk tier
+        id: gate
+        run: |
+          node scripts/changed-files-gate.mjs \
+            --run=report \
+            --base=origin/${{ github.base_ref }} | tee gate-output.log
+          TIER=$(grep -oE 'top tier: L[0-5]' gate-output.log | head -1 | awk '{print $3}')
+          if [ -z "$TIER" ]; then TIER=L0; fi
+          echo "tier=$TIER" >> "$GITHUB_OUTPUT"
+          {
+            echo "## Risk tier: ${TIER}"
+            echo ""
+            echo '```'
+            cat gate-output.log
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Flag L5 (infra / schema / deploy) for human approval
+        if: steps.gate.outputs.tier == 'L5'
+        run: |
+          echo "::warning title=L5 change detected::Infra/schema/deploy paths changed in this PR. Human approval is required to merge, and the human-only commands listed in AGENTS.md (deploys, db:migrate:apply, prod data mutations) must never be run by an agent, including in CI contexts triggered by AI-authored commits."
+
+      - name: Apply tier label
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          TIER: ${{ steps.gate.outputs.tier }}
+        run: |
+          case "$TIER" in
+            L0) COLOR=c2bebe ;; L1) COLOR=1d76db ;; L2) COLOR=0e8a16 ;;
+            L3) COLOR=d93f0b ;; L4) COLOR=b60205 ;; L5) COLOR=960205 ;;
+          esac
+          gh label create "tier:${TIER}" --color "$COLOR" --force
+          gh pr edit "$PR_NUMBER" --add-label "tier:${TIER}"
+
+      - name: Upload gate evidence
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tier-gate-evidence
+          path: |
+            gate-output.log
+            tmp/systematic-test-matrix/gate-*.log
+          retention-days: 14
