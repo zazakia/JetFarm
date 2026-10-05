@@ -1,73 +1,40 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, ScrollView, Pressable, TextInput, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, SafeAreaView, StatusBar } from 'react-native';
 import { useRouter } from 'expo-router';
 import { database } from '../../src/database';
 import Remittance from '../../src/database/models/Remittance';
-import Payment from '../../src/database/models/Payment';
 import { useAuth } from '../../src/store/AuthContext';
 import { MaterialIcons, Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { formatPHP } from '../../src/utils/currency';
-import { Q } from '@nozbe/watermelondb';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SyncStatusIndicator } from '../../src/components/SyncStatusIndicator';
 import uuid from 'react-native-uuid';
-import { startOfDay, endOfDay, format } from 'date-fns';
+import { format } from 'date-fns';
 import Animated, { FadeInDown, FadeInRight, FadeInUp, Layout } from 'react-native-reanimated';
 import { AnimatedPressable } from '../../src/components/AnimatedPressable';
 
-import { CashService } from '../../src/services/CashService';
+import { useCollectorRemittance } from '../../src/hooks/useCollectorRemittance';
 import { safeBack } from '../../src/utils/navigation';
 import { handleSaveError } from '../../src/utils/errorAlerts';
 
 export default function CollectorRemittanceScreen() {
     const { user, collectorId, sunlightMode } = useAuth();
     const router = useRouter();
-    const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [amount, setAmount] = useState('');
     const [notes, setNotes] = useState('');
-    const [totalCollectedToday, setTotalCollectedToday] = useState(0);
-    const [collectorBalance, setCollectorBalance] = useState(0);
-    const [pastRemittances, setPastRemittances] = useState<Remittance[]>([]);
 
+    const { todayCollection, balance, remittances, suggestedAmount, loading } = useCollectorRemittance({
+        collectorId: collectorId || user?.id,
+    });
+
+    // The field is a suggestion seeded once; later emissions must not overwrite what was typed.
+    const amountSeeded = useRef(false);
     useEffect(() => {
-        const loadCollectionData = async () => {
-            if (!user) return;
-            try {
-                const currentCollectorId = collectorId || user.id;
-                const today = new Date();
-                const start = startOfDay(today).getTime();
-                const end = endOfDay(today).getTime();
-
-                // Get today's payments to suggest remittance amount
-                const todayPayments = await database.collections.get<Payment>('payments')
-                    .query(
-                        Q.where('collector_id', currentCollectorId),
-                        Q.where('payment_date', Q.between(start, end))
-                    ).fetch();
-
-                const total = todayPayments.reduce((sum, p) => sum + p.amount, 0);
-                setTotalCollectedToday(total);
-
-                // Get total cash held (payments - approved remittances)
-                const balance = await CashService.getCollectorBalance(currentCollectorId);
-                setCollectorBalance(balance);
-                setAmount((balance > 0 ? balance : total).toString());
-
-                // Get past remittances
-                const past = await database.collections.get<Remittance>('remittances')
-                    .query(Q.where('collector_id', currentCollectorId), Q.sortBy('remittance_date', Q.desc), Q.take(10))
-                    .fetch();
-                setPastRemittances(past);
-
-            } catch (error) {
-                console.error('Failed to load collection data', error);
-            } finally {
-                setLoading(false);
-            }
-        };
-        loadCollectionData();
-    }, [user, collectorId]);
+        if (loading || amountSeeded.current) return;
+        amountSeeded.current = true;
+        setAmount(suggestedAmount.toString());
+    }, [loading, suggestedAmount]);
 
     const handleSubmit = async () => {
         const remitAmount = parseFloat(amount);
@@ -75,8 +42,8 @@ export default function CollectorRemittanceScreen() {
             Alert.alert("Invalid Amount", "Please enter a valid amount to remit.");
             return;
         }
-        if (collectorBalance > 0 && remitAmount > collectorBalance) {
-            Alert.alert("Amount Too High", `You currently hold ${formatPHP(collectorBalance)}. Enter that amount or less.`);
+        if (balance > 0 && remitAmount > balance) {
+            Alert.alert("Amount Too High", `You currently hold ${formatPHP(balance)}. Enter that amount or less.`);
             return;
         }
 
@@ -183,7 +150,7 @@ export default function CollectorRemittanceScreen() {
                                         <View className={`w-1.5 h-1.5 rounded-full mr-2 ${sunlightMode ? 'bg-black' : 'bg-teal-500'}`} />
                                         <Text className={`${sunlightMode ? 'text-black font-black uppercase tracking-tighter' : 'text-gray-700 text-[10px]'} font-black uppercase tracking-wider`}>Collected Today</Text>
                                     </View>
-                                    <Text className={`text-2xl font-black ${sunlightMode ? 'text-black' : 'text-teal-900'}`}>{formatPHP(totalCollectedToday)}</Text>
+                                    <Text className={`text-2xl font-black ${sunlightMode ? 'text-black' : 'text-teal-900'}`}>{formatPHP(todayCollection)}</Text>
                                 </View>
                                 <View className={`w-[1px] h-10 mx-4 ${sunlightMode ? 'bg-black border-l-2' : 'bg-gray-100'}`} />
                                 <View className="flex-1 items-end">
@@ -191,7 +158,7 @@ export default function CollectorRemittanceScreen() {
                                         <Text className={`${sunlightMode ? 'text-black font-black uppercase tracking-tighter' : 'text-gray-700 text-[10px]'} font-black uppercase tracking-wider`}>Total Cash Held</Text>
                                         <View className={`w-1.5 h-1.5 rounded-full ml-2 ${sunlightMode ? 'bg-black' : 'bg-orange-500'}`} />
                                     </View>
-                                    <Text className={`text-2xl font-black ${sunlightMode ? 'text-black' : 'text-orange-700'}`}>{formatPHP(collectorBalance)}</Text>
+                                    <Text className={`text-2xl font-black ${sunlightMode ? 'text-black' : 'text-orange-700'}`}>{formatPHP(balance)}</Text>
                                 </View>
                             </View>
 
@@ -199,7 +166,7 @@ export default function CollectorRemittanceScreen() {
                                 <View className="mb-6">
                                     <View className="flex-row justify-between items-center mb-3 px-1">
                                         <Text className={`${sunlightMode ? 'text-black' : 'text-gray-900'} font-black text-sm`}>Amount to Remit</Text>
-                                        <Pressable onPress={() => setAmount(collectorBalance.toString())}>
+                                        <Pressable onPress={() => setAmount(balance.toString())}>
                                             <Text className={`${sunlightMode ? 'text-black' : 'text-teal-600'} text-[10px] font-black uppercase border-b-2 ${sunlightMode ? 'border-black' : 'border-transparent'}`}>Max Amount</Text>
                                         </Pressable>
                                     </View>
@@ -215,9 +182,9 @@ export default function CollectorRemittanceScreen() {
                                             className={`flex-1 font-black text-xl p-0 ${sunlightMode ? 'text-black' : 'text-gray-900'}`}
                                         />
                                     </View>
-                                    {collectorBalance > 0 && parseFloat(amount || '0') > collectorBalance && (
+                                    {balance > 0 && parseFloat(amount || '0') > balance && (
                                         <Text testID="collector-remittance-overage-warning" className="text-red-600 text-xs font-black mt-2 px-1">
-                                            Amount exceeds current cash held ({formatPHP(collectorBalance)}).
+                                            Amount exceeds current cash held ({formatPHP(balance)}).
                                         </Text>
                                     )}
                                 </View>
@@ -270,7 +237,7 @@ export default function CollectorRemittanceScreen() {
                             <Ionicons name="time-outline" size={20} color={sunlightMode ? "#000" : "#9CA3AF"} />
                         </View>
 
-                        {pastRemittances.length === 0 ? (
+                        {remittances.length === 0 ? (
                             <Animated.View entering={FadeInUp.delay(200)} className={`p-12 rounded-[40px] items-center border border-dashed ${sunlightMode ? 'bg-white border-4 border-black' : 'bg-white border-gray-200'}`}>
                                 <View className={`w-16 h-16 rounded-full items-center justify-center mb-4 ${sunlightMode ? 'bg-black' : 'bg-gray-50'}`}>
                                     <MaterialIcons name="history" size={32} color={sunlightMode ? "#FFF" : "#D1D5DB"} />
@@ -278,7 +245,7 @@ export default function CollectorRemittanceScreen() {
                                 <Text className={`${sunlightMode ? 'text-black' : 'text-gray-700'} font-black italic`}>No recent remittances</Text>
                             </Animated.View>
                         ) : (
-                            pastRemittances.map((r, i) => (
+                            remittances.map((r, i) => (
                                 <Animated.View 
                                     key={r.id} 
                                     entering={FadeInRight.delay(i * 100)}
