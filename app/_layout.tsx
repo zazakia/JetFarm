@@ -12,6 +12,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useEffect } from 'react';
 import '../global.css';
 import { AutoSyncService } from '../src/services/AutoSyncService';
+import { SampleDataService } from '../src/services/SampleDataService';
 import { SettingsService } from '../src/services/SettingsService';
 import { DeviceLockOverlay } from '../src/components/DeviceLockOverlay';
 import { deviceSecurityService } from '../src/services/DeviceSecurityService';
@@ -52,6 +53,9 @@ function AppShell({ children }: { children: React.ReactNode }) {
             (window as any).router = router;
         }
         AutoSyncService.start();
+        // One-time repair: destroy pre-UUID readable-id demo rows so they stop
+        // failing Supabase pushes (22P02) on every sync. See SampleDataService.
+        void SampleDataService.purgeLegacyReadableIds(database).catch(() => {});
         void SettingsService.ensureDefaults()
             .then(async () => {
                 try {
