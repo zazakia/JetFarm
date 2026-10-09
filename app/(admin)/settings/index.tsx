@@ -45,7 +45,11 @@ export default function SettingsScreen() {
             const moduleBreakdown = [
                 t.agriParcels > 0 ? `${t.agriParcels} parcels` : '',
                 t.agriCropCycles > 0 ? `${t.agriCropCycles} cycles` : '',
+                t.agriWeeklySettlements > 0 ? `${t.agriWeeklySettlements} settlements` : '',
+                t.chartOfAccounts > 0 ? `${t.chartOfAccounts} accounts` : '',
+                t.journalEntries > 0 ? `${t.journalEntries} journals` : '',
                 t.marketplaceProducts > 0 ? `${t.marketplaceProducts} products` : '',
+                t.suppliers > 0 ? `${t.suppliers} suppliers` : '',
                 t.waterCustomers > 0 ? `${t.waterCustomers} water clients` : '',
                 t.loans > 0 ? `${t.loans} loans` : '',
                 t.employees > 0 ? `${t.employees} staff` : '',

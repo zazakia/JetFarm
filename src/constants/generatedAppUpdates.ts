@@ -2,6 +2,210 @@ import type { AppUpdateEntry } from './appUpdates';
 
 export const GENERATED_APP_UPDATES: AppUpdateEntry[] = [
     {
+        "id": "e70f982a1fb3914fc2c834ba3aa28abf5fbdb30e",
+        "version": "e70f982",
+        "versionLabel": "Commit",
+        "date": "2026-10-08",
+        "title": "Jetfarm_db schema isolation implementation plan",
+        "category": "feature",
+        "icon": "new-releases",
+        "summary": "Jetfarm_db schema isolation implementation plan",
+        "changes": [
+            "Jetfarm_db schema isolation implementation plan"
+        ],
+        "codeChanges": [
+            "Updated docs/superpowers/plans/2026-10-08-jetfarm-schema-isolation.md"
+        ]
+    },
+    {
+        "id": "4deaef068f775c859e3f3090c4337002a8f93f79",
+        "version": "4deaef0",
+        "versionLabel": "Commit",
+        "date": "2026-10-08",
+        "title": "Jetfarm_db schema isolation design (approach A clean cutover)",
+        "category": "technical",
+        "icon": "code",
+        "summary": "Jetfarm_db schema isolation design (approach A clean cutover)",
+        "changes": [
+            "Jetfarm_db schema isolation design (approach A clean cutover)"
+        ],
+        "codeChanges": [
+            "Updated docs/superpowers/specs/2026-10-08-jetfarm-schema-isolation-design.md"
+        ]
+    },
+    {
+        "id": "7e6cd4b8f1d1582b2b4958690ff9118b92865a19",
+        "version": "7e6cd4b",
+        "versionLabel": "Commit",
+        "date": "2026-10-08",
+        "title": "Give demo records deterministic uuid ids so sync pushes stop failing 22P02",
+        "category": "fix",
+        "icon": "build-circle",
+        "summary": "Production remote tables (app_areas, app_borrowers, ws_customers, employees)",
+        "changes": [
+            "Give demo records deterministic uuid ids so sync pushes stop failing 22P02",
+            "Production remote tables (app_areas, app_borrowers, ws_customers, employees)",
+            "declare id UUID PRIMARY KEY; readable sample ids (\"sample-area-poblacion\")"
+        ],
+        "codeChanges": [
+            "Updated app/_layout.tsx",
+            "Updated src/services/SampleDataService.ts",
+            "Updated src/services/__tests__/SampleDataService.test.ts"
+        ]
+    },
+    {
+        "id": "3a2400338332087dba05b773dd6d49452258d18d",
+        "version": "3a24003",
+        "versionLabel": "Commit",
+        "date": "2026-10-06",
+        "title": "Complete buildable plan artifacts (CI tier gate, marketplace posting tests, status log)",
+        "category": "feature",
+        "icon": "new-releases",
+        "summary": "- .github/workflows/tier-gate.yml: classify PR diff into L0-L5 tiers,",
+        "changes": [
+            "Complete buildable plan artifacts (CI tier gate, marketplace posting tests, status log)",
+            "- .github/workflows/tier-gate.yml: classify PR diff into L0-L5 tiers,",
+            "label the PR, warn on L5 human-approval, upload evidence artifact"
+        ],
+        "codeChanges": [
+            "Updated .github/workflows/tier-gate.yml",
+            "Updated docs/AI-ASSISTED-DEV-WORKFLOW-PLAN.md",
+            "Updated src/services/__tests__/MarketplaceSalesPostingService.test.ts"
+        ]
+    },
+    {
+        "id": "f70740a6b2f4ea294f660190606e95f054112090",
+        "version": "f70740a",
+        "versionLabel": "Commit",
+        "date": "2026-10-06",
+        "title": "Sync project updates",
+        "category": "technical",
+        "icon": "code",
+        "summary": "Sync project updates",
+        "changes": [
+            "Sync project updates"
+        ],
+        "codeChanges": [
+            "Updated src/hooks/__tests__/useObservedRecords.test.ts",
+            "Updated src/hooks/useCollectionSheet.ts",
+            "Updated src/hooks/useCollectorDashboard.ts"
+        ]
+    },
+    {
+        "id": "098052107b8b4975805b858d4e9b1b9db1074ce7",
+        "version": "0980521",
+        "versionLabel": "Commit",
+        "date": "2026-10-06",
+        "title": "Observe remittance totals instead of fetching on mount",
+        "category": "fix",
+        "icon": "build-circle",
+        "summary": "Cash held and the recent remittance list were loaded by one effect that ran per",
+        "changes": [
+            "Observe remittance totals instead of fetching on mount",
+            "Cash held and the recent remittance list were loaded by one effect that ran per",
+            "mount, so the figures went stale while the collector was on the screen and an"
+        ],
+        "codeChanges": [
+            "Updated app/(collector)/remittances.tsx",
+            "Updated src/hooks/__tests__/useCollectorRemittance.test.ts",
+            "Updated src/hooks/useCollectorRemittance.ts"
+        ]
+    },
+    {
+        "id": "6906312745d4d7a60cb3154cd14dc20a2367f0f3",
+        "version": "6906312",
+        "versionLabel": "Commit",
+        "date": "2026-10-06",
+        "title": "Ignore tar.gz archives at the repo root",
+        "category": "technical",
+        "icon": "code",
+        "summary": "Pairs the untracking commit with the rule that keeps build archives from being",
+        "changes": [
+            "Ignore tar.gz archives at the repo root",
+            "Pairs the untracking commit with the rule that keeps build archives from being",
+            "staged again by the workspace-sync automation."
+        ],
+        "codeChanges": [
+            "Updated .gitignore"
+        ]
+    },
+    {
+        "id": "0ab05ee0a7ccb5c2b39a6541ac062adff73f9169",
+        "version": "0ab05ee",
+        "versionLabel": "Commit",
+        "date": "2026-10-06",
+        "title": "Stop tracking the root build archive",
+        "category": "technical",
+        "icon": "code",
+        "summary": "A 17 MB dist_update.tar.gz was swept into the workspace-sync commit and is now",
+        "changes": [
+            "Stop tracking the root build archive",
+            "A 17 MB dist_update.tar.gz was swept into the workspace-sync commit and is now",
+            "in published history, so every clone and deploy pull carries it."
+        ],
+        "codeChanges": [
+            "Updated dist_update.tar.gz"
+        ]
+    },
+    {
+        "id": "aaf068df39af53c9e3163bc764c56ac4a2cfd399",
+        "version": "aaf068d",
+        "versionLabel": "Commit",
+        "date": "2026-10-06",
+        "title": "Sync project workspace",
+        "category": "technical",
+        "icon": "code",
+        "summary": "Sync project workspace",
+        "changes": [
+            "Sync project workspace"
+        ],
+        "codeChanges": [
+            "Updated app/(collector)/collection-sheet.tsx",
+            "Updated app/(collector)/index.tsx",
+            "Updated dist_update.tar.gz"
+        ]
+    },
+    {
+        "id": "8dc5a523f83355e43cdf8c7c6239f4ecfe79b1ee",
+        "version": "8dc5a52",
+        "versionLabel": "Commit",
+        "date": "2026-10-04",
+        "title": "Phase 1 AI-authored coverage for BusinessUnit, Dividend, CicFormatter",
+        "category": "feature",
+        "icon": "new-releases",
+        "summary": "First AI test-authoring trial under docs/AI-ASSISTED-DEV-WORKFLOW-PLAN.md",
+        "changes": [
+            "Phase 1 AI-authored coverage for BusinessUnit, Dividend, CicFormatter",
+            "First AI test-authoring trial under docs/AI-ASSISTED-DEV-WORKFLOW-PLAN.md",
+            "Phase 1 (tests only, no production behavior changed):"
+        ],
+        "codeChanges": [
+            "Updated src/__tests__/test-utils.ts",
+            "Updated src/services/__tests__/BusinessUnitService.test.ts",
+            "Updated src/services/__tests__/DividendService.test.ts"
+        ]
+    },
+    {
+        "id": "7d219fc3a75cdf146f764f299f9e7e8ffb6f96b3",
+        "version": "7d219fc",
+        "versionLabel": "Commit",
+        "date": "2026-10-04",
+        "title": "Phase 0 AI-workflow gates + checkpoint accumulated agribusiness/settings work",
+        "category": "data",
+        "icon": "fact-check",
+        "summary": "Adds the AI-assisted development workflow foundation from",
+        "changes": [
+            "Phase 0 AI-workflow gates + checkpoint accumulated agribusiness/settings work",
+            "Adds the AI-assisted development workflow foundation from",
+            "docs/AI-ASSISTED-DEV-WORKFLOW-PLAN.md:"
+        ],
+        "codeChanges": [
+            "Updated .agents/login.f85c06c.tsx",
+            "Updated .agents/login.old.tsx",
+            "Updated .agents/skills/deploy-jetfarm/SKILL.md"
+        ]
+    },
+    {
         "id": "35bef44bfc5df52e6b47005c66067d51202f2ff8",
         "version": "35bef44",
         "versionLabel": "Commit",

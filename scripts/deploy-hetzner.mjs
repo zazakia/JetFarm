@@ -3,6 +3,10 @@ import fs from 'fs';
 import path from 'path';
 import https from 'https';
 import { fileURLToPath } from 'url';
+import { createRequire } from 'module';
+
+const require = createRequire(import.meta.url);
+const { buildVersionManifest } = require('./lib/buildVersionManifest.js');
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -147,6 +151,28 @@ function buildWebExport() {
     }
 
     console.log('  ✓ Web export compiled successfully');
+
+    // Emit the in-app update manifest into dist/ (bug audit §11.5): without this file the
+    // SPA catch-all answers /version.json with index.html, every update check throws on
+    // .json() and fails silently. Written before archiving so it ships with the bundle.
+    console.log('  🧾 Generating dist/version.json for in-app update checks...');
+    const appConfig = JSON.parse(fs.readFileSync(path.join(rootDir, 'app.json'), 'utf8'));
+    const appVersion = appConfig?.expo?.version || '0.0.0';
+    const versionCode = Number(appConfig?.expo?.android?.versionCode || 1);
+    const publicAppUrl = (process.env.EXPO_PUBLIC_APP_URL || `https://${DOMAIN}`).replace(/\/+$/, '');
+    let releaseNotesChanges = null;
+    try {
+      const { GENERATED_APP_UPDATES } = require(path.join(rootDir, 'src', 'constants', 'generatedAppUpdates.js'));
+      const latest = GENERATED_APP_UPDATES?.[0];
+      if (Array.isArray(latest?.changes) && latest.changes.length > 0) {
+        releaseNotesChanges = latest.changes;
+      }
+    } catch (_e) {
+      // Missing/uncompiled updates metadata falls back to the default release notes.
+    }
+    const versionManifest = buildVersionManifest({ appVersion, versionCode, publicAppUrl, releaseNotesChanges });
+    fs.writeFileSync(path.join(distDir, 'version.json'), JSON.stringify(versionManifest, null, 2), 'utf8');
+    console.log(`  ✓ dist/version.json written (v${appVersion} / Build ${versionCode})`);
 
     // Archive dist/ into dist_update.tar.gz
     const archivePath = path.join(rootDir, 'dist_update.tar.gz');

@@ -74,7 +74,7 @@ export class AuthService {
     }
 
     static async signIn(email: string, password: string): Promise<void> {
-        console.log(`[AuthService] Attempting signIn for: ${email}`);
+        console.log('[AuthService] Attempting sign in');
         if (isLocalWebE2E()) {
             const normalizedEmail = email.trim().toLowerCase();
             const user = E2E_TEST_USERS[normalizedEmail];
@@ -100,7 +100,7 @@ export class AuthService {
                 throw error;
             }
 
-            console.log('[AuthService] signIn successful for user ID:', data?.user?.id);
+            console.log('[AuthService] signIn successful');
 
             if (data?.user?.id) {
                 let { data: profile, error: profileError } = await supabase
@@ -180,7 +180,7 @@ export class AuthService {
             return null;
         }
 
-        console.log(`[AuthService] Resolving role for ${email || uid}...`);
+        console.log('[AuthService] Resolving role...');
 
         try {
             // Supabase is the source of truth for authorization while online.
@@ -207,7 +207,7 @@ export class AuthService {
                 }
 
                 if (error) {
-                    console.warn(`[AuthService] Remote role lookup failed for ${uid}:`, error.message);
+                    console.warn('[AuthService] Remote role lookup failed:', error.message);
                     const status = (error as any).status;
                     const message = (error.message || '').toLowerCase();
                     const isAuthorizationFailure =
@@ -222,13 +222,13 @@ export class AuthService {
                         return null;
                     }
                 } else if (!data) {
-                    console.warn(`[AuthService] No active remote profile found for UID ${uid}.`);
+                    console.warn('[AuthService] No active remote profile found for this UID.');
                     return null;
                 } else if (data.deleted_at || data.is_active === false || !data.role) {
-                    console.warn(`[AuthService] Remote profile for UID ${uid} is inactive, deleted, or missing a role.`);
+                    console.warn('[AuthService] Remote profile is inactive, deleted, or missing a role.');
                     return null;
                 } else {
-                    console.log(`[AuthService] Found remote role for ${uid}: ${data.role}`);
+                    console.log(`[AuthService] Found remote role: ${data.role}`);
                     return data.role;
                 }
             } catch (remoteErr) {
@@ -243,14 +243,14 @@ export class AuthService {
                         try {
                             const profile = await profilesCollection.find(uid);
                             if (profile && !profile.deletedAt) {
-                                console.log(`[AuthService] Found local role for ${uid}: ${profile.role}`);
+                                console.log(`[AuthService] Found local role: ${profile.role}`);
                                 return profile.role;
                             }
                         } catch (e) {
                             // find() throws if not found, try query as fallback
                             const allProfiles = await profilesCollection.query(Q.where('id', uid)).fetch();
                             if (allProfiles.length > 0 && !allProfiles[0].deletedAt) {
-                                console.log(`[AuthService] Found local role via query for ${uid}: ${allProfiles[0].role}`);
+                                console.log(`[AuthService] Found local role via query: ${allProfiles[0].role}`);
                                 return allProfiles[0].role;
                             }
                         }
@@ -260,7 +260,7 @@ export class AuthService {
                 }
             }
 
-            console.warn(`[AuthService] No role found for UID ${uid} in any source.`);
+            console.warn('[AuthService] No role found for this UID in any source.');
             return null;
         } catch (e) {
             ErrorService.handleError(e, '[AuthService] Error in getCurrentUserRole:');
@@ -285,7 +285,7 @@ export class AuthService {
                 return collectorRecords[0].id;
             }
 
-            console.log(`[AuthService] Collector not found locally for UID: ${uid}, checking remote...`);
+            console.log('[AuthService] Collector not found locally, checking remote...');
             const { data, error } = await supabase
                 .from('app_collectors')
                 .select('id')
@@ -433,7 +433,7 @@ export class AuthService {
     }
 
     static async sendPasswordResetEmail(email: string): Promise<void> {
-        console.log(`[AuthService] Sending password reset email to: ${email}`);
+        console.log('[AuthService] Sending password reset email');
         try {
             const { error } = await supabase.auth.resetPasswordForEmail(email.trim());
             if (error) {

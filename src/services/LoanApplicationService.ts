@@ -65,6 +65,18 @@ export class LoanApplicationService extends BaseModelServiceClass {
         }
     }
 
+    async getApplicationById(id: string): Promise<LoanApplication | null> {
+        try {
+            return await this.db.get<LoanApplication>('loan_applications').find(id);
+        } catch (error: any) {
+            // WatermelonDB find() throws when the record does not exist.
+            if (error?.message?.includes('not found') || error?.message?.includes('has no record')) {
+                return null;
+            }
+            throw ErrorService.handleError(error, 'LoanApplicationService.getApplicationById', ErrorType.DATABASE);
+        }
+    }
+
     /**
      * Approve a loan application
      */

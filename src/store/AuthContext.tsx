@@ -311,10 +311,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 if (error) throw error;
                 if (bootstrapRequestId !== roleResolutionRequestIdRef.current) return;
 
-                console.log('[AuthContext] Session fetched:', session?.user?.id);
+                console.log('[AuthContext] Session fetched');
                 setSession(session);
                 if (session?.user) {
-                    console.log(`[AuthContext] Session changed: ${session.user.id} (${session.user.email})`);
+                    console.log('[AuthContext] Session changed');
                     setUser(session.user); // Set user first
                     const skipInitialSync = await consumeSkipNextAutoSync();
                     if (skipInitialSync) {

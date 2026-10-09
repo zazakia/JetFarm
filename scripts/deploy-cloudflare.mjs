@@ -1,6 +1,7 @@
 import { spawnSync } from 'node:child_process';
 import { writeFileSync, existsSync, readdirSync, statSync, readFileSync, renameSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
+import { buildVersionManifest } from './lib/buildVersionManifest.js';
 
 const distDir = 'dist';
 const redirectsPath = join(distDir, '_redirects');
@@ -236,21 +237,20 @@ if (apkRedirectUrl) {
 
 // 6. Generate version.json manifest for automatic in-app updates
 console.log('[deploy-cloudflare] Step 4: Generating version.json manifest for In-App Auto-Updater...');
-const [vMajor, vMinor, vPatch] = String(appVersion).split('.').map((n) => parseInt(n, 10) || 0);
-const minSupportedVersion = vPatch > 0 ? `${vMajor}.${vMinor}.${vPatch - 1}` : `${vMajor}.${vMinor}.0`;
 
-let releaseNotes = `• JetFarm Release v${appVersion}\n• Mobile Android APK installer and Web App deployment\n• Automated version synchronization and branding badges`;
+// The manifest contract lives in scripts/lib/buildVersionManifest.js so both deploy
+// pipelines emit an identical version.json (bug audit §11.5).
+let releaseNotesChanges = null;
+let releaseNotesSummary = null;
 try {
   const { GENERATED_APP_UPDATES } = await import('../src/constants/generatedAppUpdates.js').catch(async () => {
     return await import('../src/constants/appUpdates.js').catch(() => ({ GENERATED_APP_UPDATES: [] }));
   });
-  if (GENERATED_APP_UPDATES && GENERATED_APP_UPDATES.length > 0) {
-    const latest = GENERATED_APP_UPDATES[0];
-    if (latest.changes && latest.changes.length > 0) {
-      releaseNotes = latest.changes.map((c) => `• ${c}`).join('\n');
-    } else if (latest.summary) {
-      releaseNotes = `• ${latest.summary}`;
-    }
+  const latest = GENERATED_APP_UPDATES?.[0];
+  if (Array.isArray(latest?.changes) && latest.changes.length > 0) {
+    releaseNotesChanges = latest.changes;
+  } else if (latest?.summary) {
+    releaseNotesSummary = latest.summary;
   }
 } catch (_) {}
 
@@ -259,19 +259,14 @@ try {
 // "update now" link 404ed even when a valid APK had been uploaded.
 const publicAppUrl = (getProductionEnv('EXPO_PUBLIC_APP_URL') || 'https://jetfarm.818.quest').replace(/\/+$/, '');
 
-const versionManifest = {
-  latestVersion: appVersion,
+const versionManifest = buildVersionManifest({
+  appVersion,
   versionCode,
-  releaseTag: `v${appVersion}`,
-  releaseDate: new Date().toISOString().split('T')[0],
-  minSupportedVersion,
-  apkUrl: apkRedirectUrl || `${publicAppUrl}/download/v${appVersion}`,
-  apkLatestUrl: apkRedirectUrl || `${publicAppUrl}/download`,
-  apkSizeMb: 60,
-  releaseNotes,
-  forceUpdate: false,
-  autoDownload: true,
-};
+  publicAppUrl,
+  apkRedirectUrl,
+  releaseNotesChanges,
+  releaseNotesSummary,
+});
 
 const versionJsonPath = join(distDir, 'version.json');
 writeFileSync(versionJsonPath, JSON.stringify(versionManifest, null, 2), 'utf8');

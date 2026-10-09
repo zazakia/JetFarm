@@ -33,7 +33,7 @@ export default function LoanApplicationsListScreen() {
             <Text className="text-gray-500 text-sm mt-1">Date: {new Date(item.applicationDate).toLocaleDateString()}</Text>
             <Button 
                 title="View Details" 
-                onPress={() => alert('View Details coming soon')} 
+                onPress={() => router.push(`/(loan-encoder)/loan-applications/${item.id}`)} 
                 className="mt-3" 
             />
         </View>
