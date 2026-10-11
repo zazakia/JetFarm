@@ -25,7 +25,7 @@ on:
         description: 'Deployment target: cloudflare, github-pages, or none'
       cloudflare-project-name:
         type: string
-        default: 'poscursor'
+        default: 'jetfarm'
         description: 'Cloudflare Pages project name'
       build-command:
         type: string
@@ -35,6 +35,10 @@ on:
         type: string
         default: 'dist'
         description: 'Directory of build output'
+      apk-redirect-url:
+        type: string
+        default: ''
+        description: 'Direct APK download URL to wire into /download redirect'
     secrets:
       CLOUDFLARE_API_TOKEN:
         required: false
@@ -140,34 +144,13 @@ jobs:
           EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
           EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
           EXPO_PUBLIC_ENCRYPTION_KEY: ${{ secrets.EXPO_PUBLIC_ENCRYPTION_KEY }}
-      - name: Prepare SPA Headers & Asset Fix
-        run: |
-          node -e "
-            const fs = require('fs');
-            const path = require('path');
-            const dist = '${{ inputs.output-dir }}';
-            if (!fs.existsSync(dist)) fs.mkdirSync(dist, { recursive: true });
-            fs.writeFileSync(path.join(dist, '_redirects'), '/* /index.html 200\n');
-            fs.writeFileSync(path.join(dist, '_headers'), '/*\n  X-Frame-Options: DENY\n  X-Content-Type-Options: nosniff\n');
-            const nm = path.join(dist, 'assets', 'node_modules');
-            const vm = path.join(dist, 'assets', 'vendor_modules');
-            if (fs.existsSync(nm)) {
-              fs.renameSync(nm, vm);
-              const walk = (d) => {
-                fs.readdirSync(d).forEach(f => {
-                  const p = path.join(d, f);
-                  if (fs.statSync(p).isDirectory()) walk(p);
-                  else if (/\.(js|css|html|json)$/.test(p)) {
-                    let c = fs.readFileSync(p, 'utf8');
-                    if (c.includes('assets/node_modules/')) {
-                      fs.writeFileSync(p, c.split('assets/node_modules/').join('assets/vendor_modules/'));
-                    }
-                  }
-                });
-              };
-              walk(dist);
-            }
-          "
+          EXPO_PUBLIC_APP_URL: 'https://jetfarm.pages.dev'
+      - name: Prepare Cloudflare dist (_redirects, _headers, download page, version.json)
+        run: node scripts/prepare-cloudflare-dist.mjs
+        env:
+          APK_REDIRECT_URL: ${{ inputs.apk-redirect-url }}
+          EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
+          EXPO_PUBLIC_APP_URL: 'https://jetfarm.pages.dev'
       - name: Deploy via Cloudflare Pages Action
         uses: cloudflare/pages-action@v1
         with:

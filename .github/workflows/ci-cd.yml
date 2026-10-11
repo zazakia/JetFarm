@@ -85,9 +85,121 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
-  build-and-deploy:
-    name: 4. Build & Cloudflare Pages Deploy
+  build-android-apk:
+    name: 4. Build Android APK
     needs: [typecheck-and-lint, unit-tests]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.ref == 'refs/heads/Branch-V2' || github.event_name == 'workflow_dispatch'
+    outputs:
+      apk-url: ${{ steps.release.outputs.apk-url }}
+      app-version: ${{ steps.version.outputs.app-version }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Read version
+        id: version
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "app-version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Expo Prebuild (Android)
+        run: npx expo prebuild --platform android --no-install
+        env:
+          EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
+          EXPO_PUBLIC_ENCRYPTION_KEY: ${{ secrets.EXPO_PUBLIC_ENCRYPTION_KEY }}
+          EXPO_PUBLIC_APP_URL: 'https://jetfarm.pages.dev'
+
+      - name: Build Release APK via Gradle
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew app:assembleRelease \
+            -x lint \
+            -x test \
+            --configure-on-demand \
+            --build-cache \
+            -PreactNativeArchitectures=arm64-v8a,armeabi-v7a \
+            -Pexpo.useLegacyPackaging=true
+        env:
+          EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
+          EXPO_PUBLIC_ENCRYPTION_KEY: ${{ secrets.EXPO_PUBLIC_ENCRYPTION_KEY }}
+
+      - name: Locate and rename APK
+        id: locate-apk
+        run: |
+          VERSION=${{ steps.version.outputs.app-version }}
+          APK_SRC=$(find android/app/build/outputs/apk/release -name "*.apk" | head -1)
+          echo "Found APK: $APK_SRC"
+          mkdir -p dist-apk
+          cp "$APK_SRC" "dist-apk/JetFarm-v${VERSION}.apk"
+          cp "$APK_SRC" "dist-apk/jetfarm.apk"
+          echo "apk-versioned=dist-apk/JetFarm-v${VERSION}.apk" >> $GITHUB_OUTPUT
+          echo "apk-latest=dist-apk/jetfarm.apk" >> $GITHUB_OUTPUT
+
+      - name: Upload APK as build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: jetfarm-apk-${{ steps.version.outputs.app-version }}
+          path: dist-apk/
+          retention-days: 30
+
+      - name: Publish to GitHub Releases
+        id: release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION=${{ steps.version.outputs.app-version }}
+          TAG="v${VERSION}"
+          VERSIONED_APK="dist-apk/JetFarm-v${VERSION}.apk"
+          LATEST_APK="dist-apk/jetfarm.apk"
+
+          # Create or update release
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            echo "Release $TAG exists — uploading with --clobber"
+            gh release upload "$TAG" "$VERSIONED_APK" "$LATEST_APK" --clobber
+          else
+            echo "Creating new release $TAG"
+            gh release create "$TAG" "$VERSIONED_APK" "$LATEST_APK" \
+              --title "JetFarm $TAG" \
+              --notes "## JetFarm ${TAG}
+
+### Downloads
+- [JetFarm-v${VERSION}.apk](https://github.com/${{ github.repository }}/releases/download/${TAG}/JetFarm-v${VERSION}.apk)
+- [jetfarm.apk (latest)](https://github.com/${{ github.repository }}/releases/latest/download/jetfarm.apk)
+- Web Portal: https://jetfarm.pages.dev/download
+
+### Info
+- **Version**: \`${VERSION}\`
+- **Built**: $(date -u +%Y-%m-%dT%H:%M:%SZ)
+- **Commit**: ${{ github.sha }}
+"
+          fi
+
+          APK_URL="https://github.com/${{ github.repository }}/releases/download/${TAG}/JetFarm-v${VERSION}.apk"
+          echo "apk-url=$APK_URL" >> $GITHUB_OUTPUT
+          echo "Versioned APK published: $APK_URL"
+
+  build-and-deploy:
+    name: 5. Build Web & Deploy to Cloudflare Pages
+    needs: [typecheck-and-lint, unit-tests, build-android-apk]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.ref == 'refs/heads/Branch-V2' || github.event_name == 'workflow_dispatch'
     steps:
@@ -98,45 +210,27 @@ jobs:
           cache: 'npm'
       - name: Install dependencies
         run: npm ci
+
       - name: Build Web Production Export
         run: npm run export:web:production
         env:
           EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
           EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
           EXPO_PUBLIC_ENCRYPTION_KEY: ${{ secrets.EXPO_PUBLIC_ENCRYPTION_KEY }}
-      - name: Prepare Cloudflare SPA Headers & Asset Fix
-        run: |
-          node -e "
-            const fs = require('fs');
-            const path = require('path');
-            const dist = 'dist';
-            if (!fs.existsSync(dist)) fs.mkdirSync(dist, { recursive: true });
-            fs.writeFileSync(path.join(dist, '_redirects'), '/* /index.html 200\n');
-            fs.writeFileSync(path.join(dist, '_headers'), '/*\n  X-Frame-Options: DENY\n  X-Content-Type-Options: nosniff\n  Referrer-Policy: strict-origin-when-cross-origin\n');
-            const nm = path.join(dist, 'assets', 'node_modules');
-            const vm = path.join(dist, 'assets', 'vendor_modules');
-            if (fs.existsSync(nm)) {
-              fs.renameSync(nm, vm);
-              const walk = (d) => {
-                fs.readdirSync(d).forEach(f => {
-                  const p = path.join(d, f);
-                  if (fs.statSync(p).isDirectory()) walk(p);
-                  else if (/\.(js|css|html|json)$/.test(p)) {
-                    let c = fs.readFileSync(p, 'utf8');
-                    if (c.includes('assets/node_modules/')) {
-                      fs.writeFileSync(p, c.split('assets/node_modules/').join('assets/vendor_modules/'));
-                    }
-                  }
-                });
-              };
-              walk(dist);
-            }
-          "
+          EXPO_PUBLIC_APP_URL: 'https://jetfarm.pages.dev'
+
+      - name: Prepare Cloudflare dist (_redirects, _headers, download page, version.json)
+        run: node scripts/prepare-cloudflare-dist.mjs
+        env:
+          APK_REDIRECT_URL: ${{ needs.build-android-apk.outputs.apk-url }}
+          EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
+          EXPO_PUBLIC_APP_URL: 'https://jetfarm.pages.dev'
+
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/pages-action@v1
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          projectName: 'poscursor'
+          projectName: 'jetfarm'
           directory: 'dist'
           branch: 'main'

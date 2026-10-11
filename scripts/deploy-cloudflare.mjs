@@ -130,7 +130,16 @@ if (skipApkUpload) {
       const require = createRequire(import.meta.url);
       const { listObsoleteApkObjectNames } = require('./apkStorageRetention.js');
 
-      // Upload the mutable latest artifact
+      // Upload versioned APK installer as primary target
+      const versionedApkName = `JetFarm-v${appVersion}.apk`;
+      const { error: versionedError } = await supabase.storage
+        .from('downloads')
+        .upload(versionedApkName, apkBuffer, {
+          contentType: 'application/vnd.android.package-archive',
+          upsert: true,
+        });
+
+      // Also upload jetfarm.apk for backward compatibility
       const { error } = await supabase.storage
         .from('downloads')
         .upload('jetfarm.apk', apkBuffer, {
@@ -138,19 +147,20 @@ if (skipApkUpload) {
           upsert: true,
         });
 
-      if (error) {
-        console.error('[deploy-cloudflare] Supabase upload failed for jetfarm.apk:', error.message);
+      if (versionedError && error) {
+        console.error('[deploy-cloudflare] Supabase upload failed for APK:', (versionedError || error).message);
       } else {
-        apkRedirectUrl = `${supabaseUrl}/storage/v1/object/public/downloads/jetfarm.apk`;
-        console.log('[deploy-cloudflare] Latest APK uploaded successfully:', apkRedirectUrl);
+        apkRedirectUrl = `${supabaseUrl}/storage/v1/object/public/downloads/${versionedApkName}`;
+        console.log('[deploy-cloudflare] Versioned APK uploaded successfully:', apkRedirectUrl);
       }
 
-      // Delete historical obsolete APKs left in bucket
+      // Delete historical obsolete APKs left in bucket (excluding current version)
       const { data: objects, error: listError } = await supabase.storage.from('downloads').list('', { limit: 1000 });
       if (listError) {
         console.warn('[deploy-cloudflare] Warning: could not list downloads bucket for cleanup:', listError.message);
       } else {
-        const obsolete = listObsoleteApkObjectNames((objects || []).map((obj) => obj.name));
+        const obsolete = listObsoleteApkObjectNames((objects || []).map((obj) => obj.name))
+          .filter((name) => name !== versionedApkName && name !== versionedApkName.toLowerCase());
         if (obsolete.length > 0) {
           const { error: removeError } = await supabase.storage.from('downloads').remove(obsolete);
           if (removeError) {
@@ -194,12 +204,14 @@ if (!existsSync(distDir)) {
 console.log('[deploy-cloudflare] Step 3: Creating _redirects file for SPA client-side routing & APK downloads...');
 let redirectsContent = `/* /index.html 200\n`;
 if (apkRedirectUrl) {
+  const versionedApkName = `JetFarm-v${appVersion}.apk`;
   redirectsContent =
     `/download ${apkRedirectUrl} 302\n` +
     `/download/ ${apkRedirectUrl} 302\n` +
     `/download/latest ${apkRedirectUrl} 302\n` +
     `/download/apk ${apkRedirectUrl} 302\n` +
     `/download/v* ${apkRedirectUrl} 302\n` +
+    `/${versionedApkName} ${apkRedirectUrl} 302\n` +
     `/jetfarm.apk ${apkRedirectUrl} 302\n` +
     redirectsContent;
 }
@@ -208,6 +220,7 @@ console.log('[deploy-cloudflare] Successfully wrote _redirects');
 
 // 5. Create static fallback download page in dist/download/index.html
 if (apkRedirectUrl) {
+  const versionedApkName = `JetFarm-v${appVersion}.apk`;
   const downloadPageDir = join(distDir, 'download');
   mkdirSync(downloadPageDir, { recursive: true });
   const downloadHtml = `<!DOCTYPE html>
@@ -225,8 +238,8 @@ if (apkRedirectUrl) {
   <div style="text-align: center; padding: 2.5rem; background: #1e293b; border: 1px solid #334155; border-radius: 1rem; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.5); max-width: 440px; width: 90%;">
     <div style="font-size: 2.5rem; margin-bottom: 1rem;">🌾</div>
     <h2 style="font-size: 1.5rem; font-weight: 700; margin: 0 0 0.5rem 0;">JetFarm Mobile App</h2>
-    <p style="color: #94a3b8; font-size: 0.95rem; line-height: 1.5; margin-bottom: 1.75rem;">Your APK installer download is starting automatically. If it does not begin, click the button below.</p>
-    <a href="${apkRedirectUrl}" style="display: inline-block; width: 100%; box-sizing: border-box; background: #059669; color: #ffffff; padding: 0.875rem 1.5rem; border-radius: 0.5rem; text-decoration: none; font-weight: 600; font-size: 1rem; transition: background 0.2s;">Download APK Directly</a>
+    <p style="color: #94a3b8; font-size: 0.95rem; line-height: 1.5; margin-bottom: 1.75rem;">Your installer <strong>${versionedApkName}</strong> is downloading automatically. If it does not begin, click the button below.</p>
+    <a href="${apkRedirectUrl}" download="${versionedApkName}" style="display: inline-block; width: 100%; box-sizing: border-box; background: #059669; color: #ffffff; padding: 0.875rem 1.5rem; border-radius: 0.5rem; text-decoration: none; font-weight: 600; font-size: 1rem; transition: background 0.2s;">Download ${versionedApkName}</a>
     <p style="color: #64748b; font-size: 0.8rem; margin-top: 1.5rem; margin-bottom: 0;">Version ${appVersion} (Build ${versionCode}) • JetFarm Android Release</p>
   </div>
 </body>

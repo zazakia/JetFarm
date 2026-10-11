@@ -67,6 +67,7 @@ export default function WeeklySettlementsScreen() {
             for (const s of rawSettlements) {
                 let ownerName = 'Land Owner';
                 let cycleCode = 'Cycle';
+                let parcelName = 'Assigned Parcel';
                 try {
                     const owner = await database.get<AgriLandOwner>('agri_land_owners').find(s.landOwnerId);
                     ownerName = owner.name;
@@ -77,11 +78,17 @@ export default function WeeklySettlementsScreen() {
                 try {
                     const c = await database.get<AgriCropCycle>('agri_crop_cycles').find(s.cropCycleId);
                     cycleCode = c.cycleCode;
+                    try {
+                        const p = await database.get<AgriParcel>('agri_parcels').find(c.parcelId);
+                        parcelName = p.name;
+                    } catch {
+                        parcelName = 'Assigned Parcel';
+                    }
                 } catch {
                     cycleCode = 'Cycle';
                 }
 
-                formatted.push({ settlement: s, landOwnerName: ownerName, cycleCode });
+                formatted.push({ settlement: s, landOwnerName: ownerName, cycleCode, parcelName });
             }
             setSettlements(formatted);
 
@@ -187,12 +194,12 @@ export default function WeeklySettlementsScreen() {
     };
 
     const handleViewSlip = (item: any) => {
-        const { settlement, landOwnerName, cycleCode } = item;
+        const { settlement, landOwnerName, cycleCode, parcelName } = item;
         const slip = LandSettlementEngine.generateSettlementSlip({
             settlementId: settlement.id,
             cropCycleCode: cycleCode,
             landOwnerName,
-            parcelName: 'Assigned Parcel',
+            parcelName: parcelName || 'Assigned Parcel',
             weekNumber: settlement.weekNumber,
             weekStartDate: new Date(settlement.weekStartDate),
             weekEndDate: new Date(settlement.weekEndDate),

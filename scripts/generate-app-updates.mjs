@@ -7,6 +7,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, '..');
 const outputPath = path.join(repoRoot, 'src', 'constants', 'generatedAppUpdates.ts');
+const jsonOutputPath = path.join(repoRoot, 'src', 'constants', 'generatedAppUpdates.json');
 
 const RECORD_SEPARATOR = '\u001e';
 const FIELD_SEPARATOR = '\u001f';
@@ -52,7 +53,8 @@ function writeBaselineUpdates() {
         },
     ];
     fs.writeFileSync(outputPath, serializeUpdates(updates), 'utf8');
-    console.log(`Wrote ${updates.length} baseline updates to ${outputPath} (no git history)`);
+    fs.writeFileSync(jsonOutputPath, JSON.stringify(updates, null, 4), 'utf8');
+    console.log(`Wrote ${updates.length} baseline updates to ${outputPath} and ${jsonOutputPath} (no git history)`);
 }
 
 function cleanMessage(value) {
@@ -200,4 +202,5 @@ const updates = entries.map(entry => {
 });
 
 fs.writeFileSync(outputPath, serializeUpdates(updates), 'utf8');
-console.log(`Wrote ${updates.length} updates to ${outputPath}`);
+fs.writeFileSync(jsonOutputPath, JSON.stringify(updates, null, 4), 'utf8');
+console.log(`Wrote ${updates.length} updates to ${outputPath} and ${jsonOutputPath}`);

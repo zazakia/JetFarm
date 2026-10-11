@@ -52,6 +52,7 @@ export async function buildAndReleaseApk(options = {}) {
 
   // 4. Publish to GitHub Releases via gh CLI
   console.log(`[release-apk] Step 2: Publishing Release to GitHub (${tag})...`);
+  const repo = process.env.GITHUB_REPOSITORY || 'zazakia/JetFarm';
   const releaseTitle = `JetFarm ${tag}`;
   const releaseNotes = `## JetFarm ${tag} Official Release
 
@@ -104,8 +105,8 @@ export async function buildAndReleaseApk(options = {}) {
     }
   }
 
-  const directDownloadUrl = `https://github.com/zazakia/POS Cursor/releases/download/${tag}/${versionedApkName}`;
-  const latestDownloadUrl = `https://github.com/zazakia/POS Cursor/releases/latest/download/${latestApkName}`;
+  const directDownloadUrl = `https://github.com/${repo}/releases/download/${tag}/${versionedApkName}`;
+  const latestDownloadUrl = `https://github.com/${repo}/releases/latest/download/${latestApkName}`;
   console.log('================================================================');
   console.log('✅ [release-apk] APK Build & GitHub Release Complete!');
   console.log(`📥 Versioned Download: ${directDownloadUrl}`);
@@ -122,7 +123,8 @@ export async function buildAndReleaseApk(options = {}) {
 
 // Standalone execution
 if (process.argv[1]?.endsWith('release-apk.mjs')) {
-  buildAndReleaseApk()
+  const skipBuild = process.argv.includes('--skip-build') || process.argv.includes('--skip-apk-build');
+  buildAndReleaseApk({ skipBuild })
     .then(() => process.exit(0))
     .catch((err) => {
       console.error('[release-apk] Failed:', err);

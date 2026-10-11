@@ -1,6 +1,6 @@
 {
   "name": "jetfarm",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "main": "index.js",
   "scripts": {
     "prepare:app": "npm run generate:updates && node scripts/check-auth-schema.mjs",
@@ -20,6 +20,7 @@
     "web:local": "expo start --web --clear",
     "preexport:web": "npm run generate:updates",
     "export:web": "npx expo export --platform web",
+    "postexport:web": "node scripts/write-dist-version.mjs",
     "generate:updates": "node scripts/generate-app-updates.mjs",
     "test": "jest",
     "test:e2e": "npx playwright test",
@@ -47,7 +48,8 @@
     "deploy:pipeline": "node scripts/pipeline-e2e.mjs --deploy",
     "postinstall": "patch-package",
     "prepare": "husky",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "prepare:cloudflare": "node scripts/prepare-cloudflare-dist.mjs"
   },
   "dependencies": {
     "@babel/plugin-proposal-decorators": "7.25.9",

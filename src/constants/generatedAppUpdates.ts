@@ -2,6 +2,24 @@ import type { AppUpdateEntry } from './appUpdates';
 
 export const GENERATED_APP_UPDATES: AppUpdateEntry[] = [
     {
+        "id": "6a18bd3d3f56f216dff832adf1ff4ec3cb94ac06",
+        "version": "6a18bd3",
+        "versionLabel": "Commit",
+        "date": "2026-10-09",
+        "title": "Oct 9 updates — loan applications, services, and tests",
+        "category": "technical",
+        "icon": "code",
+        "summary": "Oct 9 updates — loan applications, services, and tests",
+        "changes": [
+            "Oct 9 updates — loan applications, services, and tests"
+        ],
+        "codeChanges": [
+            "Updated app/(admin)/settings/index.tsx",
+            "Updated app/(loan-encoder)/loan-applications/[id].tsx",
+            "Updated app/(loan-encoder)/loan-applications/__tests__/[id].test.tsx"
+        ]
+    },
+    {
         "id": "e70f982a1fb3914fc2c834ba3aa28abf5fbdb30e",
         "version": "e70f982",
         "versionLabel": "Commit",
