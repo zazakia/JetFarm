@@ -52,7 +52,8 @@ const EXPECTED_COLUMNS = {
 
 function psql(sql, { input = null, label = 'psql', bare = false } = {}) {
     const flags = bare ? '-t -A' : '-q';
-    const command = `ssh ${HETZNER_SSH} "docker exec -i supabase-db psql -U postgres -d postgres ${flags} -v ON_ERROR_STOP=1"`;
+    const sshOpts = '-o BatchMode=yes -o ConnectTimeout=15 -o ServerAliveInterval=10 -o ServerAliveCountMax=3';
+    const command = `ssh ${sshOpts} ${HETZNER_SSH} "docker exec -i supabase-db psql -U postgres -d postgres ${flags} -v ON_ERROR_STOP=1"`;
     const result = spawnSync(command, {
         shell: true,
         input: input ?? sql,
@@ -104,28 +105,29 @@ function verify() {
     console.log('\n🔎 Live schema check (read-only)');
     const present = new Set();
 
-    for (const [table, columns] of Object.entries(EXPECTED_COLUMNS)) {
-        const rows = psql(
-            `SELECT column_name FROM information_schema.columns WHERE table_schema = 'public' AND table_name = '${table}' AND column_name IN (${columns.map((c) => `'${c}'`).join(',')});`,
-            { label: `column probe ${table}`, bare: true }
-        );
-        rows.forEach((row) => present.add(`${table}.${row}`));
-    }
+    const expectedTables = Object.keys(EXPECTED_COLUMNS);
+    const tableListSql = expectedTables.map((t) => `'${t}'`).join(',');
+    const rows = psql(
+        `SELECT table_name || '.' || column_name FROM information_schema.columns WHERE table_schema = 'public' AND table_name IN (${tableListSql});`,
+        { label: 'batch column probe', bare: true }
+    );
+    rows.forEach((row) => present.add(row.trim()));
 
     const missing = [];
     for (const [table, columns] of Object.entries(EXPECTED_COLUMNS)) {
         for (const column of columns) {
-            if (!present.has(`${table}.${column}`)) missing.push(`${table}.${column}`);
-            console.log(`  ${present.has(`${table}.${column}`) ? '✓' : '✗'} ${table}.${column}`);
+            const key = `${table}.${column}`;
+            if (!present.has(key)) missing.push(key);
+            console.log(`  ${present.has(key) ? '✓' : '✗'} ${key}`);
         }
     }
 
-    const [fkCount] = psql(
-        `SELECT count(*) FROM pg_constraint WHERE contype = 'f' AND conrelid = 'public.app_payrolls'::regclass AND confrelid = 'public.app_employees'::regclass;`,
-        { label: 'foreign key probe', bare: true }
+    const countRows = psql(
+        `SELECT (SELECT count(*) FROM pg_constraint WHERE contype = 'f' AND conrelid = 'public.app_payrolls'::regclass AND confrelid = 'public.app_employees'::regclass) || '|' || (SELECT count(*) FROM public.app_payrolls) || '|' || (SELECT count(*) FROM public.app_employees);`,
+        { label: 'batch constraints probe', bare: true }
     );
-    const [payrolls] = psql('SELECT count(*) FROM public.app_payrolls;', { label: 'legacy payload probe', bare: true });
-    const [employees] = psql('SELECT count(*) FROM public.app_employees;', { label: 'legacy employee probe', bare: true });
+    const [countsStr = '0|0|0'] = countRows;
+    const [fkCount = '0', payrolls = '0', employees = '0'] = countsStr.split('|');
 
     console.log(`  ${Number(fkCount) === 0 ? '✓' : '✗'} app_payrolls -> app_employees foreign key removed (found ${fkCount})`);
     console.log(`  · legacy payload size: app_payrolls=${payrolls} rows, app_employees=${employees} rows`);

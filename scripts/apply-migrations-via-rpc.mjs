@@ -10,8 +10,7 @@ import path from 'node:path';
 
 function loadEnv(filePath) {
   if (!existsSync(filePath)) return;
-  for (const line of readFileSync(filePath, 'utf8').split(/?
-/)) {
+  for (const line of readFileSync(filePath, 'utf8').split(/\r?\n/)) {
     const trimmed = line.trim();
     if (!trimmed || trimmed.startsWith('#')) continue;
     const separator = trimmed.indexOf('=');

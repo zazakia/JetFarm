@@ -162,13 +162,16 @@ function buildWebExport() {
     const publicAppUrl = (process.env.EXPO_PUBLIC_APP_URL || `https://${DOMAIN}`).replace(/\/+$/, '');
     let releaseNotesChanges = null;
     try {
-      const { GENERATED_APP_UPDATES } = require(path.join(rootDir, 'src', 'constants', 'generatedAppUpdates.js'));
-      const latest = GENERATED_APP_UPDATES?.[0];
-      if (Array.isArray(latest?.changes) && latest.changes.length > 0) {
-        releaseNotesChanges = latest.changes;
+      const updatesJsonPath = path.join(rootDir, 'src', 'constants', 'generatedAppUpdates.json');
+      if (fs.existsSync(updatesJsonPath)) {
+        const updates = JSON.parse(fs.readFileSync(updatesJsonPath, 'utf8'));
+        const latest = updates?.[0];
+        if (Array.isArray(latest?.changes) && latest.changes.length > 0) {
+          releaseNotesChanges = latest.changes;
+        }
       }
     } catch (_e) {
-      // Missing/uncompiled updates metadata falls back to the default release notes.
+      // Missing updates metadata falls back to the default release notes.
     }
     const versionManifest = buildVersionManifest({ appVersion, versionCode, publicAppUrl, releaseNotesChanges });
     fs.writeFileSync(path.join(distDir, 'version.json'), JSON.stringify(versionManifest, null, 2), 'utf8');

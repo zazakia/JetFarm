@@ -33,7 +33,7 @@ function parseExcelDate(excelValue) {
 }
 const ignoreKw = ['batch', 'total', 'grand total', 'name of client', 'monthly', 'weekly'];
 function runExtraction() {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o;
+    let _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o;
     console.log("Extracting Brayan Excel Data to JSON...");
     const wb = xlsx.readFile('brayan Import migration cleanup.xlsx', { cellStyles: true, cellDates: true });
     const ws = wb.Sheets['DATA of Clients'];

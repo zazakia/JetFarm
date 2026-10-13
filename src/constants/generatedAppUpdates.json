@@ -1,5 +1,23 @@
 [
     {
+        "id": "a837640a573fc0ab280c17bbc7905db73e18415e",
+        "version": "a837640",
+        "versionLabel": "Commit",
+        "date": "2026-10-12",
+        "title": "Release v0.1.2 — versioned APK installer JetFarm-v0.1.2.apk, fix CI/CD pipeline, Cloudflare Pages download redirects",
+        "category": "fix",
+        "icon": "build-circle",
+        "summary": "Release v0.1.2 — versioned APK installer JetFarm-v0.1.2.apk, fix CI/CD pipeline, Cloudflare Pages download redirects",
+        "changes": [
+            "Release v0.1.2 — versioned APK installer JetFarm-v0.1.2.apk, fix CI/CD pipeline, Cloudflare Pages download redirects"
+        ],
+        "codeChanges": [
+            "Updated .github/workflows/ci-cd.yml",
+            "Updated .github/workflows/reusable-ci-cd.yml",
+            "Updated app.json"
+        ]
+    },
+    {
         "id": "6a18bd3d3f56f216dff832adf1ff4ec3cb94ac06",
         "version": "6a18bd3",
         "versionLabel": "Commit",

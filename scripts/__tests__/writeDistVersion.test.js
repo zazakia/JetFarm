@@ -32,6 +32,19 @@ describe('write-dist-version script', () => {
         expect(manifest).toHaveProperty('versionCode');
         expect(manifest).toHaveProperty('releaseTag');
         expect(manifest).toHaveProperty('apkUrl');
-        expect(manifest.latestVersion).toBe('0.1.1');
+
+        // Assert against the source of truth (app.json), never a literal version:
+        // hardcoding "0.1.1" made every release bump fail this suite.
+        const appConfig = JSON.parse(
+            fs.readFileSync(path.join(rootDir, 'app.json'), 'utf8')
+        );
+        const expectedVersion = appConfig.expo.version;
+        const expectedVersionCode = Number(appConfig.expo.android.versionCode);
+
+        expect(manifest.latestVersion).toBe(expectedVersion);
+        expect(manifest.versionCode).toBe(expectedVersionCode);
+        expect(manifest.releaseTag).toBe(`v${expectedVersion}`);
+        expect(manifest.apkUrl).toContain(`/download/v${expectedVersion}`);
+        expect(manifest.apkUrl).toMatch(/^https?:\/\//);
     });
 });
