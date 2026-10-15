@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, ScrollView, Pressable, ActivityIndicator, TextInput, Modal, Alert, RefreshControl } from 'react-native';
-import { useRouter, useFocusEffect } from 'expo-router';
+import { useRouter, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { database } from '../../../src/database';
 import AgriFarmExpense from '../../../src/database/models/AgriFarmExpense';
@@ -10,6 +10,7 @@ import { Q } from '@nozbe/watermelondb';
 import { AutoPostingService } from '../../../src/services/AutoPostingService';
 import { DynamicSearchBar } from '../../../src/components/DynamicSearchBar';
 import { useDynamicSearch } from '../../../src/hooks/useDynamicSearch';
+import { AgriFarmingStepsService, CycleStepsSummary } from '../../../src/services/AgriFarmingStepsService';
 
 export const EXPENSE_CATEGORIES = [
     { id: 'fertilizer', label: 'Fertilizer', icon: 'eco' as const, badgeBg: 'bg-emerald-100', badgeText: 'text-emerald-800' },
@@ -24,8 +25,15 @@ export const EXPENSE_CATEGORIES = [
 
 export default function FarmExpensesScreen() {
     const router = useRouter();
+    const params = useLocalSearchParams();
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+
+    // Active View Mode: ledger (all records) vs steps (planned vs actual monitoring)
+    const [activeTab, setActiveTab] = useState<'ledger' | 'steps'>(params.view === 'steps' ? 'steps' : 'ledger');
+    const [stepsAnalysis, setStepsAnalysis] = useState<CycleStepsSummary | null>(null);
+    const [loadingSteps, setLoadingSteps] = useState(false);
+    const [expandedStepNum, setExpandedStepNum] = useState<number | null>(null);
 
     const [expenses, setExpenses] = useState<Array<{ expense: AgriFarmExpense; cycleCode: string }>>([]);
     const [cycles, setCycles] = useState<AgriCropCycle[]>([]);
@@ -76,12 +84,71 @@ export default function FarmExpensesScreen() {
                 formatted.push({ expense: exp, cycleCode: code });
             }
             setExpenses(formatted);
+            await loadStepsAnalysis(selectedCycleId || cycleList[0]?.id);
         } catch (err) {
             console.error('[FarmExpenses] Error loading:', err);
         } finally {
+            setLoadingSteps(false);
             setLoading(false);
             setRefreshing(false);
         }
+    };
+
+    const loadStepsAnalysis = async (cycleId?: string) => {
+        const targetId = cycleId !== undefined ? cycleId : (selectedCycleId || (cycles[0]?.id ?? ''));
+        if (!targetId) {
+            const defs = AgriFarmingStepsService.getStandardFarmingSteps(1.0);
+            const fallbackSummary = AgriFarmingStepsService.calculateCyclePlannedVsActualSummary(
+                defs.map((d) => ({
+                    stepNumber: d.stepNumber,
+                    id: d.id,
+                    name: d.name,
+                    timelineDays: d.timelineDays,
+                    targetStage: d.targetStage,
+                    plannedBudget: d.totalPlannedBudget,
+                    actualExpenses: 0,
+                    varianceAmount: -d.totalPlannedBudget,
+                    variancePercent: -100,
+                    budgetStatus: 'under_budget',
+                    stepStatus: 'upcoming',
+                    expenseCount: 0,
+                })),
+                1.0,
+                new Date()
+            );
+            fallbackSummary.cycleCode = 'Cassava Benchmark (1.0 Ha)';
+            fallbackSummary.cropType = 'Cassava (Golden Yellow)';
+            setStepsAnalysis(fallbackSummary);
+            return;
+        }
+
+        setLoadingSteps(true);
+        try {
+            const analysis = await AgriFarmingStepsService.analyzeCycleFarmingSteps(targetId);
+            setStepsAnalysis(analysis);
+        } catch (err) {
+            console.warn('[FarmExpenses] Error analyzing farming steps:', err);
+        } finally {
+            setLoadingSteps(false);
+        }
+    };
+
+    const openStepExpense = (stepNumber: number) => {
+        let cat = 'fertilizer';
+        switch (stepNumber) {
+            case 1: cat = 'tractor_equipment'; break;
+            case 2: cat = 'seedlings'; break;
+            case 3: cat = 'herbicide_pesticide'; break;
+            case 4: cat = 'fertilizer'; break;
+            case 5: cat = 'fertilizer'; break;
+            case 6: cat = 'tools'; break;
+            case 7: cat = 'transport'; break;
+        }
+        setFormCategory(cat);
+        if (stepsAnalysis?.cycleId) {
+            setFormCycleId(stepsAnalysis.cycleId);
+        }
+        setModalVisible(true);
     };
 
     useFocusEffect(
@@ -255,10 +322,406 @@ export default function FarmExpensesScreen() {
                 <Text className="text-emerald-100 text-xs mt-1">
                     Operational cost accounting: Fertilizer, Land Prep, Tractor, Seedlings & Pest Control
                 </Text>
+
+                {/* View Mode Toggle: Ledger vs Planned vs Actual Steps */}
+                <View className="flex-row mt-4 bg-emerald-950/40 p-1 rounded-xl">
+                    <Pressable
+                        onPress={() => setActiveTab('ledger')}
+                        className={`flex-1 py-2 rounded-lg items-center justify-center flex-row ${
+                            activeTab === 'ledger' ? 'bg-white shadow-xs' : ''
+                        }`}
+                    >
+                        <MaterialIcons
+                            name="receipt-long"
+                            size={16}
+                            color={activeTab === 'ledger' ? '#047857' : '#D1FAE5'}
+                            style={{ marginRight: 6 }}
+                        />
+                        <Text
+                            className={`text-xs font-bold ${
+                                activeTab === 'ledger' ? 'text-emerald-950' : 'text-emerald-100'
+                            }`}
+                        >
+                            Expense Ledger
+                        </Text>
+                    </Pressable>
+                    <Pressable
+                        onPress={() => {
+                            setActiveTab('steps');
+                            loadStepsAnalysis(selectedCycleId || (cycles[0]?.id ?? ''));
+                        }}
+                        className={`flex-1 py-2 rounded-lg items-center justify-center flex-row ${
+                            activeTab === 'steps' ? 'bg-white shadow-xs' : ''
+                        }`}
+                    >
+                        <MaterialIcons
+                            name="timeline"
+                            size={16}
+                            color={activeTab === 'steps' ? '#047857' : '#D1FAE5'}
+                            style={{ marginRight: 6 }}
+                        />
+                        <Text
+                            className={`text-xs font-bold ${
+                                activeTab === 'steps' ? 'text-emerald-950' : 'text-emerald-100'
+                            }`}
+                        >
+                            Planned vs Actual Steps
+                        </Text>
+                    </Pressable>
+                </View>
             </View>
 
-            {/* KPI Overview Cards */}
-            <View className="p-4 -mt-5">
+            {activeTab === 'steps' ? (
+                <View className="p-4">
+                    {/* Cycle Selector Bar for Steps */}
+                    <View className="mb-4">
+                        <Text className="text-xs font-bold text-gray-600 uppercase tracking-wider mb-2">
+                            Select Crop Cycle for Step Monitoring
+                        </Text>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row pb-1">
+                            {cycles.map((cy) => {
+                                const isSelected = (stepsAnalysis?.cycleId === cy.id) || (!stepsAnalysis?.cycleId && selectedCycleId === cy.id);
+                                return (
+                                    <Pressable
+                                        key={cy.id}
+                                        onPress={() => {
+                                            setSelectedCycleId(cy.id);
+                                            loadStepsAnalysis(cy.id);
+                                        }}
+                                        className={`px-3 py-2 rounded-xl mr-2 flex-row items-center border ${
+                                            isSelected
+                                                ? 'bg-emerald-800 border-emerald-800 shadow-sm'
+                                                : 'bg-white border-gray-200'
+                                        }`}
+                                    >
+                                        <MaterialIcons
+                                            name="grass"
+                                            size={16}
+                                            color={isSelected ? '#FFFFFF' : '#047857'}
+                                            style={{ marginRight: 6 }}
+                                        />
+                                        <View>
+                                            <Text className={`text-xs font-bold ${isSelected ? 'text-white' : 'text-gray-900'}`}>
+                                                {cy.cycleCode}
+                                            </Text>
+                                            <Text className={`text-[10px] ${isSelected ? 'text-emerald-100' : 'text-gray-500'}`}>
+                                                {cy.variety || 'Cassava'} • {cy.areaPlantedHa} ha
+                                            </Text>
+                                        </View>
+                                    </Pressable>
+                                );
+                            })}
+                        </ScrollView>
+                    </View>
+
+                    {loadingSteps ? (
+                        <View className="bg-white p-8 rounded-2xl border border-gray-200 items-center justify-center">
+                            <ActivityIndicator size="small" color="#047857" />
+                            <Text className="text-xs font-semibold text-gray-500 mt-2">Computing planned vs actual step metrics...</Text>
+                        </View>
+                    ) : stepsAnalysis ? (
+                        <>
+                            {/* Crop Cycle Progress & Status Banner */}
+                            <View className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm mb-4">
+                                <View className="flex-row items-center justify-between mb-3">
+                                    <View className="flex-row items-center">
+                                        <View className="w-10 h-10 rounded-full bg-emerald-100 items-center justify-center mr-3">
+                                            <MaterialIcons name="eco" size={22} color="#047857" />
+                                        </View>
+                                        <View>
+                                            <Text className="text-base font-black text-gray-900">
+                                                {stepsAnalysis.cycleCode || 'Active Crop Cycle'}
+                                            </Text>
+                                            <Text className="text-xs font-semibold text-emerald-800">
+                                                {stepsAnalysis.cropType || 'Cassava'} • {stepsAnalysis.areaPlantedHa.toFixed(2)} Hectares
+                                            </Text>
+                                        </View>
+                                    </View>
+                                    <View className="bg-emerald-100 px-2.5 py-1 rounded-full">
+                                        <Text className="text-emerald-900 text-[11px] font-bold">
+                                            Step {stepsAnalysis.currentStepNumber} of 7 Active
+                                        </Text>
+                                    </View>
+                                </View>
+
+                                {/* Timeline Tracker */}
+                                <View className="bg-gray-50 p-3 rounded-xl border border-gray-100 mb-3">
+                                    <View className="flex-row justify-between items-center mb-1.5">
+                                        <Text className="text-xs font-bold text-gray-700">
+                                            Implementation Timeline: Day {stepsAnalysis.daysElapsed} of 270
+                                        </Text>
+                                        <Text className="text-xs font-bold text-gray-500">
+                                            {stepsAnalysis.daysRemaining} days until harvest
+                                        </Text>
+                                    </View>
+                                    <View className="w-full bg-gray-200 h-2 rounded-full overflow-hidden">
+                                        <View
+                                            className="bg-emerald-600 h-full rounded-full"
+                                            style={{ width: `${Math.min(100, Math.max(2, (stepsAnalysis.daysElapsed / 270) * 100))}%` }}
+                                        />
+                                    </View>
+                                </View>
+
+                                {/* Step Stage Status Chips */}
+                                <View className="flex-row gap-2">
+                                    <View className="flex-1 bg-emerald-50 border border-emerald-200 px-3 py-2 rounded-xl items-center">
+                                        <Text className="text-emerald-900 text-xs font-black">{stepsAnalysis.completedStepsCount}</Text>
+                                        <Text className="text-emerald-700 text-[10px] font-bold uppercase">Completed</Text>
+                                    </View>
+                                    <View className="flex-1 bg-amber-50 border border-amber-200 px-3 py-2 rounded-xl items-center">
+                                        <Text className="text-amber-900 text-xs font-black">{stepsAnalysis.activeStepsCount}</Text>
+                                        <Text className="text-amber-700 text-[10px] font-bold uppercase">In Progress</Text>
+                                    </View>
+                                    <View className="flex-1 bg-slate-50 border border-slate-200 px-3 py-2 rounded-xl items-center">
+                                        <Text className="text-slate-900 text-xs font-black">{stepsAnalysis.upcomingStepsCount}</Text>
+                                        <Text className="text-slate-600 text-[10px] font-bold uppercase">Upcoming</Text>
+                                    </View>
+                                </View>
+                            </View>
+
+                            {/* Overall Budget vs Actual KPI Cards */}
+                            <View className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                                <View className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                                    <Text className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1">
+                                        Planned Budget
+                                    </Text>
+                                    <Text className="text-lg font-black text-gray-900">
+                                        {formatPHP(stepsAnalysis.totalPlannedBudget)}
+                                    </Text>
+                                    <Text className="text-[10px] text-gray-400 mt-0.5">
+                                        ₱80,000 / ha benchmark
+                                    </Text>
+                                </View>
+
+                                <View className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                                    <Text className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1">
+                                        Actual Expenses
+                                    </Text>
+                                    <Text className="text-lg font-black text-blue-700">
+                                        {formatPHP(stepsAnalysis.totalActualExpenses)}
+                                    </Text>
+                                    <Text className="text-[10px] text-blue-500 mt-0.5">
+                                        {stepsAnalysis.budgetBurnRatePercent.toFixed(1)}% budget utilized
+                                    </Text>
+                                </View>
+
+                                <View className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                                    <Text className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1">
+                                        Net Variance
+                                    </Text>
+                                    <Text className={`text-lg font-black ${
+                                        stepsAnalysis.netVariance <= 0 ? 'text-emerald-700' : 'text-rose-700'
+                                    }`}>
+                                        {stepsAnalysis.netVariance <= 0
+                                            ? `-${formatPHP(Math.abs(stepsAnalysis.netVariance))}`
+                                            : `+${formatPHP(stepsAnalysis.netVariance)}`
+                                        }
+                                    </Text>
+                                    <Text className={`text-[10px] font-bold mt-0.5 ${
+                                        stepsAnalysis.netVariance <= 0 ? 'text-emerald-600' : 'text-rose-600'
+                                    }`}>
+                                        {stepsAnalysis.netVariance <= 0 ? '✓ Under Budget' : '⚠ Over Budget'}
+                                    </Text>
+                                </View>
+
+                                <View className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                                    <Text className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1">
+                                        Remaining Budget
+                                    </Text>
+                                    <Text className="text-lg font-black text-purple-700">
+                                        {formatPHP(Math.max(0, stepsAnalysis.totalPlannedBudget - stepsAnalysis.totalActualExpenses))}
+                                    </Text>
+                                    <Text className="text-[10px] text-purple-500 mt-0.5">
+                                        For remaining steps
+                                    </Text>
+                                </View>
+                            </View>
+
+                            {/* Section Header */}
+                            <View className="mb-3 mt-2">
+                                <Text className="text-base font-black text-gray-900">
+                                    Schedule of Implementation & Step Expenses
+                                </Text>
+                                <Text className="text-xs text-gray-500">
+                                    7 Sequential cassava farming steps (Theoretical planned vs. Actual incurred)
+                                </Text>
+                            </View>
+
+                            {/* 7 Farming Steps List */}
+                            {stepsAnalysis.steps.map((step) => {
+                                const isExpanded = expandedStepNum === step.stepNumber;
+                                const isCompleted = step.stepStatus === 'completed';
+                                const isInProgress = step.stepStatus === 'in_progress';
+
+                                const burnPercent = step.plannedBudget > 0
+                                    ? Math.min(150, Math.round((step.actualExpenses / step.plannedBudget) * 100))
+                                    : 0;
+
+                                return (
+                                    <View
+                                        key={step.stepNumber}
+                                        className="bg-white rounded-2xl border border-gray-200 shadow-sm mb-3 overflow-hidden"
+                                    >
+                                        <Pressable
+                                            onPress={() => setExpandedStepNum(isExpanded ? null : step.stepNumber)}
+                                            className="p-4 active:bg-gray-50"
+                                        >
+                                            <View className="flex-row items-center justify-between mb-2">
+                                                <View className="flex-row items-center flex-1 pr-2">
+                                                    <View className={`w-8 h-8 rounded-full items-center justify-center mr-3 ${
+                                                        isCompleted ? 'bg-emerald-600' :
+                                                        isInProgress ? 'bg-amber-500' : 'bg-gray-200'
+                                                    }`}>
+                                                        {isCompleted ? (
+                                                            <MaterialIcons name="check" size={18} color="#FFFFFF" />
+                                                        ) : (
+                                                            <Text className={`font-black text-xs ${
+                                                                isInProgress ? 'text-white' : 'text-gray-700'
+                                                            }`}>
+                                                                {step.stepNumber}
+                                                            </Text>
+                                                        )}
+                                                    </View>
+                                                    <View className="flex-1">
+                                                        <Text className="text-sm font-bold text-gray-900" numberOfLines={1}>
+                                                            Step {step.stepNumber}: {step.name}
+                                                        </Text>
+                                                        <Text className="text-[11px] font-semibold text-gray-500">
+                                                            {step.timelineDays} • Stage: {step.targetStage}
+                                                        </Text>
+                                                    </View>
+                                                </View>
+
+                                                <View className="items-end">
+                                                    <View className={`px-2 py-0.5 rounded-full ${
+                                                        isCompleted ? 'bg-emerald-100' :
+                                                        isInProgress ? 'bg-amber-100' : 'bg-gray-100'
+                                                    }`}>
+                                                        <Text className={`text-[10px] font-bold uppercase tracking-wider ${
+                                                            isCompleted ? 'text-emerald-800' :
+                                                            isInProgress ? 'text-amber-800' : 'text-gray-600'
+                                                        }`}>
+                                                            {isCompleted ? 'Completed' : isInProgress ? 'In Progress' : 'Upcoming'}
+                                                        </Text>
+                                                    </View>
+                                                </View>
+                                            </View>
+
+                                            {/* Budget Comparison Bar */}
+                                            <View className="bg-gray-50 p-3 rounded-xl border border-gray-100 mt-2">
+                                                <View className="flex-row justify-between items-center mb-1">
+                                                    <Text className="text-xs text-gray-600 font-medium">
+                                                        Planned: <Text className="font-bold text-gray-900">{formatPHP(step.plannedBudget)}</Text>
+                                                    </Text>
+                                                    <Text className="text-xs text-gray-600 font-medium">
+                                                        Actual: <Text className="font-bold text-blue-700">{formatPHP(step.actualExpenses)}</Text>
+                                                    </Text>
+                                                </View>
+
+                                                <View className="w-full bg-gray-200 h-2 rounded-full overflow-hidden my-1">
+                                                    <View
+                                                        className={`h-full rounded-full ${
+                                                            step.budgetStatus === 'over_budget' ? 'bg-rose-500' : 'bg-emerald-600'
+                                                        }`}
+                                                        style={{ width: `${Math.min(100, Math.max(step.actualExpenses > 0 ? 3 : 0, burnPercent))}%` }}
+                                                    />
+                                                </View>
+
+                                                <View className="flex-row justify-between items-center mt-1">
+                                                    <Text className={`text-[11px] font-bold ${
+                                                        step.actualExpenses === 0 ? 'text-gray-400' :
+                                                        step.budgetStatus === 'over_budget' ? 'text-rose-600' : 'text-emerald-700'
+                                                    }`}>
+                                                        {step.actualExpenses === 0
+                                                            ? 'No expenses recorded yet'
+                                                            : step.budgetStatus === 'over_budget'
+                                                            ? `+${formatPHP(step.varianceAmount)} (+${step.variancePercent}%) Over Budget`
+                                                            : `-${formatPHP(Math.abs(step.varianceAmount))} (-${Math.abs(step.variancePercent)}%) Under Budget`
+                                                        }
+                                                    </Text>
+                                                    <View className="flex-row items-center">
+                                                        <Text className="text-[11px] text-gray-500 mr-1">
+                                                            {step.expenseCount} record{step.expenseCount !== 1 ? 's' : ''}
+                                                        </Text>
+                                                        <MaterialIcons
+                                                            name={isExpanded ? 'expand-less' : 'expand-more'}
+                                                            size={18}
+                                                            color="#6B7280"
+                                                        />
+                                                    </View>
+                                                </View>
+                                            </View>
+                                        </Pressable>
+
+                                        {/* Expanded Details: Incurred Expenses & Add Button */}
+                                        {isExpanded && (
+                                            <View className="px-4 pb-4 pt-2 border-t border-gray-100 bg-gray-50/50">
+                                                <View className="flex-row items-center justify-between mb-2">
+                                                    <Text className="text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                                        Step {step.stepNumber} Incurred Expenses
+                                                    </Text>
+                                                    <Pressable
+                                                        onPress={() => openStepExpense(step.stepNumber)}
+                                                        className="flex-row items-center bg-emerald-700 px-2.5 py-1 rounded-lg active:bg-emerald-800"
+                                                    >
+                                                        <MaterialIcons name="add" size={14} color="#FFFFFF" />
+                                                        <Text className="text-white text-[11px] font-bold ml-0.5">
+                                                            + Add Expense
+                                                        </Text>
+                                                    </Pressable>
+                                                </View>
+
+                                                {step.matchingExpenses && step.matchingExpenses.length > 0 ? (
+                                                    <View className="gap-2">
+                                                        {step.matchingExpenses.map((exp: AgriFarmExpense) => (
+                                                            <View
+                                                                key={exp.id}
+                                                                className="bg-white p-3 rounded-xl border border-gray-200 shadow-2xs flex-row items-center justify-between"
+                                                            >
+                                                                <View className="flex-1 pr-2">
+                                                                    <Text className="text-xs font-bold text-gray-900" numberOfLines={1}>
+                                                                        {exp.description}
+                                                                    </Text>
+                                                                    <Text className="text-[10px] text-gray-500 mt-0.5">
+                                                                        {exp.expenseDate ? new Date(exp.expenseDate).toLocaleDateString() : ''} • Paid by: {exp.paidBy === 'investor' ? 'BioGreen Investor' : 'Jet (Operator)'}
+                                                                    </Text>
+                                                                </View>
+                                                                <View className="items-end">
+                                                                    <Text className="text-xs font-black text-gray-900">
+                                                                        {formatPHP(exp.amount || 0)}
+                                                                    </Text>
+                                                                </View>
+                                                            </View>
+                                                        ))}
+                                                    </View>
+                                                ) : (
+                                                    <View className="bg-white p-4 rounded-xl border border-dashed border-gray-300 items-center justify-center">
+                                                        <Text className="text-xs text-gray-500 font-medium">
+                                                            No expenses logged for this step yet.
+                                                        </Text>
+                                                        <Pressable
+                                                            onPress={() => openStepExpense(step.stepNumber)}
+                                                            className="mt-2 flex-row items-center bg-emerald-100 px-3 py-1.5 rounded-lg active:bg-emerald-200"
+                                                        >
+                                                            <MaterialIcons name="add-circle-outline" size={16} color="#047857" />
+                                                            <Text className="text-emerald-800 text-xs font-bold ml-1">
+                                                                Record First Expense for Step {step.stepNumber}
+                                                            </Text>
+                                                        </Pressable>
+                                                    </View>
+                                                )}
+                                            </View>
+                                        )}
+                                    </View>
+                                );
+                            })}
+                        </>
+                    ) : null}
+                </View>
+            ) : (
+                <>
+                    {/* KPI Overview Cards */}
+                    <View className="p-4 -mt-5">
                 <View className="grid grid-cols-2 md:grid-cols-4 gap-3">
                     <View className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
                         <View className="flex-row items-center justify-between mb-1">
@@ -492,6 +955,8 @@ export default function FarmExpensesScreen() {
                     })
                 )}
             </View>
+                </>
+            )}
 
             {/* Modal: Log Farm Expense */}
             <Modal visible={modalVisible} transparent animationType="fade">

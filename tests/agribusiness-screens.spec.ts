@@ -81,4 +81,22 @@ test.describe('Agribusiness screen routes render without runtime errors', () => 
 
         expect(pageErrors).toEqual([]);
     });
+
+    test('Farm Expenses screen renders both Expense Ledger and Planned vs Actual Farming Steps', async ({ page }) => {
+        const pageErrors = await collectPageErrors(page);
+        await safeNavigate(page, '/agribusiness/expenses');
+
+        await expect(page.getByText(/Farm Input Expenses/i).first()).toBeVisible({ timeout: 20000 });
+        await expect(page.getByText(/Expense Ledger/i).first()).toBeVisible();
+        await expect(page.getByText(/Planned vs Actual Steps/i).first()).toBeVisible();
+
+        // Toggle to Planned vs Actual Steps
+        await page.getByText(/Planned vs Actual Steps/i).first().click();
+
+        await expect(page.getByText(/Schedule of Implementation/i).first()).toBeVisible({ timeout: 15000 });
+        await expect(page.getByText(/Planned Budget/i).first()).toBeVisible();
+        await expect(page.getByText(/Land Preparation & Tillage/i).first()).toBeVisible();
+
+        expect(pageErrors).toEqual([]);
+    });
 });

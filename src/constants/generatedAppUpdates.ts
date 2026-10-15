@@ -2,6 +2,24 @@ import type { AppUpdateEntry } from './appUpdates';
 
 export const GENERATED_APP_UPDATES: AppUpdateEntry[] = [
     {
+        "id": "a5f17f9082e8dd59b48bd9e886b34be48a5ab74e",
+        "version": "a5f17f9",
+        "versionLabel": "Commit",
+        "date": "2026-10-15",
+        "title": "Agribusiness, dynamic search bar, transfers, and tracing updates",
+        "category": "feature",
+        "icon": "new-releases",
+        "summary": "Agribusiness, dynamic search bar, transfers, and tracing updates",
+        "changes": [
+            "Agribusiness, dynamic search bar, transfers, and tracing updates"
+        ],
+        "codeChanges": [
+            "Updated app.json",
+            "Updated app/(admin)/_layout.tsx",
+            "Updated app/(admin)/agribusiness/expenses.tsx"
+        ]
+    },
+    {
         "id": "db105e1e02cc52d185970c3db36806179d92e7ad",
         "version": "db105e1",
         "versionLabel": "Commit",

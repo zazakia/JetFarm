@@ -71,4 +71,36 @@ describe('UsersListScreen', () => {
             expect(await findByText('Bagacay (Benchmark)')).toBeTruthy();
         });
     });
+
+    it('renders pending user with Pending badge and Activate button', async () => {
+        const mockPendingUser = {
+            id: 'usr-pending-1',
+            fullName: 'Pending Applicant',
+            email: 'applicant@example.com',
+            role: ROLES.collector,
+            isActive: false,
+            update: jest.fn(),
+        };
+
+        (database.collections.get as jest.Mock).mockImplementation((tableName: string) => {
+            if (tableName === 'user_profiles') {
+                return {
+                    query: jest.fn().mockReturnValue({
+                        fetch: jest.fn().mockResolvedValue([mockPendingUser]),
+                    }),
+                };
+            }
+            return {
+                query: jest.fn().mockReturnValue({
+                    fetch: jest.fn().mockResolvedValue([]),
+                }),
+            };
+        });
+
+        const { findByText, findAllByText, getByTestId } = render(<UsersListScreen />);
+
+        expect(await findByText('Pending Applicant')).toBeTruthy();
+        expect((await findAllByText('Pending')).length).toBeGreaterThan(0);
+        expect(getByTestId('user-activate-usr-pending-1')).toBeTruthy();
+    });
 });

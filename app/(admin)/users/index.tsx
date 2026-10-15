@@ -10,6 +10,8 @@ import { SearchBar } from '../../../src/components/SearchBar';
 import { Colors } from '../../../src/constants/colors';
 import { ROLES, ROLE_LABELS } from '../../../src/constants/roles';
 import { SyncService } from '../../../src/services/SyncService';
+import { supabase } from '../../../src/database/supabase';
+import ActionLogService from '../../../src/services/ActionLogService';
 
 type FilterTab = 'all' | 'pending' | 'active';
 
@@ -134,6 +136,63 @@ export default function UsersListScreen() {
         }
     };
 
+    const [activatingId, setActivatingId] = useState<string | null>(null);
+
+    const handleQuickActivate = (user: UserProfile) => {
+        Alert.alert(
+            'Activate User',
+            `Are you sure you want to approve and activate ${user.fullName || 'this user'}?`,
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Activate Now',
+                    style: 'default',
+                    onPress: async () => {
+                        setActivatingId(user.id);
+                        try {
+                            await database.write(async () => {
+                                await user.update((u) => {
+                                    u.isActive = true;
+                                });
+                            });
+
+                            // Cloud sync to Supabase
+                            try {
+                                await supabase
+                                    .from('user_profiles')
+                                    .update({ is_active: true, updated_at: new Date().toISOString() })
+                                    .eq('id', user.id);
+                            } catch (cloudErr) {
+                                console.warn('[QuickActivate] Cloud update warning:', cloudErr);
+                            }
+
+                            // Audit log
+                            try {
+                                await ActionLogService.logAction({
+                                    action: 'UPDATE',
+                                    entityType: 'user_profiles',
+                                    entityId: user.id,
+                                    newData: { fullName: user.fullName, email: user.email, role: user.role, isActive: true, quickActivated: true },
+                                });
+                            } catch (logErr) {
+                                console.warn('[QuickActivate] Action log error:', logErr);
+                            }
+
+                            SyncService.checkAndSync({ force: true }).catch(() => {});
+                            await loadData();
+                            Alert.alert('Success', `${user.fullName || 'User'} has been activated successfully.`);
+                        } catch (err: any) {
+                            console.error('[QuickActivate] Error:', err);
+                            Alert.alert('Error', err.message || 'Failed to activate user.');
+                        } finally {
+                            setActivatingId(null);
+                        }
+                    },
+                },
+            ]
+        );
+    };
+
     const renderItem = ({ item }: { item: UserProfile }) => {
         const isPending = !item.isActive;
         const roleColor = getRoleColor(item.role);
@@ -187,7 +246,29 @@ export default function UsersListScreen() {
                         )}
                     </View>
                 </View>
-                <MaterialIcons name="chevron-right" size={24} color="#CBD5E1" />
+                <View className="flex-row items-center">
+                    {isPending && (
+                        <Pressable
+                            testID={`user-activate-${item.id}`}
+                            onPress={(e: any) => {
+                                e?.stopPropagation?.();
+                                handleQuickActivate(item);
+                            }}
+                            disabled={activatingId === item.id}
+                            className="bg-emerald-600 px-3 py-1.5 rounded-lg mr-2 flex-row items-center active:bg-emerald-700"
+                        >
+                            {activatingId === item.id ? (
+                                <ActivityIndicator size="small" color="#FFFFFF" />
+                            ) : (
+                                <>
+                                    <MaterialIcons name="check-circle" size={14} color="#FFFFFF" style={{ marginRight: 4 }} />
+                                    <Text className="text-white text-xs font-bold">Activate</Text>
+                                </>
+                            )}
+                        </Pressable>
+                    )}
+                    <MaterialIcons name="chevron-right" size={24} color="#CBD5E1" />
+                </View>
             </Pressable>
         );
     };

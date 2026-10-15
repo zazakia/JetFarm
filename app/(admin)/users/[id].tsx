@@ -365,6 +365,11 @@ export default function EditUserScreen() {
         }
     };
 
+    const handleDirectActivate = () => {
+        setValue('isActive', true, { shouldDirty: true, shouldValidate: true });
+        handleSubmit(onSubmit)();
+    };
+
     const handleDelete = () => {
         if (Platform.OS === 'web') {
             setShowDeleteConfirm(true);
@@ -653,16 +658,20 @@ export default function EditUserScreen() {
                                 Verify the signup details below, confirm the role assignment, then activate the account.
                             </Text>
                             <Pressable
-                                className="bg-amber-600 py-3 rounded-xl items-center flex-row justify-center"
-                                onPress={() => {
-                                    setValue('isActive', true, { shouldDirty: true, shouldValidate: true });
-                                }}
+                                className="bg-amber-600 active:bg-amber-700 py-3 rounded-xl items-center flex-row justify-center"
+                                onPress={handleDirectActivate}
                                 disabled={saving}
                             >
-                                <MaterialIcons name="check-circle" size={20} color="#FFFFFF" />
-                                <Text className="text-white font-black text-sm uppercase tracking-wider ml-2">
-                                    Activate Account
-                                </Text>
+                                {saving ? (
+                                    <ActivityIndicator size="small" color="#FFFFFF" />
+                                ) : (
+                                    <>
+                                        <MaterialIcons name="check-circle" size={20} color="#FFFFFF" />
+                                        <Text className="text-white font-black text-sm uppercase tracking-wider ml-2">
+                                            Activate Account & Save
+                                        </Text>
+                                    </>
+                                )}
                             </Pressable>
                         </View>
                     )}
