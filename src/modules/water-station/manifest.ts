@@ -110,6 +110,12 @@ export const WaterStationModule: CoopModule = {
             label: 'Inventory',
             icon: 'inventory',
             permissionKey: 'permission.modules.water_station.inventory'
+        },
+        {
+            path: '/(admin)/modules/water-station/history',
+            label: 'History & Trace',
+            icon: 'history',
+            permissionKey: 'permission.modules.water_station.deliveries'
         }
     ],
     roles: [

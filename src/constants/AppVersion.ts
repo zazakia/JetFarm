@@ -1,11 +1,11 @@
 import Constants from 'expo-constants';
 import { getRuntimeSupabaseUrl } from '../database/supabaseUrl';
 
-export const APP_VERSION = '0.1.2';
-export const APP_BUILD_NUMBER = 3;
-export const APP_RELEASE_NAME = 'v0.1.2';
+export const APP_VERSION = '0.1.3';
+export const APP_BUILD_NUMBER = 4;
+export const APP_RELEASE_NAME = 'v0.1.3';
 export const WATERMELONDB_SCHEMA_VERSION = 48;
-export const APP_RELEASE_DATE = '2026-10-10';
+export const APP_RELEASE_DATE = '2026-10-14';
 
 /**
  * Origin that serves `/download` and `/version.json`. Production is the self-hosted
@@ -47,14 +47,14 @@ export const FALLBACK_VERSION_URL = `${getRuntimeSupabaseUrl(
 )}/storage/v1/object/public/downloads/version.json`;
 
 /**
- * Returns the current runtime application version string (e.g. "0.1.2").
+ * Returns the current runtime application version string (e.g. "0.1.3").
  */
 export function getAppVersion(): string {
     return Constants.expoConfig?.version || APP_VERSION;
 }
 
 /**
- * Returns the formatted release badge (e.g. "v0.1.2").
+ * Returns the formatted release badge (e.g. "v0.1.3").
  */
 export function getReleaseName(): string {
     return `v${getAppVersion()}`;

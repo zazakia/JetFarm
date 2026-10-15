@@ -1,6 +1,19 @@
-import { Database } from '@nozbe/watermelondb';
+import { Database, Q } from '@nozbe/watermelondb';
 import { database as globalDatabase } from '../database';
 import CashTransaction from '../database/models/CashTransaction';
+import UserProfile from '../database/models/UserProfile';
+import { resolveOperator } from '../utils/auditTrailFormatter';
+
+export interface CashDropHistoryRecord {
+    id: string;
+    amount: number;
+    branchId: string;
+    cashierId: string;
+    operatorName?: string;
+    operatorRole?: string;
+    reason: string;
+    timestamp: number;
+}
 
 export interface CashDenominations {
     p1000: number;
@@ -185,6 +198,61 @@ export class ShiftCashService {
         });
 
         return createdId;
+    }
+
+    /**
+     * Retrieves recent mid-shift cash drops with cashier user tracing.
+     */
+    async getCashDropHistory(branchId?: string, limit: number = 30): Promise<CashDropHistoryRecord[]> {
+        try {
+            const cashCollection = this.db.get<CashTransaction>('cash_transactions');
+            if (!cashCollection) return [];
+
+            let query = cashCollection.query(
+                Q.where('type', 'out'),
+                Q.where('deleted_at', Q.eq(null))
+            );
+
+            if (branchId) {
+                query = query.extend(Q.where('branch_id', branchId));
+            }
+
+            const transactions = await query
+                .extend(Q.sortBy('transaction_date', Q.desc), Q.take(limit))
+                .fetch();
+
+            const dropTransactions = transactions.filter(
+                (t) => t.remarks?.includes('Cash Drop') || t.particulars?.includes('Safe Drop')
+            );
+
+            const userProfiles = await this.db.get<UserProfile>('user_profiles').query().fetch().catch(() => []);
+            const userMap = new Map<string, { id: string; fullName: string; role: string; email?: string }>();
+            for (const p of userProfiles) {
+                userMap.set(p.id, {
+                    id: p.id,
+                    fullName: p.fullName || p.email,
+                    role: p.role,
+                    email: p.email,
+                });
+            }
+
+            return dropTransactions.map((t) => {
+                const operator = resolveOperator(t.recordedBy, userMap);
+                return {
+                    id: t.id,
+                    amount: t.amount,
+                    branchId: t.branchId || '',
+                    cashierId: t.recordedBy || 'unknown',
+                    operatorName: operator.name,
+                    operatorRole: operator.role,
+                    reason: t.particulars?.split('—')?.[1]?.trim() || t.remarks || 'Mid-shift safe drop',
+                    timestamp: t.transactionDate ? Number(t.transactionDate) : Date.now(),
+                };
+            });
+        } catch (error) {
+            console.error('[ShiftCashService] Failed to load cash drop history:', error);
+            return [];
+        }
     }
 
     /**

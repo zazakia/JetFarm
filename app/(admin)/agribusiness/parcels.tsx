@@ -6,6 +6,8 @@ import { database } from '../../../src/database';
 import AgriParcel from '../../../src/database/models/AgriParcel';
 import AgriLandOwner from '../../../src/database/models/AgriLandOwner';
 import { AgriParcelService } from '../../../src/services/AgriParcelService';
+import { DynamicSearchBar } from '../../../src/components/DynamicSearchBar';
+import { useDynamicSearch } from '../../../src/hooks/useDynamicSearch';
 
 export default function ParcelsRegistryScreen() {
     const router = useRouter();
@@ -13,6 +15,23 @@ export default function ParcelsRegistryScreen() {
     const [refreshing, setRefreshing] = useState(false);
     const [statusFilter, setStatusFilter] = useState('all');
     const [parcelsList, setParcelsList] = useState<any[]>([]);
+
+    const {
+        query: searchQuery,
+        setQuery: setSearchQuery,
+        filteredData: filteredParcels,
+    } = useDynamicSearch({
+        data: parcelsList,
+        searchKeys: [
+            'parcel.name',
+            'parcel.code',
+            'parcel.locationAddress',
+            'parcel.soilType',
+            'parcel.status',
+            'landOwner.name',
+        ],
+        debounceMs: 150,
+    });
 
     // Modal state
     const [modalVisible, setModalVisible] = useState(false);
@@ -126,6 +145,14 @@ export default function ParcelsRegistryScreen() {
                 </Pressable>
             </View>
 
+            {/* Dynamic and Flexible Search */}
+            <DynamicSearchBar
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                placeholder="Search parcels by name, code, owner, or location..."
+                className="mb-3"
+            />
+
             {/* Filter Tabs */}
             <View className="flex-row gap-2 mb-5 overflow-x-auto">
                 {[
@@ -161,23 +188,36 @@ export default function ParcelsRegistryScreen() {
                     <ActivityIndicator size="small" color="#047857" />
                     <Text className="text-gray-500 text-xs mt-2">Loading parcels...</Text>
                 </View>
-            ) : parcelsList.length === 0 ? (
+            ) : filteredParcels.length === 0 ? (
                 <View className="bg-white p-8 rounded-2xl border border-gray-200 items-center justify-center">
                     <MaterialIcons name="landscape" size={48} color="#9CA3AF" />
-                    <Text className="text-gray-900 font-bold text-base mt-2">No Parcels Found</Text>
-                    <Text className="text-gray-500 text-xs text-center mt-1 mb-4">
-                        Register your first agricultural land parcel to start cropping.
+                    <Text className="text-gray-900 font-bold text-base mt-2">
+                        {searchQuery ? 'No Matching Parcels' : 'No Parcels Found'}
                     </Text>
-                    <Pressable
-                        onPress={() => setModalVisible(true)}
-                        className="bg-emerald-700 px-5 py-2 rounded-xl"
-                    >
-                        <Text className="text-white font-bold text-sm">Add Parcel</Text>
-                    </Pressable>
+                    <Text className="text-gray-500 text-xs text-center mt-1 mb-4">
+                        {searchQuery
+                            ? `No parcels match your search for "${searchQuery}".`
+                            : 'Register your first agricultural land parcel to start cropping.'}
+                    </Text>
+                    {searchQuery ? (
+                        <Pressable
+                            onPress={() => setSearchQuery('')}
+                            className="bg-gray-100 px-4 py-2 rounded-xl active:bg-gray-200"
+                        >
+                            <Text className="text-emerald-800 font-bold text-xs">Clear Search</Text>
+                        </Pressable>
+                    ) : (
+                        <Pressable
+                            onPress={() => setModalVisible(true)}
+                            className="bg-emerald-700 px-5 py-2 rounded-xl"
+                        >
+                            <Text className="text-white font-bold text-sm">Add Parcel</Text>
+                        </Pressable>
+                    )}
                 </View>
             ) : (
                 <View className="gap-3">
-                    {parcelsList.map(({ parcel, landOwner, activeCycle }: any) => (
+                    {filteredParcels.map(({ parcel, landOwner, activeCycle }: any) => (
                         <View
                             key={parcel.id}
                             testID={`parcel-card-${parcel.id}`}

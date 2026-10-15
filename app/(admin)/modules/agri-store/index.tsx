@@ -5,6 +5,9 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { formatPHP } from '../../../../src/utils/currency';
 import { DemoDataNotice } from '../../../../src/components/DemoDataNotice';
 
+import { formatRelative } from '../../../../src/utils/dates';
+import { useAuth } from '../../../../src/store/AuthContext';
+
 interface ProductItem {
     id: string;
     name: string;
@@ -13,6 +16,21 @@ interface ProductItem {
     price: number;
     stock: number;
 }
+
+interface AgriSaleHistoryItem {
+    id: string;
+    productName: string;
+    unit: string;
+    price: number;
+    operator: string;
+    timestamp: number;
+}
+
+const INITIAL_SALES_HISTORY: AgriSaleHistoryItem[] = [
+    { id: 'tx-1', productName: 'Complete Fertilizer 14-14-14 (50kg)', unit: 'bag', price: 2150, operator: 'Pedro Storekeeper', timestamp: Date.now() - 1000 * 60 * 45 },
+    { id: 'tx-2', productName: 'Hybrid Rice Seeds NSIC Rc222 (20kg)', unit: 'bag', price: 1200, operator: 'Cybergada Master', timestamp: Date.now() - 1000 * 60 * 120 },
+    { id: 'tx-3', productName: 'Insecticide Spray 1L', unit: 'bottle', price: 650, operator: 'Pedro Storekeeper', timestamp: Date.now() - 1000 * 60 * 240 },
+];
 
 const INITIAL_PRODUCTS: ProductItem[] = [
     { id: '1', name: 'Complete Fertilizer 14-14-14 (50kg)', category: 'Fertilizer', unit: 'bag', price: 2150, stock: 45 },
@@ -28,7 +46,9 @@ const INITIAL_PRODUCTS: ProductItem[] = [
 // (stock_movements + InventoryJournalService.recordMovement, CoA 1210/5130 are already mapped).
 export default function AgriStoreConsoleScreen() {
     const router = useRouter();
+    const { user } = useAuth();
     const [products, setProducts] = useState<ProductItem[]>(INITIAL_PRODUCTS);
+    const [salesHistory, setSalesHistory] = useState<AgriSaleHistoryItem[]>(INITIAL_SALES_HISTORY);
     const [search, setSearch] = useState('');
     const [salesCount, setSalesCount] = useState(14);
     const [totalRevenue, setTotalRevenue] = useState(48250);
@@ -44,6 +64,19 @@ export default function AgriStoreConsoleScreen() {
         setProducts(prev => prev.map(p => p.id === product.id ? { ...p, stock: p.stock - 1 } : p));
         setSalesCount(prev => prev + 1);
         setTotalRevenue(prev => prev + product.price);
+
+        const operatorName = (user?.user_metadata?.full_name as string) || user?.email || 'Active Storekeeper';
+        setSalesHistory(prev => [
+            {
+                id: 'tx-' + Date.now(),
+                productName: product.name,
+                unit: product.unit,
+                price: product.price,
+                operator: operatorName,
+                timestamp: Date.now(),
+            },
+            ...prev,
+        ]);
 
         Alert.alert(
             'Preview Only — Nothing Was Saved',
@@ -125,6 +158,39 @@ export default function AgriStoreConsoleScreen() {
                     </Pressable>
                 </View>
             ))}
+
+            {/* Sales & Activity History Feed */}
+            <View className="mt-8 mb-8">
+                <View className="flex-row items-center justify-between mb-3">
+                    <Text className="text-lg font-bold text-gray-900">Sales & Activity History</Text>
+                    <Text className="text-xs text-gray-500 font-semibold">{salesHistory.length} recorded</Text>
+                </View>
+
+                <View className="gap-2.5">
+                    {salesHistory.map((item) => (
+                        <View key={item.id} className="bg-white p-4 rounded-2xl border border-gray-150 shadow-xs">
+                            <View className="flex-row justify-between items-start">
+                                <View className="flex-1 mr-2">
+                                    <Text className="text-sm font-bold text-gray-900">{item.productName}</Text>
+                                    <Text className="text-xs text-gray-400 mt-0.5">{formatRelative(item.timestamp)}</Text>
+                                </View>
+                                <Text className="text-sm font-black text-emerald-800">{formatPHP(item.price)}</Text>
+                            </View>
+                            <View className="mt-2 pt-2 border-t border-gray-50 flex-row items-center justify-between">
+                                <View className="flex-row items-center">
+                                    <MaterialIcons name="person" size={14} color="#64748B" style={{ marginRight: 4 }} />
+                                    <Text className="text-[11px] text-gray-500 font-medium">
+                                        Sold by: <Text className="font-bold text-gray-800">{item.operator}</Text>
+                                    </Text>
+                                </View>
+                                <View className="bg-emerald-50 px-2 py-0.5 rounded-full">
+                                    <Text className="text-[10px] font-bold text-emerald-700">1 {item.unit}</Text>
+                                </View>
+                            </View>
+                        </View>
+                    ))}
+                </View>
+            </View>
         </ScrollView>
     );
 }

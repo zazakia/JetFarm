@@ -12,7 +12,7 @@ import {
     TextInput,
     Alert
 } from 'react-native';
-import { Stack, useFocusEffect } from 'expo-router';
+import { Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import ActionLogService from '../../../src/services/ActionLogService';
 import ActionLog from '../../../src/database/models/ActionLog';
@@ -61,6 +61,7 @@ const TIME_FILTERS = [
 ];
 
 export default function AuditTrailScreen() {
+    const params = useLocalSearchParams<{ userId?: string; operator?: string; query?: string }>();
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [logs, setLogs] = useState<ActionLog[]>([]);
@@ -69,7 +70,8 @@ export default function AuditTrailScreen() {
     const [activeInspectorTab, setActiveInspectorTab] = useState<Record<string, 'diff' | 'raw'>>({});
     
     // Filters & Search
-    const [searchQuery, setSearchQuery] = useState('');
+    const [filterUserId, setFilterUserId] = useState<string | null>(params.userId || null);
+    const [searchQuery, setSearchQuery] = useState(params.operator || params.query || '');
     const [selectedModule, setSelectedModule] = useState('All');
     const [selectedAction, setSelectedAction] = useState('ALL');
     const [selectedTimeFilter, setSelectedTimeFilter] = useState('ALL');
@@ -78,6 +80,15 @@ export default function AuditTrailScreen() {
     const [copiedKey, setCopiedKey] = useState<string | null>(null);
     const [exporting, setExporting] = useState(false);
     const realtimeSyncTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    useEffect(() => {
+        if (params.userId && params.userId !== filterUserId) {
+            setFilterUserId(params.userId);
+        }
+        if (params.operator && !searchQuery) {
+            setSearchQuery(params.operator);
+        }
+    }, [params.userId, params.operator]);
 
     const loadData = useCallback(async (isRefreshing = false) => {
         if (isRefreshing) setRefreshing(true);
@@ -211,6 +222,33 @@ export default function AuditTrailScreen() {
         const todayStart = startOfToday().getTime();
 
         return logs.filter(log => {
+            // User ID filter (if tracing specific user)
+            if (filterUserId) {
+                const operator = resolveOperator(log.performedBy, userProfilesMap);
+                const targetProfile = userProfilesMap.get(filterUserId);
+                const userAliases = [
+                    filterUserId.toLowerCase(),
+                    (targetProfile?.email || '').toLowerCase(),
+                    (targetProfile?.fullName || '').toLowerCase()
+                ].filter(Boolean);
+
+                const logPerformedBy = (log.performedBy || '').toLowerCase();
+                const opId = (operator.id || '').toLowerCase();
+                const opName = (operator.name || '').toLowerCase();
+                const opEmail = (operator.email || '').toLowerCase();
+
+                const matchesUser = userAliases.some(alias => 
+                    logPerformedBy.includes(alias) || 
+                    opId.includes(alias) || 
+                    opName.includes(alias) || 
+                    opEmail.includes(alias)
+                );
+
+                if (!matchesUser) {
+                    return false;
+                }
+            }
+
             // Action filter
             if (selectedAction !== 'ALL' && log.action !== selectedAction) {
                 return false;
@@ -248,7 +286,7 @@ export default function AuditTrailScreen() {
 
             return true;
         });
-    }, [logs, searchQuery, selectedModule, selectedAction, selectedTimeFilter, userProfilesMap]);
+    }, [logs, searchQuery, selectedModule, selectedAction, selectedTimeFilter, userProfilesMap, filterUserId]);
 
     // Handle CSV export
     const handleExportCSV = async () => {
@@ -421,6 +459,33 @@ export default function AuditTrailScreen() {
 
                 {/* Search & Filter Toolbar */}
                 <View className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm mb-4">
+                    {/* User Tracing Filter Banner */}
+                    {filterUserId && (
+                        <View className="mb-3 bg-blue-50 border border-blue-200 rounded-xl p-3 flex-row items-center justify-between">
+                            <View className="flex-row items-center flex-1 mr-2">
+                                <MaterialIcons name="person-pin" size={20} color="#1D4ED8" />
+                                <View className="ml-2 flex-1">
+                                    <Text className="text-xs font-bold text-blue-900">
+                                        Tracing Activity for: {userProfilesMap.get(filterUserId)?.fullName || params.operator || filterUserId}
+                                    </Text>
+                                    <Text className="text-[11px] text-blue-700">
+                                        Showing actions recorded for this specific user account
+                                    </Text>
+                                </View>
+                            </View>
+                            <Pressable
+                                onPress={() => {
+                                    setFilterUserId(null);
+                                    setSearchQuery('');
+                                }}
+                                className="bg-blue-200 px-2.5 py-1.5 rounded-lg active:bg-blue-300 flex-row items-center"
+                            >
+                                <MaterialIcons name="close" size={14} color="#1E3A8A" />
+                                <Text className="text-xs font-bold text-blue-900 ml-1">Clear</Text>
+                            </Pressable>
+                        </View>
+                    )}
+
                     {/* Search Input */}
                     <View className="flex-row items-center bg-gray-50 border border-gray-200 rounded-xl px-3 py-2">
                         <MaterialIcons name="search" size={20} color="#6B7280" className="mr-2" />

@@ -1,4 +1,4 @@
-import { GPSCoordinate, distanceMeters } from '../utils/coordinates';
+import { GPSCoordinate, distanceMeters, isValidCoordinate } from '../utils/coordinates';
 
 /** A single GPS observation from the device (or browser). */
 export interface GPSFix {
@@ -20,8 +20,10 @@ export const DEFAULT_WALK_SETTINGS: WalkSettings = {
     minDistanceMeters: 5,
 };
 
-/** Accuracy gate — rejects fixes too imprecise to trust for boundary capture. */
+/** Accuracy and coordinate sanity gate — rejects invalid or imprecise fixes. */
 export function isFixAccepted(fix: GPSFix, settings: WalkSettings): boolean {
+    if (!fix || !fix.coordinate) return false;
+    if (!isValidCoordinate(fix.coordinate.latitude, fix.coordinate.longitude)) return false;
     if (fix.accuracyMeters == null) return true;
     return fix.accuracyMeters <= settings.maxAccuracyMeters;
 }

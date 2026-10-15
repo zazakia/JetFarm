@@ -5,6 +5,9 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { formatPHP } from '../../../../src/utils/currency';
 import { DemoDataNotice } from '../../../../src/components/DemoDataNotice';
 
+import { formatRelative } from '../../../../src/utils/dates';
+import { useAuth } from '../../../../src/store/AuthContext';
+
 interface VehicleUnit {
     id: string;
     plateNumber: string;
@@ -14,6 +17,22 @@ interface VehicleUnit {
     collectedToday: number;
     status: 'on_route' | 'maintenance' | 'idle';
 }
+
+interface TransportCollectionHistoryItem {
+    id: string;
+    plateNumber: string;
+    vehicleType: string;
+    driver: string;
+    amount: number;
+    operator: string;
+    timestamp: number;
+}
+
+const INITIAL_COLLECTION_HISTORY: TransportCollectionHistoryItem[] = [
+    { id: 'col-1', plateNumber: 'ABC-1234', vehicleType: 'Jeepney (Traditional)', driver: 'Mario Santos', amount: 1500, operator: 'Bong Dispatcher', timestamp: Date.now() - 1000 * 60 * 60 },
+    { id: 'col-2', plateNumber: 'XYZ-5678', vehicleType: 'Modern PUV Euro-4', driver: 'Danilo Cruz', amount: 2500, operator: 'Cybergada Master', timestamp: Date.now() - 1000 * 60 * 150 },
+    { id: 'col-3', plateNumber: 'TRK-9101', vehicleType: 'Tricycle Unit #12', driver: 'Ramon Mercado', amount: 400, operator: 'Bong Dispatcher', timestamp: Date.now() - 1000 * 60 * 270 },
+];
 
 const INITIAL_VEHICLES: VehicleUnit[] = [
     { id: '1', plateNumber: 'ABC-1234', vehicleType: 'Jeepney (Traditional)', assignedDriver: 'Mario Santos', dailyBoundary: 1500, collectedToday: 1500, status: 'on_route' },
@@ -25,7 +44,9 @@ const INITIAL_VEHICLES: VehicleUnit[] = [
 
 export default function TransportConsoleScreen() {
     const router = useRouter();
+    const { user } = useAuth();
     const [vehicles, setVehicles] = useState<VehicleUnit[]>(INITIAL_VEHICLES);
+    const [collectionHistory, setCollectionHistory] = useState<TransportCollectionHistoryItem[]>(INITIAL_COLLECTION_HISTORY);
     const [totalCollections, setTotalCollections] = useState(4400);
 
     const handleCollectBoundary = (unit: VehicleUnit) => {
@@ -36,6 +57,20 @@ export default function TransportConsoleScreen() {
 
         setVehicles(prev => prev.map(v => v.id === unit.id ? { ...v, collectedToday: unit.dailyBoundary } : v));
         setTotalCollections(prev => prev + unit.dailyBoundary);
+
+        const operatorName = (user?.user_metadata?.full_name as string) || user?.email || 'Fleet Dispatcher';
+        setCollectionHistory(prev => [
+            {
+                id: 'col-' + Date.now(),
+                plateNumber: unit.plateNumber,
+                vehicleType: unit.vehicleType,
+                driver: unit.assignedDriver,
+                amount: unit.dailyBoundary,
+                operator: operatorName,
+                timestamp: Date.now(),
+            },
+            ...prev,
+        ]);
 
         Alert.alert(
             'Preview Only — Nothing Was Saved',
@@ -116,6 +151,42 @@ export default function TransportConsoleScreen() {
                     </Pressable>
                 </View>
             ))}
+
+            {/* Boundary Collection & Fleet Trip History Feed */}
+            <View className="mt-8 mb-8">
+                <View className="flex-row items-center justify-between mb-3">
+                    <Text className="text-lg font-bold text-gray-900">Boundary & Trip History</Text>
+                    <Text className="text-xs text-gray-500 font-semibold">{collectionHistory.length} recorded</Text>
+                </View>
+
+                <View className="gap-2.5">
+                    {collectionHistory.map((item) => (
+                        <View key={item.id} className="bg-white p-4 rounded-2xl border border-gray-150 shadow-xs">
+                            <View className="flex-row justify-between items-start">
+                                <View className="flex-1 mr-2">
+                                    <View className="flex-row items-center">
+                                        <Text className="text-sm font-bold text-gray-900">{item.plateNumber}</Text>
+                                        <Text className="text-xs text-gray-500 ml-1.5 font-medium">({item.vehicleType})</Text>
+                                    </View>
+                                    <Text className="text-xs text-gray-400 mt-0.5">Driver: {item.driver} • {formatRelative(item.timestamp)}</Text>
+                                </View>
+                                <Text className="text-sm font-black text-indigo-900">{formatPHP(item.amount)}</Text>
+                            </View>
+                            <View className="mt-2 pt-2 border-t border-gray-50 flex-row items-center justify-between">
+                                <View className="flex-row items-center">
+                                    <MaterialIcons name="person" size={14} color="#64748B" style={{ marginRight: 4 }} />
+                                    <Text className="text-[11px] text-gray-500 font-medium">
+                                        Collected by: <Text className="font-bold text-gray-800">{item.operator}</Text>
+                                    </Text>
+                                </View>
+                                <View className="bg-indigo-50 px-2 py-0.5 rounded-full">
+                                    <Text className="text-[10px] font-bold text-indigo-700">Boundary Settled</Text>
+                                </View>
+                            </View>
+                        </View>
+                    ))}
+                </View>
+            </View>
         </ScrollView>
     );
 }

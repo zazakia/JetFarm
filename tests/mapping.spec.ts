@@ -67,7 +67,7 @@ async function openMappingScreen(page: Page, parcelCount = 1): Promise<Record<st
   const ids = await seedParcels(page, parcelCount);
 
   // A target text is required: safeNavigate otherwise waits for 'networkidle',
-  // which never settles here because the live OpenStreetMap layer keeps
+  // which never settles here because the live satellite tile layer keeps
   // requesting tiles.
   await safeNavigate(page, MAPPING_ROUTE, 'GPS Boundary Mapping');
   await expect(page.locator('[data-testid^="parcel-chip-"]').first()).toBeVisible();
@@ -132,6 +132,10 @@ test.describe('GPS Boundary Mapping', () => {
     await expect(page.getByTestId('confirm-dialog-message')).toContainText('3 GPS vertices');
     await acknowledgeDialog(page);
     await expect(page.getByTestId('unsaved-badge')).toHaveCount(0);
+
+    // Ensure map tiles have finished loading so screenshots capture real cartography
+    await page.locator('.leaflet-tile-loaded').first().waitFor({ state: 'visible', timeout: 15000 }).catch(() => {});
+    await page.waitForTimeout(1500);
 
     await page.screenshot({ path: 'docs/images/mapping-boundary-saved.png', fullPage: true });
     // Close-up of the rendered polygon for the module docs.
@@ -218,21 +222,29 @@ test.describe('GPS Boundary Mapping', () => {
 
     const map = page.locator('.leaflet-container');
     await expect(map).toBeVisible();
-    const box = await map.boundingBox();
-    expect(box).not.toBeNull();
-    if (!box) return;
+
+    // The map translates upward as soon as a vertex row appears (measured: the
+    // container moved y 491 -> 400 after the first click), so every click has to
+    // be measured against the box as it is at click time. A box cached before
+    // the first click points below the map and the click is silently lost.
+    const clickMap = async (xFraction: number, yFraction: number) => {
+      const box = await map.boundingBox();
+      expect(box).not.toBeNull();
+      if (!box) return;
+      await page.mouse.click(box.x + box.width * xFraction, box.y + box.height * yFraction);
+    };
 
     // Start from an empty parcel so the click cannot land on the polygon path
     // (an interactive L.Polygon swallows the map click by design).
     expect(await vertexCount(page)).toBe(0);
 
     // A map click adds the first vertex.
-    await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+    await clickMap(0.5, 0.5);
     await expect.poll(() => vertexCount(page)).toBe(1);
 
     // FitBounds re-frames the map on that vertex; a second click elsewhere adds
     // another, which is what the coordinates list below reflects.
-    await page.mouse.click(box.x + 60, box.y + box.height - 60);
+    await clickMap(0.1, 0.85);
     await expect.poll(() => vertexCount(page)).toBe(2);
     await expect(page.getByTestId('unsaved-badge')).toBeVisible();
 

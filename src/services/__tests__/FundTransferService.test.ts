@@ -66,4 +66,9 @@ describe('FundTransferService', () => {
             description: 'Same account transfer',
         })).rejects.toThrow('Source and target accounts cannot be the same.');
     });
+
+    it('returns transfer history list with user tracing', async () => {
+        const history = await FundTransferService.getTransferHistory(10);
+        expect(Array.isArray(history)).toBe(true);
+    });
 });

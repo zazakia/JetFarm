@@ -88,8 +88,8 @@ export function ParcelMap({
                 attributionControl
             >
                 <TileLayer
-                    attribution='&copy; OpenStreetMap contributors'
-                    url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    attribution="Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics"
+                    url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
                     maxZoom={19}
                 />
                 <FitBounds coordinates={coordinates} />

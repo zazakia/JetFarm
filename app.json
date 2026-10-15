@@ -2,8 +2,8 @@
   "expo": {
     "name": "JetFarm",
     "slug": "jetfarm",
-    "version": "0.1.2",
-    "orientation": "portrait",
+    "version": "0.1.3",
+    "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "splash": {
@@ -13,10 +13,13 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.jetfarm.app"
+      "bundleIdentifier": "com.jetfarm.app",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Allow JetFarm to use your location to map farm parcel boundaries."
+      }
     },
     "android": {
-      "versionCode": 3,
+      "versionCode": 4,
       "adaptiveIcon": {
         "backgroundColor": "#155F2E",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -24,7 +27,11 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.jetfarm.app"
+      "package": "com.jetfarm.app",
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png",
@@ -32,6 +39,12 @@
     },
     "plugins": [
       "expo-router",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Allow JetFarm to use your location to map farm parcel boundaries."
+        }
+      ],
       [
         "expo-build-properties",
         {

@@ -229,4 +229,51 @@ describe('ShiftCashService', () => {
             expect(session.status).toBe('closed');
         });
     });
+
+    describe('getCashDropHistory', () => {
+        it('returns cash drop history records with operator tracing', async () => {
+            const fakeTransactions = [
+                {
+                    id: 'tx-drop-1',
+                    amount: 5000,
+                    branchId: 'branch-bagacay',
+                    recordedBy: 'cybergada',
+                    particulars: 'Safe Drop: ₱5000.00 — Mid-shift drop (branch-bagacay)',
+                    remarks: 'Cash Drop to Safe',
+                    transactionDate: Date.now(),
+                },
+            ];
+
+            const mockQuery = {
+                extend: jest.fn().mockReturnThis(),
+                fetch: jest.fn().mockResolvedValue(fakeTransactions),
+            };
+
+            const mockCashCollection = {
+                query: jest.fn().mockReturnValue(mockQuery),
+            };
+
+            const mockUserCollection = {
+                query: jest.fn().mockReturnValue({
+                    fetch: jest.fn().mockResolvedValue([]),
+                }),
+            };
+
+            const mockDb = {
+                get: jest.fn().mockImplementation((table: string) => {
+                    if (table === 'cash_transactions') return mockCashCollection;
+                    if (table === 'user_profiles') return mockUserCollection;
+                    return null;
+                }),
+            } as any;
+
+            const service = new ShiftCashService(mockDb);
+            const history = await service.getCashDropHistory('branch-bagacay');
+
+            expect(history.length).toBe(1);
+            expect(history[0].amount).toBe(5000);
+            expect(history[0].operatorName).toBeDefined();
+            expect(history[0].cashierId).toBe('cybergada');
+        });
+    });
 });

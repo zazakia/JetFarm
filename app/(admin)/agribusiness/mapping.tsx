@@ -179,9 +179,11 @@ export default function GPSMappingScreen() {
             const permission = await locationProvider.requestPermission();
             if (permission !== 'granted') {
                 showDialog({
-                    title: 'Location Permission Required',
+                    title: permission === 'unavailable' ? 'Location Services Unavailable' : 'Location Permission Required',
                     message:
-                        'Enable location access to capture the parcel boundary by walking its perimeter.',
+                        permission === 'unavailable'
+                            ? 'Please ensure GPS / location services are turned on in your device settings.'
+                            : 'Enable location access to capture the parcel boundary by walking its perimeter.',
                     mode: 'alert',
                 });
                 return;
@@ -375,7 +377,7 @@ export default function GPSMappingScreen() {
                     <Text className="text-xs font-bold text-gray-500 uppercase tracking-wider">
                         Parcel Boundary Map
                     </Text>
-                    <Text className="text-[10px] text-gray-400">OpenStreetMap</Text>
+                    <Text className="text-[10px] text-gray-400">Satellite Imagery (Esri)</Text>
                 </View>
                 <ParcelMap
                     coordinates={coordinates}

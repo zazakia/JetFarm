@@ -13,6 +13,7 @@ import { getFeatureKeyForRoute } from '../../src/utils/featureFlags';
 import { isCrispyKing } from '../../src/config/deployment';
 import { OnboardingTourProvider } from '../../src/context/OnboardingTourContext';
 import { OnboardingTourModal } from '../../src/components/onboarding/OnboardingTourModal';
+import { GlobalSearchModal } from '../../src/components/GlobalSearch';
 
 function FeatureDisabledNotice({ featureName }: { featureName: string }) {
     const router = useRouter();
@@ -51,6 +52,7 @@ export default function AdminShellLayout() {
     const { width } = useWindowDimensions();
     const isDesktop = width >= 720;
     const [drawerOpen, setDrawerOpen] = useState(false);
+    const [searchModalOpen, setSearchModalOpen] = useState(false);
     const pathname = usePathname();
     const { user, role, roleResolved, initialized } = useAuth();
     const { isEnabled } = useFeatureFlags();
@@ -119,6 +121,22 @@ export default function AdminShellLayout() {
                         <SidebarContent />
                     </View>
                     <View className="flex-1 bg-gray-50">
+                        {/* Desktop Header */}
+                        <View className="bg-white border-b border-gray-200 px-6 py-3 flex-row items-center justify-between shadow-sm">
+                            <Text className="text-xl font-bold text-gray-900">{currentTitle}</Text>
+                            <View className="flex-row items-center gap-3">
+                                <Pressable
+                                    testID="desktop-search-button"
+                                    onPress={() => setSearchModalOpen(true)}
+                                    className="flex-row items-center bg-gray-100 hover:bg-gray-200 px-3.5 py-1.5 rounded-xl border border-gray-200"
+                                    accessibilityLabel="Quick search"
+                                >
+                                    <MaterialIcons name="search" size={18} color="#64748B" />
+                                    <Text className="text-gray-500 text-xs ml-2 font-medium">Quick search menus, borrowers, parcels...</Text>
+                                </Pressable>
+                                <SyncStatusBadge />
+                            </View>
+                        </View>
                         {!isCurrentRouteFeatureEnabled ? (
                             <FeatureDisabledNotice featureName={routeFeature?.label || 'Feature'} />
                         ) : (
@@ -126,6 +144,7 @@ export default function AdminShellLayout() {
                         )}
                     </View>
                 </View>
+                <GlobalSearchModal visible={searchModalOpen} onClose={() => setSearchModalOpen(false)} />
                 <OnboardingTourModal />
             </OnboardingTourProvider>
         );
@@ -175,6 +194,14 @@ export default function AdminShellLayout() {
                                 </View>
                                 <View className="flex-row items-center">
                                     <SyncStatusBadge />
+                                    <Pressable
+                                        testID="mobile-search-button"
+                                        onPress={() => setSearchModalOpen(true)}
+                                        className="bg-white/10 p-2 rounded-full active:bg-white/20 ml-2"
+                                        accessibilityLabel="Quick search"
+                                    >
+                                        <MaterialIcons name="search" size={24} color="#FFFFFF" />
+                                    </Pressable>
                                     <Pressable className="bg-white/10 p-2 rounded-full active:bg-white/20 ml-2">
                                         <MaterialIcons name="notifications-none" size={24} color="#FFFFFF" />
                                     </Pressable>
@@ -240,6 +267,7 @@ export default function AdminShellLayout() {
                     </View>
                 </Modal>
             </View>
+            <GlobalSearchModal visible={searchModalOpen} onClose={() => setSearchModalOpen(false)} />
             <OnboardingTourModal />
         </OnboardingTourProvider>
     );

@@ -2,6 +2,24 @@ import type { AppUpdateEntry } from './appUpdates';
 
 export const GENERATED_APP_UPDATES: AppUpdateEntry[] = [
     {
+        "id": "db105e1e02cc52d185970c3db36806179d92e7ad",
+        "version": "db105e1",
+        "versionLabel": "Commit",
+        "date": "2026-10-13",
+        "title": "Update migration scripts, test assertions, and docs",
+        "category": "technical",
+        "icon": "code",
+        "summary": "Update migration scripts, test assertions, and docs",
+        "changes": [
+            "Update migration scripts, test assertions, and docs"
+        ],
+        "codeChanges": [
+            "Updated docs/JetFarm_Agribusiness_Outgrower_Platform.pptx",
+            "Updated docs/images/agribusiness-analytics.png",
+            "Updated docs/images/agribusiness-command-center.png"
+        ]
+    },
+    {
         "id": "a837640a573fc0ab280c17bbc7905db73e18415e",
         "version": "a837640",
         "versionLabel": "Commit",

@@ -34,6 +34,13 @@ describe('BoundaryWalkService', () => {
         it('accepts fixes with unknown accuracy', () => {
             expect(isFixAccepted(fix(8, 125, null), SETTINGS)).toBe(true);
         });
+
+        it('rejects fixes with invalid or NaN coordinates', () => {
+            expect(isFixAccepted(fix(NaN, 125, 5), SETTINGS)).toBe(false);
+            expect(isFixAccepted(fix(8, NaN, 5), SETTINGS)).toBe(false);
+            expect(isFixAccepted(fix(95, 125, 5), SETTINGS)).toBe(false);
+            expect(isFixAccepted(fix(8, 195, 5), SETTINGS)).toBe(false);
+        });
     });
 
     describe('appendVertexIfMoved', () => {

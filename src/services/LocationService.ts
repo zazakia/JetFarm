@@ -21,14 +21,27 @@ export interface LocationProvider {
     ): LocationWatchHandle;
 }
 
-class NativeLocationProvider implements LocationProvider {
+function getExpoLocation(): any {
+    try {
+        return require('expo-location');
+    } catch {
+        return null;
+    }
+}
+
+export class NativeLocationProvider implements LocationProvider {
     isAvailable(): boolean {
         return true;
     }
 
     async requestPermission(): Promise<LocationPermissionStatus> {
         try {
-            const Location = await import('expo-location');
+            const Location = getExpoLocation();
+            if (!Location) return 'unavailable';
+            const hasServices = await Location.hasServicesEnabledAsync();
+            if (!hasServices) {
+                return 'unavailable';
+            }
             const { status } = await Location.requestForegroundPermissionsAsync();
             return status === 'granted' ? 'granted' : 'denied';
         } catch {
@@ -43,34 +56,37 @@ class NativeLocationProvider implements LocationProvider {
         let subscription: LocationWatchHandle | null = null;
         let removed = false;
 
-        import('expo-location')
-            .then((Location) =>
-                Location.watchPositionAsync(
-                    {
-                        accuracy: Location.LocationAccuracy.BestForNavigation,
-                        distanceInterval: 1,
-                        timeInterval: 1000,
+        const Location = getExpoLocation();
+        if (!Location) {
+            onError(new Error('expo-location is unavailable'));
+            return { remove: () => {} };
+        }
+
+        Location.watchPositionAsync(
+            {
+                accuracy: Location.LocationAccuracy.BestForNavigation,
+                distanceInterval: 1,
+                timeInterval: 1000,
+            },
+            (position: any) => {
+                onFix({
+                    coordinate: {
+                        latitude: position.coords.latitude,
+                        longitude: position.coords.longitude,
                     },
-                    (position) => {
-                        onFix({
-                            coordinate: {
-                                latitude: position.coords.latitude,
-                                longitude: position.coords.longitude,
-                            },
-                            accuracyMeters: position.coords.accuracy ?? null,
-                            timestamp: position.timestamp,
-                        });
-                    }
-                )
-            )
-            .then((sub) => {
+                    accuracyMeters: position.coords.accuracy ?? null,
+                    timestamp: position.timestamp,
+                });
+            }
+        )
+            .then((sub: any) => {
                 if (removed) {
                     sub.remove();
                 } else {
                     subscription = sub;
                 }
             })
-            .catch((error) => onError(error instanceof Error ? error : new Error(String(error))));
+            .catch((error: any) => onError(error instanceof Error ? error : new Error(String(error))));
 
         return {
             remove: () => {
@@ -81,7 +97,7 @@ class NativeLocationProvider implements LocationProvider {
     }
 }
 
-class WebLocationProvider implements LocationProvider {
+export class WebLocationProvider implements LocationProvider {
     isAvailable(): boolean {
         return typeof navigator !== 'undefined' && !!navigator.geolocation;
     }

@@ -8,6 +8,8 @@ import AgriCropCycle from '../../../src/database/models/AgriCropCycle';
 import { formatPHP } from '../../../src/utils/currency';
 import { Q } from '@nozbe/watermelondb';
 import { AutoPostingService } from '../../../src/services/AutoPostingService';
+import { DynamicSearchBar } from '../../../src/components/DynamicSearchBar';
+import { useDynamicSearch } from '../../../src/hooks/useDynamicSearch';
 
 export const EXPENSE_CATEGORIES = [
     { id: 'fertilizer', label: 'Fertilizer', icon: 'eco' as const, badgeBg: 'bg-emerald-100', badgeText: 'text-emerald-800' },
@@ -186,6 +188,23 @@ export default function FarmExpensesScreen() {
         return matchesCycle && matchesCat;
     });
 
+    // Dynamic and flexible search on filtered expenses
+    const {
+        query: searchQuery,
+        setQuery: setSearchQuery,
+        filteredData: searchedExpenses,
+    } = useDynamicSearch({
+        data: filteredExpenses,
+        searchKeys: [
+            'expense.description',
+            'expense.category',
+            'cycleCode',
+            'expense.paidBy',
+            (item: any) => String(item.expense?.amount ?? ''),
+        ],
+        debounceMs: 150,
+    });
+
     // KPI computations
     const totalExpenses = filteredExpenses.reduce((sum, item) => sum + (item.expense.amount || 0), 0);
     const jetPaidTotal = filteredExpenses
@@ -351,11 +370,20 @@ export default function FarmExpensesScreen() {
                 </ScrollView>
             </View>
 
+            {/* Dynamic and Flexible Search */}
+            <View className="px-4 mb-2">
+                <DynamicSearchBar
+                    value={searchQuery}
+                    onChangeText={setSearchQuery}
+                    placeholder="Search expenses by description, amount, payee..."
+                />
+            </View>
+
             {/* Expense Item List */}
             <View className="px-4 pb-12">
                 <View className="flex-row items-center justify-between mb-2">
                     <Text className="text-sm font-bold text-gray-900">
-                        Recorded Input Logs ({filteredExpenses.length})
+                        Recorded Input Logs ({searchedExpenses.length})
                     </Text>
                 </View>
 
@@ -364,22 +392,35 @@ export default function FarmExpensesScreen() {
                         <ActivityIndicator size="large" color="#047857" />
                         <Text className="text-gray-500 text-xs mt-2">Loading farm expenses...</Text>
                     </View>
-                ) : filteredExpenses.length === 0 ? (
+                ) : searchedExpenses.length === 0 ? (
                     <View className="bg-white p-8 rounded-2xl border border-gray-200 items-center justify-center my-2">
                         <MaterialIcons name="receipt-long" size={48} color="#D1D5DB" />
-                        <Text className="text-gray-800 font-bold text-base mt-2">No Farm Expenses Found</Text>
-                        <Text className="text-gray-500 text-xs text-center mt-1 mb-4">
-                            Log fertilizers, seedling purchases, tractor hours or hauling to track input costs.
+                        <Text className="text-gray-800 font-bold text-base mt-2">
+                            {searchQuery ? 'No Matching Expenses' : 'No Farm Expenses Found'}
                         </Text>
-                        <Pressable
-                            onPress={() => setModalVisible(true)}
-                            className="bg-emerald-800 px-4 py-2 rounded-xl active:bg-emerald-900"
-                        >
-                            <Text className="text-white text-xs font-bold">+ Log First Expense</Text>
-                        </Pressable>
+                        <Text className="text-gray-500 text-xs text-center mt-1 mb-4">
+                            {searchQuery
+                                ? `No expenses match your search for "${searchQuery}".`
+                                : 'Log fertilizers, seedling purchases, tractor hours or hauling to track input costs.'}
+                        </Text>
+                        {searchQuery ? (
+                            <Pressable
+                                onPress={() => setSearchQuery('')}
+                                className="bg-gray-100 px-4 py-2 rounded-xl active:bg-gray-200"
+                            >
+                                <Text className="text-emerald-800 font-bold text-xs">Clear Search</Text>
+                            </Pressable>
+                        ) : (
+                            <Pressable
+                                onPress={() => setModalVisible(true)}
+                                className="bg-emerald-800 px-4 py-2 rounded-xl active:bg-emerald-900"
+                            >
+                                <Text className="text-white text-xs font-bold">+ Log First Expense</Text>
+                            </Pressable>
+                        )}
                     </View>
                 ) : (
-                    filteredExpenses.map((item) => {
+                    searchedExpenses.map((item) => {
                         const catMeta = EXPENSE_CATEGORIES.find((c) => c.id === item.expense.category) || {
                             id: 'miscellaneous',
                             label: item.expense.category,

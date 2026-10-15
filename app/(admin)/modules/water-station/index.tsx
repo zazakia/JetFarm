@@ -164,6 +164,16 @@ export default function WaterStationDashboard() {
                             </View>
                             <Text className="text-xs font-medium text-gray-700">Inventory/CoA</Text>
                         </Pressable>
+
+                        <Pressable 
+                            onPress={() => router.push('/(admin)/modules/water-station/history')} 
+                            className="items-center flex-1"
+                        >
+                            <View className="bg-amber-50 p-3 rounded-full mb-2">
+                                <MaterialIcons name="history" size={24} color="#D97706" />
+                            </View>
+                            <Text className="text-xs font-medium text-gray-700">History</Text>
+                        </Pressable>
                     </View>
 
                     {/* Recent Deliveries List */}

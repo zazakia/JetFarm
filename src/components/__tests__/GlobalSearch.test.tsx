@@ -144,4 +144,57 @@ describe('GlobalSearch', () => {
             resetDeploymentMode();
         }
     });
+
+    it('matches items across different fields using multi-token search', async () => {
+        const { getByPlaceholderText, getByText } = render(
+            <GlobalSearch onNavigate={mockOnNavigate} />
+        );
+        await act(async () => {});
+
+        const input = getByPlaceholderText('Search menus & reports...');
+        await act(async () => {
+            fireEvent(input, 'focus');
+            fireEvent.changeText(input, 'Santos Maria');
+        });
+
+        await waitFor(() => {
+            expect(getByText('Maria Santos')).toBeTruthy();
+        });
+    });
+
+    it('filters results by category tab', async () => {
+        const { getByPlaceholderText, getByText, queryByText } = render(
+            <GlobalSearch onNavigate={mockOnNavigate} />
+        );
+        await act(async () => {});
+
+        const input = getByPlaceholderText('Search menus & reports...');
+        await act(async () => {
+            fireEvent(input, 'focus');
+            fireEvent.changeText(input, 'Maria');
+        });
+
+        await waitFor(() => {
+            expect(getByText('Maria Santos')).toBeTruthy();
+        });
+
+        // Click Menus tab
+        const menusTab = getByText('Menus');
+        await act(async () => {
+            fireEvent.press(menusTab);
+        });
+
+        // Under Menus tab, Maria Santos (a borrower) is excluded
+        expect(queryByText('Maria Santos')).toBeNull();
+
+        // Click Borrowers tab
+        const borrowersTab = getByText('Borrowers');
+        await act(async () => {
+            fireEvent.press(borrowersTab);
+        });
+
+        // Under Borrowers tab, Maria Santos is visible again
+        expect(getByText('Maria Santos')).toBeTruthy();
+    });
 });
+
