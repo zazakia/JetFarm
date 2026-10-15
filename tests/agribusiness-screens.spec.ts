@@ -99,4 +99,17 @@ test.describe('Agribusiness screen routes render without runtime errors', () => 
 
         expect(pageErrors).toEqual([]);
     });
+
+    test('Implementation & P&L Report screen renders Bacalso Farm schedule matrix and P&L', async ({ page }) => {
+        const pageErrors = await collectPageErrors(page);
+        await safeNavigate(page, '/agribusiness/implementation-report');
+
+        await expect(page.getByText(/BACALSO FARM/i).first()).toBeVisible({ timeout: 20000 });
+        await expect(page.getByText(/Summary of Expenses & Net Income/i).first()).toBeVisible();
+        await expect(page.getByText(/TOTAL COST/i).first()).toBeVisible();
+        await expect(page.getByText(/NET INCOME/i).first()).toBeVisible();
+        await expect(page.getByText(/Print \/ Export/i).first()).toBeVisible();
+
+        expect(pageErrors).toEqual([]);
+    });
 });

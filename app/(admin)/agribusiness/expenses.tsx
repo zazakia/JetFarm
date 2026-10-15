@@ -368,6 +368,23 @@ export default function FarmExpensesScreen() {
                             Planned vs Actual Steps
                         </Text>
                     </Pressable>
+                    <Pressable
+                        onPress={() => router.push({
+                            pathname: '/(admin)/agribusiness/implementation-report' as any,
+                            params: { cycleId: selectedCycleId || (cycles[0]?.id ?? 'benchmark') },
+                        })}
+                        className="py-2 px-3 rounded-lg items-center justify-center flex-row bg-emerald-900/80 active:bg-emerald-950 ml-1"
+                    >
+                        <MaterialIcons
+                            name="table-chart"
+                            size={16}
+                            color="#FDE68A"
+                            style={{ marginRight: 6 }}
+                        />
+                        <Text className="text-xs font-bold text-amber-200">
+                            Bacalso Matrix &amp; P&amp;L
+                        </Text>
+                    </Pressable>
                 </View>
             </View>
 

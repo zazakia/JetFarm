@@ -479,6 +479,12 @@ export default function SettingsScreen() {
             <Section title="System">
                 <View className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
                     <SettingsItem
+                        icon="storage"
+                        label="Data Maintenance & Lookups"
+                        color="#1E3A8A"
+                        onPress={() => router.push('/(admin)/settings/data-maintenance')}
+                    />
+                    <SettingsItem
                         icon="tune"
                         label="Business Rules"
                         color="#1E3A8A"

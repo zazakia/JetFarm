@@ -119,6 +119,7 @@ export const BOOKS_OF_ACCOUNTS_MENU: MenuItem[] = [
 // 8. ADMIN & SYSTEM CONTROLS
 // ==========================================
 export const ADMIN_MENU: MenuItem[] = [
+    { icon: 'storage', label: 'Data Maintenance & Lookups', route: '/(admin)/settings/data-maintenance' },
     { icon: 'manage-accounts', label: 'User Roles & Access', route: '/(admin)/users' },
     { icon: 'assignment-ind', label: 'Employees Directory', route: '/(admin)/settings/employees', featureKey: 'module.employees' },
     { icon: 'history', label: 'Audit Trail', route: '/(admin)/settings/audit-trail' },

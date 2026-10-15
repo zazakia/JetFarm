@@ -6,6 +6,7 @@ import { database } from '../../../src/database';
 import AgriParcel from '../../../src/database/models/AgriParcel';
 import AgriLandOwner from '../../../src/database/models/AgriLandOwner';
 import { AgriParcelService } from '../../../src/services/AgriParcelService';
+import { LookupDataService } from '../../../src/services/LookupDataService';
 import { DynamicSearchBar } from '../../../src/components/DynamicSearchBar';
 import { useDynamicSearch } from '../../../src/hooks/useDynamicSearch';
 
@@ -43,11 +44,14 @@ export default function ParcelsRegistryScreen() {
     const [areaHectares, setAreaHectares] = useState('');
     const [locationAddress, setLocationAddress] = useState('');
     const [soilType, setSoilType] = useState('Loam');
+    const [soilTypeOptions, setSoilTypeOptions] = useState<string[]>([]);
 
     const loadParcels = async () => {
         try {
             const list = await AgriParcelService.listParcels(statusFilter);
             setParcelsList(list);
+            const soils = await LookupDataService.getActiveOptions('soil_type');
+            if (soils.length > 0) setSoilTypeOptions(soils);
         } catch (error) {
             console.error('[ParcelsRegistry] Error loading parcels:', error);
         } finally {
@@ -373,6 +377,29 @@ export default function ParcelsRegistryScreen() {
                             />
 
                             <Text className="text-xs font-bold text-gray-700 mb-1">Soil Type</Text>
+                            {soilTypeOptions.length > 0 && (
+                                <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row gap-2 mb-2">
+                                    {soilTypeOptions.map((st) => (
+                                        <Pressable
+                                            key={st}
+                                            onPress={() => setSoilType(st)}
+                                            className={`px-3 py-1.5 rounded-lg border ${
+                                                soilType === st
+                                                    ? 'bg-emerald-800 border-emerald-800'
+                                                    : 'bg-gray-100 border-gray-200'
+                                            }`}
+                                        >
+                                            <Text
+                                                className={`text-xs font-bold ${
+                                                    soilType === st ? 'text-white' : 'text-gray-700'
+                                                }`}
+                                            >
+                                                {st}
+                                            </Text>
+                                        </Pressable>
+                                    ))}
+                                </ScrollView>
+                            )}
                             <TextInput
                                 value={soilType}
                                 onChangeText={setSoilType}

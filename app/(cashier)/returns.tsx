@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, Pressable, TextInput, Alert, Modal } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,6 +8,7 @@ import { COMPANY_NAME } from '../../src/constants/brand';
 import { CRISPY_KING_MENU, MenuItem } from '../../src/services/QSRPosService';
 import { SalesReturnService, ReturnItemInput, ReturnCondition } from '../../src/services/SalesReturnService';
 import { SupervisorApprovalModal } from '../../src/components/SupervisorApprovalModal';
+import { LookupDataService } from '../../src/services/LookupDataService';
 
 export default function CashierReturnsScreen() {
     const router = useRouter();
@@ -27,6 +28,15 @@ export default function CashierReturnsScreen() {
     const [itemQty, setItemQty] = useState('1');
     const [itemCondition, setItemCondition] = useState<ReturnCondition>('good_resellable');
     const [itemReason, setItemReason] = useState('Customer changed mind / wrong order');
+    const [availableReasons, setAvailableReasons] = useState<string[]>([]);
+
+    useEffect(() => {
+        LookupDataService.getActiveOptions('return_reason')
+            .then(reasons => {
+                if (reasons.length > 0) setAvailableReasons(reasons);
+            })
+            .catch(err => console.warn('Failed to load return reasons:', err));
+    }, []);
 
     // Supervisor approval modal
     const [supervisorModalOpen, setSupervisorModalOpen] = useState(false);
@@ -357,6 +367,29 @@ export default function CashierReturnsScreen() {
 
                         <View className="mb-4">
                             <Text className="text-slate-500 text-xs font-medium mb-1">Return Reason</Text>
+                            {availableReasons.length > 0 && (
+                                <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row gap-1.5 mb-2">
+                                    {availableReasons.map((r) => (
+                                        <Pressable
+                                            key={r}
+                                            onPress={() => setItemReason(r)}
+                                            className={`px-2.5 py-1.5 rounded-lg border ${
+                                                itemReason === r
+                                                    ? 'bg-emerald-700 border-emerald-700'
+                                                    : 'bg-slate-50 border-slate-200'
+                                            }`}
+                                        >
+                                            <Text
+                                                className={`text-[11px] font-bold ${
+                                                    itemReason === r ? 'text-white' : 'text-slate-700'
+                                                }`}
+                                            >
+                                                {r}
+                                            </Text>
+                                        </Pressable>
+                                    ))}
+                                </ScrollView>
+                            )}
                             <TextInput
                                 value={itemReason}
                                 onChangeText={setItemReason}
