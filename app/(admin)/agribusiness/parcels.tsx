@@ -9,6 +9,8 @@ import { AgriParcelService } from '../../../src/services/AgriParcelService';
 import { LookupDataService } from '../../../src/services/LookupDataService';
 import { DynamicSearchBar } from '../../../src/components/DynamicSearchBar';
 import { useDynamicSearch } from '../../../src/hooks/useDynamicSearch';
+import { TransactionConfirmationBanner } from '../../../src/components/TransactionConfirmationBanner';
+import Toast from '../../../src/components/AppToast';
 
 export default function ParcelsRegistryScreen() {
     const router = useRouter();
@@ -16,6 +18,7 @@ export default function ParcelsRegistryScreen() {
     const [refreshing, setRefreshing] = useState(false);
     const [statusFilter, setStatusFilter] = useState('all');
     const [parcelsList, setParcelsList] = useState<any[]>([]);
+    const [confirmationMessage, setConfirmationMessage] = useState<string | null>(null);
 
     const {
         query: searchQuery,
@@ -110,6 +113,14 @@ export default function ParcelsRegistryScreen() {
             });
 
             setModalVisible(false);
+            const msg = `Parcel "${parcelName.trim()}" (${parseFloat(areaHectares) || 1} ha) registered successfully with standard ₱1.00/kg & ₱25k minimum guarantee!`;
+            setConfirmationMessage(msg);
+            Toast.show({
+                type: 'success',
+                text1: 'Parcel Registered',
+                text2: msg,
+            });
+
             setParcelName('');
             setParcelCode('');
             setOwnerName('');
@@ -117,7 +128,7 @@ export default function ParcelsRegistryScreen() {
             setAreaHectares('');
             setLocationAddress('');
             loadParcels();
-            Alert.alert('Success', 'Parcel registered successfully with standard ₱1.00/kg & ₱25k minimum guarantee!');
+            Alert.alert('Success', msg);
         } catch (error: any) {
             Alert.alert('Error', error?.message || 'Failed to register parcel');
         } finally {
@@ -148,6 +159,15 @@ export default function ParcelsRegistryScreen() {
                     <Text className="text-white font-bold text-sm">Register Parcel</Text>
                 </Pressable>
             </View>
+
+            {/* Inline Confirmation Banner */}
+            {confirmationMessage && (
+                <TransactionConfirmationBanner
+                    title="Parcel Registered Successfully"
+                    message={confirmationMessage}
+                    onDismiss={() => setConfirmationMessage(null)}
+                />
+            )}
 
             {/* Dynamic and Flexible Search */}
             <DynamicSearchBar

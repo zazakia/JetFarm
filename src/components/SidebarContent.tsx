@@ -29,6 +29,7 @@ export const AGRIBUSINESS_MENU: MenuItem[] = [
     { icon: 'receipt-long', label: 'Land Owner Settlements', route: '/(admin)/agribusiness/settlements' },
     { icon: 'attach-money', label: 'BioGreen Investor Ledger', route: '/(admin)/agribusiness/investors' },
     { icon: 'engineering', label: 'Farm Labor & Payroll', route: '/(admin)/agribusiness/labor' },
+    { icon: 'groups', label: 'Farm Laborers & Staff', route: '/(admin)/agribusiness/workers' },
     { icon: 'receipt', label: 'Farm Input Expenses', route: '/(admin)/agribusiness/expenses' },
     { icon: 'insights', label: 'P&L & Yield Analytics', route: '/(admin)/agribusiness/analytics' },
 ];

@@ -75,8 +75,8 @@ describe('SidebarContent', () => {
         expect(queryByText('Staff Payroll')).toBeNull();
     });
 
-    it('AGRIBUSINESS_MENU has all 10 expected items', () => {
-        expect(AGRIBUSINESS_MENU).toHaveLength(10);
+    it('AGRIBUSINESS_MENU has all 11 expected items', () => {
+        expect(AGRIBUSINESS_MENU).toHaveLength(11);
         const labels = AGRIBUSINESS_MENU.map(i => i.label);
         expect(labels).toContain('Operator Command Center');
         expect(labels).toContain('Land Parcels Registry');
@@ -86,6 +86,7 @@ describe('SidebarContent', () => {
         expect(labels).toContain('Land Owner Settlements');
         expect(labels).toContain('BioGreen Investor Ledger');
         expect(labels).toContain('Farm Labor & Payroll');
+        expect(labels).toContain('Farm Laborers & Staff');
         expect(labels).toContain('Farm Input Expenses');
         expect(labels).toContain('P&L & Yield Analytics');
     });

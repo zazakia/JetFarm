@@ -11,6 +11,8 @@ import { AutoPostingService } from '../../../src/services/AutoPostingService';
 import { DynamicSearchBar } from '../../../src/components/DynamicSearchBar';
 import { useDynamicSearch } from '../../../src/hooks/useDynamicSearch';
 import { AgriFarmingStepsService, CycleStepsSummary } from '../../../src/services/AgriFarmingStepsService';
+import { TransactionConfirmationBanner } from '../../../src/components/TransactionConfirmationBanner';
+import Toast from '../../../src/components/AppToast';
 
 export const EXPENSE_CATEGORIES = [
     { id: 'fertilizer', label: 'Fertilizer', icon: 'eco' as const, badgeBg: 'bg-emerald-100', badgeText: 'text-emerald-800' },
@@ -49,6 +51,7 @@ export default function FarmExpensesScreen() {
     const [formPaidBy, setFormPaidBy] = useState<'jet' | 'investor'>('jet');
     const [formReceiptRef, setFormReceiptRef] = useState('');
     const [saving, setSaving] = useState(false);
+    const [confirmationMessage, setConfirmationMessage] = useState<string | null>(null);
 
     const loadData = async () => {
         try {
@@ -212,7 +215,15 @@ export default function FarmExpensesScreen() {
             setFormReceiptRef('');
             setFormPaidBy('jet');
             setFormCategory('fertilizer');
-            Alert.alert('Success', 'Farm input expense recorded and posted to General Ledger.');
+
+            const msg = `Farm expense "${formDescription.trim()}" (${formatPHP(parsedAmount)}) recorded and posted to General Ledger.`;
+            setConfirmationMessage(msg);
+            Toast.show({
+                type: 'success',
+                text1: 'Farm Expense Recorded',
+                text2: msg,
+            });
+            Alert.alert('Success', msg);
             loadData();
         } catch (err: any) {
             Alert.alert('Error', err.message || 'Failed to save farm expense.');
@@ -387,6 +398,16 @@ export default function FarmExpensesScreen() {
                     </Pressable>
                 </View>
             </View>
+
+            {confirmationMessage && (
+                <View className="p-4 pb-0">
+                    <TransactionConfirmationBanner
+                        title="Farm Expense Saved"
+                        message={confirmationMessage}
+                        onDismiss={() => setConfirmationMessage(null)}
+                    />
+                </View>
+            )}
 
             {activeTab === 'steps' ? (
                 <View className="p-4">

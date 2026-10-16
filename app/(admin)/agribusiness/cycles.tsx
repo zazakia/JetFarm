@@ -10,6 +10,8 @@ import AgriGrowthCheckin from '../../../src/database/models/AgriGrowthCheckin';
 import { AgriCropCycleService } from '../../../src/services/AgriCropCycleService';
 import { formatPHP } from '../../../src/utils/currency';
 import { Q } from '@nozbe/watermelondb';
+import { CropHealthGrowthChart } from '../../../src/components/CropHealthGrowthChart';
+import Toast from '../../../src/components/AppToast';
 
 export default function CropCyclesScreen() {
     const params = useLocalSearchParams();
@@ -17,6 +19,7 @@ export default function CropCyclesScreen() {
 
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    const [confirmationMessage, setConfirmationMessage] = useState<string | null>(null);
     const [cycles, setCycles] = useState<any[]>([]);
     const [parcels, setParcels] = useState<AgriParcel[]>([]);
     const [investors, setInvestors] = useState<AgriInvestor[]>([]);
@@ -42,7 +45,24 @@ export default function CropCyclesScreen() {
     const loadData = async () => {
         try {
             const list = await AgriCropCycleService.listCycles();
-            setCycles(list);
+            const enriched = await Promise.all(
+                list.map(async item => {
+                    try {
+                        const checkins = await database
+                            .get<AgriGrowthCheckin>('agri_growth_checkins')
+                            .query(
+                                Q.where('crop_cycle_id', item.cycle.id),
+                                Q.where('deleted_at', null),
+                                Q.sortBy('checkin_date', Q.asc)
+                            )
+                            .fetch();
+                        return { ...item, checkins };
+                    } catch {
+                        return { ...item, checkins: [] };
+                    }
+                })
+            );
+            setCycles(enriched);
 
             const pclList = await database
                 .get<AgriParcel>('agri_parcels')
@@ -109,7 +129,14 @@ export default function CropCyclesScreen() {
 
             setCreateModalVisible(false);
             loadData();
-            Alert.alert('Success', 'Cassava Crop Cycle started successfully!');
+            const msg = `Cassava crop cycle (${variety}, ${ha} ha) started successfully!`;
+            setConfirmationMessage(msg);
+            Toast.show({
+                type: 'success',
+                text1: 'Crop Cycle Started',
+                text2: msg,
+            });
+            Alert.alert('Success', msg);
         } catch (error: any) {
             Alert.alert('Error', error?.message || 'Failed to start crop cycle.');
         } finally {
@@ -133,7 +160,15 @@ export default function CropCyclesScreen() {
             setCheckinModalVisible(false);
             setCheckinNotes('');
             loadData();
-            Alert.alert('Success', 'Growth stage checkin recorded successfully!');
+            const stageLabel = checkinStage.replace('_', ' ').toUpperCase();
+            const msg = `Growth stage checkin recorded: ${stageLabel} evaluated with ${healthStatus.toUpperCase()} health!`;
+            setConfirmationMessage(msg);
+            Toast.show({
+                type: 'success',
+                text1: 'Growth Checkin Saved',
+                text2: msg,
+            });
+            Alert.alert('Success', msg);
         } catch (err: any) {
             Alert.alert('Error', err?.message || 'Failed to record checkin');
         } finally {
@@ -174,6 +209,23 @@ export default function CropCyclesScreen() {
                 </Pressable>
             </View>
 
+            {/* Inline Confirmation Banner */}
+            {confirmationMessage && (
+                <View className="bg-emerald-50 border border-emerald-300 rounded-2xl p-4 mb-6 flex-row items-center justify-between shadow-sm">
+                    <View className="flex-row items-center gap-3 flex-1">
+                        <View className="w-8 h-8 rounded-full bg-emerald-100 items-center justify-center">
+                            <MaterialIcons name="check-circle" size={20} color="#047857" />
+                        </View>
+                        <Text className="text-emerald-900 font-bold text-xs flex-1">
+                            {confirmationMessage}
+                        </Text>
+                    </View>
+                    <Pressable onPress={() => setConfirmationMessage(null)} className="p-1">
+                        <MaterialIcons name="close" size={18} color="#047857" />
+                    </Pressable>
+                </View>
+            )}
+
             {/* Cycles List */}
             {loading ? (
                 <View className="p-8 items-center">
@@ -196,7 +248,7 @@ export default function CropCyclesScreen() {
                 </View>
             ) : (
                 <View className="gap-4">
-                    {cycles.map(({ cycle, parcel, investor }) => (
+                    {cycles.map(({ cycle, parcel, investor, checkins }) => (
                         <View
                             key={cycle.id}
                             className="bg-white p-5 rounded-3xl border border-gray-200 shadow-sm"
@@ -231,7 +283,7 @@ export default function CropCyclesScreen() {
                             </View>
 
                             {/* Progress bar / Yield stats */}
-                            <View className="bg-gray-50 p-3 rounded-2xl border border-gray-100 mb-4">
+                            <View className="bg-gray-50 p-3 rounded-2xl border border-gray-100 mb-3">
                                 <View className="flex-row justify-between text-xs mb-1">
                                     <Text className="text-xs text-gray-500">Actual Harvest vs Projected Target</Text>
                                     <Text className="text-xs font-bold text-gray-900">
@@ -249,6 +301,15 @@ export default function CropCyclesScreen() {
                                         }}
                                     />
                                 </View>
+                            </View>
+
+                            {/* Growth Stage Crop Health Status Line Graph */}
+                            <View className="mb-4">
+                                <CropHealthGrowthChart
+                                    checkins={checkins || []}
+                                    variety={cycle.variety}
+                                    currentStage={cycle.status}
+                                />
                             </View>
 
                             {/* Action Buttons */}

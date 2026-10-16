@@ -250,6 +250,7 @@ export default function AgribusinessDashboard() {
                     { label: 'Planting Cycles', route: '/(admin)/agribusiness/cycles', icon: 'grass', desc: 'Cassava crop check-ins', color: 'bg-green-700' },
                     { label: 'BioGreen Investor', route: '/(admin)/agribusiness/investors', icon: 'business-center', desc: 'Capital & off-take ledger', color: 'bg-indigo-600' },
                     { label: 'Farm Labor', route: '/(admin)/agribusiness/labor', icon: 'engineering', desc: 'Worker registry & tasks', color: 'bg-cyan-700' },
+                    { label: 'Farm Staff & Crew', route: '/(admin)/agribusiness/workers', icon: 'groups', desc: 'Worker registry & crew records', color: 'bg-emerald-700' },
                     { label: 'Farm Expenses', route: '/(admin)/agribusiness/expenses', icon: 'receipt-long', desc: 'Fertilizer, tractor, seed costs', color: 'bg-rose-600' },
                     { label: 'Planned vs Actual Steps', route: '/(admin)/agribusiness/expenses?view=steps', icon: 'timeline', desc: '7 farming steps & budget variance', color: 'bg-emerald-700' },
                     { label: 'Implementation & P&L Report', route: '/(admin)/agribusiness/implementation-report', icon: 'table-chart', desc: 'Bacalso farm matrix, schedule & P&L', color: 'bg-teal-700' },

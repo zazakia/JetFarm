@@ -9,11 +9,13 @@ import AgriCropCycle from '../../../src/database/models/AgriCropCycle';
 import { formatPHP } from '../../../src/utils/currency';
 import { Q } from '@nozbe/watermelondb';
 import { AutoPostingService } from '../../../src/services/AutoPostingService';
+import Toast from '../../../src/components/AppToast';
 
 export default function FarmLaborScreen() {
     const router = useRouter();
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    const [confirmationMessage, setConfirmationMessage] = useState<string | null>(null);
 
     const [workers, setWorkers] = useState<AgriFarmWorker[]>([]);
     const [laborLogs, setLaborLogs] = useState<Array<{ log: AgriLaborLog; workerName: string; cycleCode: string }>>([]);
@@ -131,7 +133,14 @@ export default function FarmLaborScreen() {
             setWorkerName('');
             setWorkerPhone('');
             loadData();
-            Alert.alert('Success', 'Worker registered successfully!');
+            const msg = `Worker "${workerName.trim()}" registered successfully!`;
+            setConfirmationMessage(msg);
+            Toast.show({
+                type: 'success',
+                text1: 'Worker Registered',
+                text2: msg,
+            });
+            Alert.alert('Success', msg);
         } catch (err: any) {
             Alert.alert('Error', err?.message || 'Failed to save worker');
         } finally {
@@ -169,7 +178,14 @@ export default function FarmLaborScreen() {
             setTaskModal(false);
             setTaskNotes('');
             loadData();
-            Alert.alert('Success', `Task recorded: ${formatPHP(totalPay)} added to labor ledger.`);
+            const msg = `Labor task recorded: ${formatPHP(totalPay)} (${task}) added to labor ledger.`;
+            setConfirmationMessage(msg);
+            Toast.show({
+                type: 'success',
+                text1: 'Labor Task Recorded',
+                text2: msg,
+            });
+            Alert.alert('Success', msg);
         } catch (err: any) {
             Alert.alert('Error', err?.message || 'Failed to save task log');
         } finally {
@@ -209,7 +225,14 @@ export default function FarmLaborScreen() {
             }
 
             loadData();
-            Alert.alert('Success', 'Labor payment marked as paid and posted to General Ledger.');
+            const msg = `Labor wage payment of ${formatPHP(log.totalPay)} marked as paid and posted to General Ledger.`;
+            setConfirmationMessage(msg);
+            Toast.show({
+                type: 'success',
+                text1: 'Wage Payment Recorded',
+                text2: msg,
+            });
+            Alert.alert('Success', msg);
         } catch (err: any) {
             Alert.alert('Error', err?.message || 'Failed to update status');
         }
@@ -239,6 +262,14 @@ export default function FarmLaborScreen() {
                 </View>
                 <View className="flex-row gap-2">
                     <Pressable
+                        testID="btn-workers-directory"
+                        onPress={() => router.push('/(admin)/agribusiness/workers' as any)}
+                        className="bg-emerald-50 border border-emerald-300 px-3 py-2.5 rounded-xl flex-row items-center gap-1 active:bg-emerald-100"
+                    >
+                        <MaterialIcons name="groups" size={18} color="#047857" />
+                        <Text className="text-emerald-800 font-bold text-xs">Staff Directory</Text>
+                    </Pressable>
+                    <Pressable
                         onPress={() => setWorkerModal(true)}
                         className="bg-gray-200 px-3 py-2.5 rounded-xl flex-row items-center gap-1 active:bg-gray-300"
                     >
@@ -255,13 +286,39 @@ export default function FarmLaborScreen() {
                 </View>
             </View>
 
+            {/* Inline Confirmation Banner */}
+            {confirmationMessage && (
+                <View className="bg-emerald-50 border border-emerald-300 rounded-2xl p-4 mb-6 flex-row items-center justify-between shadow-sm">
+                    <View className="flex-row items-center gap-3 flex-1">
+                        <View className="w-8 h-8 rounded-full bg-emerald-100 items-center justify-center">
+                            <MaterialIcons name="check-circle" size={20} color="#047857" />
+                        </View>
+                        <Text className="text-emerald-900 font-bold text-xs flex-1">
+                            {confirmationMessage}
+                        </Text>
+                    </View>
+                    <Pressable onPress={() => setConfirmationMessage(null)} className="p-1">
+                        <MaterialIcons name="close" size={18} color="#047857" />
+                    </Pressable>
+                </View>
+            )}
+
             {/* KPI Cards */}
             <View className="flex-row flex-wrap gap-4 mb-6">
-                <View className="flex-1 min-w-[140px] bg-white p-5 rounded-2xl border border-gray-200 shadow-sm">
-                    <Text className="text-xs font-bold text-gray-500 uppercase">Field Workers</Text>
+                <Pressable
+                    testID="field-workers-kpi-card"
+                    onPress={() => router.push('/(admin)/agribusiness/workers' as any)}
+                    className="flex-1 min-w-[140px] bg-white p-5 rounded-2xl border border-gray-200 shadow-sm active:bg-gray-50 hover:border-emerald-500 transition-colors"
+                >
+                    <View className="flex-row justify-between items-center">
+                        <Text className="text-xs font-bold text-gray-500 uppercase">Field Workers</Text>
+                        <MaterialIcons name="chevron-right" size={18} color="#047857" />
+                    </View>
                     <Text className="text-2xl font-black text-gray-900 mt-1">{workers.length}</Text>
-                    <Text className="text-xs text-gray-500">Registered farm crew</Text>
-                </View>
+                    <View className="flex-row items-center gap-1 mt-0.5">
+                        <Text className="text-xs text-emerald-700 font-semibold">View Records →</Text>
+                    </View>
+                </Pressable>
                 <View className="flex-1 min-w-[140px] bg-white p-5 rounded-2xl border border-gray-200 shadow-sm">
                     <Text className="text-xs font-bold text-gray-500 uppercase">Pending Wages</Text>
                     <Text className="text-2xl font-black text-amber-700 mt-1">{formatPHP(totalLaborPending)}</Text>

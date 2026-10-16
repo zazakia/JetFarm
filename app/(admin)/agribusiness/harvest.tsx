@@ -9,6 +9,8 @@ import AgriHarvestLog from '../../../src/database/models/AgriHarvestLog';
 import { AgriHarvestService, HarvestSummary } from '../../../src/services/AgriHarvestService';
 import { formatPHP } from '../../../src/utils/currency';
 import { Q } from '@nozbe/watermelondb';
+import { TransactionConfirmationBanner } from '../../../src/components/TransactionConfirmationBanner';
+import Toast from '../../../src/components/AppToast';
 
 export default function HarvestWeighInScreen() {
     const params = useLocalSearchParams();
@@ -17,6 +19,11 @@ export default function HarvestWeighInScreen() {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [saving, setSaving] = useState(false);
+    const [confirmation, setConfirmation] = useState<{
+        title: string;
+        message: string;
+        batchNumber?: string;
+    } | null>(null);
 
     // Form inputs
     const [cycles, setCycles] = useState<AgriCropCycle[]>([]);
@@ -119,7 +126,7 @@ export default function HarvestWeighInScreen() {
             const cycle = cycles.find(c => c.id === selectedCycleId);
             if (!cycle) throw new Error('Selected cycle not found');
 
-            await AgriHarvestService.logWeighIn({
+            const savedLog = await AgriHarvestService.logWeighIn({
                 cropCycleId: cycle.id,
                 parcelId: cycle.parcelId,
                 grossWeightKg: gross,
@@ -137,10 +144,22 @@ export default function HarvestWeighInScreen() {
             setNotes('');
             loadData();
 
-            Alert.alert(
-                'Weigh-In Saved',
-                `Logged ${netKg.toLocaleString()} net kg! Total cycle harvest and investor off-take ledger have been automatically updated.`
-            );
+            const batchCode = savedLog.batchNumber;
+            const message = `Recorded ${netKg.toLocaleString()} net kg (${qualityGrade}) for cycle ${cycle.cycleCode}. Total harvest and investor off-take ledger have been automatically updated.`;
+
+            setConfirmation({
+                title: 'Weigh-in Batch Saved Successfully',
+                message,
+                batchNumber: batchCode,
+            });
+
+            Toast.show({
+                type: 'success',
+                text1: 'Weigh-in Batch Saved',
+                text2: `${batchCode} • ${netKg.toLocaleString()} net kg`,
+            });
+
+            Alert.alert('Weigh-In Saved', message);
         } catch (error: any) {
             Alert.alert('Error', error?.message || 'Failed to log weigh-in');
         } finally {
@@ -319,6 +338,16 @@ export default function HarvestWeighInScreen() {
                     )}
                 </Pressable>
             </View>
+
+            {/* Confirmation Banner */}
+            {confirmation && (
+                <TransactionConfirmationBanner
+                    title={confirmation.title}
+                    message={confirmation.message}
+                    transactionCode={confirmation.batchNumber}
+                    onDismiss={() => setConfirmation(null)}
+                />
+            )}
 
             {/* Cycle Harvest Summary KPIs */}
             <View className="flex-row flex-wrap gap-3 mb-6">

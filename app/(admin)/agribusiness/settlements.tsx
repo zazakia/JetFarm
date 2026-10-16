@@ -10,6 +10,8 @@ import AgriWeeklySettlement from '../../../src/database/models/AgriWeeklySettlem
 import { LandSettlementEngine } from '../../../src/services/LandSettlementEngine';
 import { formatPHP } from '../../../src/utils/currency';
 import { Q } from '@nozbe/watermelondb';
+import { TransactionConfirmationBanner } from '../../../src/components/TransactionConfirmationBanner';
+import Toast from '../../../src/components/AppToast';
 
 export default function WeeklySettlementsScreen() {
     const params = useLocalSearchParams();
@@ -18,6 +20,7 @@ export default function WeeklySettlementsScreen() {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [calculating, setCalculating] = useState(false);
+    const [confirmationMessage, setConfirmationMessage] = useState<string | null>(null);
 
     const [cycles, setCycles] = useState<AgriCropCycle[]>([]);
     const [selectedCycleId, setSelectedCycleId] = useState<string>(params.cropCycleId as string || '');
@@ -144,10 +147,14 @@ export default function WeeklySettlementsScreen() {
             );
 
             loadData();
-            Alert.alert(
-                'Settlement Computed',
-                `Week ${wk} computed: ${formatPHP(settlement.netPayoutDueThisWeek)} net due (Target: ${formatPHP(settlement.targetCumulativePayout)}, Previous Paid: ${formatPHP(settlement.previousCumulativePayout)}).`
-            );
+            const msg = `Week ${wk} settlement computed: ${formatPHP(settlement.netPayoutDueThisWeek)} net due (Cumulative target: ${formatPHP(settlement.targetCumulativePayout)}).`;
+            setConfirmationMessage(msg);
+            Toast.show({
+                type: 'success',
+                text1: 'Settlement Computed',
+                text2: msg,
+            });
+            Alert.alert('Settlement Computed', msg);
         } catch (error: any) {
             Alert.alert('Computation Error', error?.message || 'Failed to compute settlement.');
         } finally {
@@ -159,7 +166,14 @@ export default function WeeklySettlementsScreen() {
         try {
             await LandSettlementEngine.approveSettlement(settlementId, false);
             loadData();
-            Alert.alert('Approved', 'Settlement approved for payout.');
+            const msg = 'Settlement approved and authorized for weekly disbursement.';
+            setConfirmationMessage(msg);
+            Toast.show({
+                type: 'success',
+                text1: 'Settlement Approved',
+                text2: msg,
+            });
+            Alert.alert('Approved', msg);
         } catch (err: any) {
             Alert.alert('Error', err?.message || 'Failed to approve');
         }
@@ -185,7 +199,14 @@ export default function WeeklySettlementsScreen() {
 
             setDisburseModalVisible(false);
             loadData();
-            Alert.alert('Success', 'Settlement marked as paid and disbursed to Land Owner!');
+            const msg = `Settlement marked as paid and disbursed to Land Owner (Ref: ${receiptRef || 'Check/Cash'})!`;
+            setConfirmationMessage(msg);
+            Toast.show({
+                type: 'success',
+                text1: 'Disbursement Complete',
+                text2: msg,
+            });
+            Alert.alert('Success', msg);
         } catch (err: any) {
             Alert.alert('Error', err?.message || 'Failed to record disbursement');
         } finally {
@@ -234,6 +255,15 @@ export default function WeeklySettlementsScreen() {
                     Guarantee-aware weekly payouts: ₱1.00/kg harvested vs ₱25,000 guaranteed minimum per cycle
                 </Text>
             </View>
+
+            {/* Inline Confirmation Banner */}
+            {confirmationMessage && (
+                <TransactionConfirmationBanner
+                    title="Settlement Updated Successfully"
+                    message={confirmationMessage}
+                    onDismiss={() => setConfirmationMessage(null)}
+                />
+            )}
 
             {/* Formula Explanation Card */}
             <View className="bg-emerald-900 rounded-3xl p-5 mb-6 shadow-md text-white">

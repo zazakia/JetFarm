@@ -9,11 +9,14 @@ import AgriCropCycle from '../../../src/database/models/AgriCropCycle';
 import { formatPHP } from '../../../src/utils/currency';
 import { Q } from '@nozbe/watermelondb';
 import { AutoPostingService } from '../../../src/services/AutoPostingService';
+import { TransactionConfirmationBanner } from '../../../src/components/TransactionConfirmationBanner';
+import Toast from '../../../src/components/AppToast';
 
 export default function InvestorsScreen() {
     const router = useRouter();
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    const [confirmationMessage, setConfirmationMessage] = useState<string | null>(null);
 
     const [investors, setInvestors] = useState<AgriInvestor[]>([]);
     const [selectedInvestorId, setSelectedInvestorId] = useState<string>('');
@@ -106,7 +109,14 @@ export default function InvestorsScreen() {
 
             setCreateInvestorModal(false);
             loadData();
-            Alert.alert('Success', 'Investor registered successfully!');
+            const msg = `Investor "${companyName.trim()}" registered successfully!`;
+            setConfirmationMessage(msg);
+            Toast.show({
+                type: 'success',
+                text1: 'Investor Registered',
+                text2: msg,
+            });
+            Alert.alert('Success', msg);
         } catch (err: any) {
             Alert.alert('Error', err?.message || 'Failed to save investor');
         } finally {
@@ -160,7 +170,14 @@ export default function InvestorsScreen() {
             setCapitalModal(false);
             setCapitalAmount('');
             loadData();
-            Alert.alert('Success', `Recorded ${formatPHP(amt)} capital funded by Investor and posted to General Ledger!`);
+            const msg = `Recorded ${formatPHP(amt)} capital funded by ${selectedInvestor?.companyName || 'Investor'} and posted to General Ledger!`;
+            setConfirmationMessage(msg);
+            Toast.show({
+                type: 'success',
+                text1: 'Capital Inflow Recorded',
+                text2: msg,
+            });
+            Alert.alert('Success', msg);
         } catch (err: any) {
             Alert.alert('Error', err?.message || 'Failed to record capital');
         } finally {
@@ -201,6 +218,15 @@ export default function InvestorsScreen() {
                     <Text className="text-white font-bold text-sm">Add Investor</Text>
                 </Pressable>
             </View>
+
+            {/* Inline Confirmation Banner */}
+            {confirmationMessage && (
+                <TransactionConfirmationBanner
+                    title="Investor Record Saved"
+                    message={confirmationMessage}
+                    onDismiss={() => setConfirmationMessage(null)}
+                />
+            )}
 
             {/* Investor Selector */}
             <View className="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm mb-6">
