@@ -2,6 +2,60 @@ import type { AppUpdateEntry } from './appUpdates';
 
 export const GENERATED_APP_UPDATES: AppUpdateEntry[] = [
     {
+        "id": "11ae100dcb7fc59e2749bbeb812460159847dc36",
+        "version": "11ae100",
+        "versionLabel": "Commit",
+        "date": "2026-10-16",
+        "title": "Farm workers module, growth health line graph, and universal transaction confirmation messages (fixes #4, #5, #6, #7)",
+        "category": "feature",
+        "icon": "new-releases",
+        "summary": "Farm workers module, growth health line graph, and universal transaction confirmation messages (fixes #4, #5, #6, #7)",
+        "changes": [
+            "Farm workers module, growth health line graph, and universal transaction confirmation messages (fixes #4, #5, #6, #7)"
+        ],
+        "codeChanges": [
+            "Updated app/(admin)/agribusiness/cycles.tsx",
+            "Updated app/(admin)/agribusiness/expenses.tsx",
+            "Updated app/(admin)/agribusiness/harvest.tsx"
+        ]
+    },
+    {
+        "id": "857a0b9cc18093a2f69808230456a9e46fd17378",
+        "version": "857a0b9",
+        "versionLabel": "Commit",
+        "date": "2026-10-15",
+        "title": "Implement Bacalso Farm schedule of implementation and P&L report (fixes #2, #3)",
+        "category": "feature",
+        "icon": "new-releases",
+        "summary": "Implement Bacalso Farm schedule of implementation and P&L report (fixes #2, #3)",
+        "changes": [
+            "Implement Bacalso Farm schedule of implementation and P&L report (fixes #2, #3)"
+        ],
+        "codeChanges": [
+            "Updated app/(admin)/agribusiness/expenses.tsx",
+            "Updated app/(admin)/agribusiness/implementation-report.tsx",
+            "Updated app/(admin)/agribusiness/index.tsx"
+        ]
+    },
+    {
+        "id": "3c40430ffab789650fb576f4f153748fccf6e161",
+        "version": "3c40430",
+        "versionLabel": "Commit",
+        "date": "2026-10-15",
+        "title": "Integrate planned vs actual farming steps and harden user activation (fixes #1, #2, #3)",
+        "category": "feature",
+        "icon": "new-releases",
+        "summary": "Integrate planned vs actual farming steps and harden user activation (fixes #1, #2, #3)",
+        "changes": [
+            "Integrate planned vs actual farming steps and harden user activation (fixes #1, #2, #3)"
+        ],
+        "codeChanges": [
+            "Updated app/(admin)/agribusiness/expenses.tsx",
+            "Updated app/(admin)/agribusiness/index.tsx",
+            "Updated app/(admin)/users/[id].tsx"
+        ]
+    },
+    {
         "id": "a5f17f9082e8dd59b48bd9e886b34be48a5ab74e",
         "version": "a5f17f9",
         "versionLabel": "Commit",
