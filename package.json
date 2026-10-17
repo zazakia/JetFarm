@@ -1,6 +1,6 @@
 {
   "name": "jetfarm",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "main": "index.js",
   "scripts": {
     "prepare:app": "npm run generate:updates && node scripts/check-auth-schema.mjs",

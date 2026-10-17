@@ -2,6 +2,76 @@ import type { AppUpdateEntry } from './appUpdates';
 
 export const GENERATED_APP_UPDATES: AppUpdateEntry[] = [
     {
+        "id": "c9ad2331ea46c5e58e442b982af7270067481a8f",
+        "version": "c9ad233",
+        "versionLabel": "Commit",
+        "date": "2026-10-17",
+        "title": "Add database schema migration verification to deploy-jetfarm",
+        "category": "feature",
+        "icon": "new-releases",
+        "summary": "Add database schema migration verification to deploy-jetfarm",
+        "changes": [
+            "Add database schema migration verification to deploy-jetfarm"
+        ],
+        "codeChanges": [
+            "Updated .agents/skills/deploy-jetfarm/SKILL.md"
+        ]
+    },
+    {
+        "id": "e1a068c8c40341c06132e8868f87907883464d40",
+        "version": "e1a068c",
+        "versionLabel": "Commit",
+        "date": "2026-10-17",
+        "title": "Add edit and delete actions across all agribusiness modules",
+        "category": "feature",
+        "icon": "new-releases",
+        "summary": "Add edit and delete actions across all agribusiness modules",
+        "changes": [
+            "Add edit and delete actions across all agribusiness modules"
+        ],
+        "codeChanges": [
+            "Updated app/(admin)/agribusiness/expenses.tsx",
+            "Updated app/(admin)/agribusiness/harvest.tsx",
+            "Updated app/(admin)/agribusiness/investors.tsx"
+        ]
+    },
+    {
+        "id": "c7dceeb29b6428c8f72f09d2074881836e1ab5b8",
+        "version": "c7dceeb",
+        "versionLabel": "Commit",
+        "date": "2026-10-17",
+        "title": "Parcel block division, monitoring panels, responsive layout, and mapping workflows",
+        "category": "feature",
+        "icon": "new-releases",
+        "summary": "Parcel block division, monitoring panels, responsive layout, and mapping workflows",
+        "changes": [
+            "Parcel block division, monitoring panels, responsive layout, and mapping workflows"
+        ],
+        "codeChanges": [
+            "Updated app/(admin)/_layout.tsx",
+            "Updated app/(admin)/agribusiness/__tests__/cycles.test.tsx",
+            "Updated app/(admin)/agribusiness/__tests__/laborBlockLinks.test.tsx"
+        ]
+    },
+    {
+        "id": "9027c974f5ee3ef8be338eff2d1144395df8d00a",
+        "version": "9027c97",
+        "versionLabel": "Commit",
+        "date": "2026-10-16",
+        "title": "Bump version to v0.1.4 (build 5) after deployment",
+        "category": "technical",
+        "icon": "code",
+        "summary": "Bump version to v0.1.4 (build 5) after deployment",
+        "changes": [
+            "Bump version to v0.1.4 (build 5) after deployment"
+        ],
+        "codeChanges": [
+            "Updated app.json",
+            "Updated package.json",
+            "Updated src/constants/AppVersion.ts"
+        ]
+    },
+    {
         "id": "dc932802f77ed888fb5e4607b6218796c9cb1959",
         "version": "dc93280",
         "versionLabel": "Commit",
