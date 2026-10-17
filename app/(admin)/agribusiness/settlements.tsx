@@ -181,6 +181,41 @@ export default function WeeklySettlementsScreen() {
         }
     };
 
+    const handleDeleteSettlement = (item: any) => {
+        const { settlement, weekNumber } = item;
+        Alert.alert(
+            'Confirm Delete',
+            `Are you sure you want to remove the Week ${settlement.weekNumber} settlement (${formatPHP(settlement.netPayoutDueThisWeek)})?`,
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Delete',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            await database.write(async () => {
+                                const record = await database.get<AgriWeeklySettlement>('agri_weekly_settlements').find(settlement.id);
+                                await record.update(r => {
+                                    r.deletedAt = new Date();
+                                });
+                            });
+                            const msg = `Week ${settlement.weekNumber} settlement removed.`;
+                            setConfirmationMessage(msg);
+                            Toast.show({
+                                type: 'success',
+                                text1: 'Settlement Removed',
+                                text2: msg,
+                            });
+                            loadData();
+                        } catch (err: any) {
+                            Alert.alert('Error', err?.message || 'Failed to delete settlement');
+                        }
+                    },
+                },
+            ]
+        );
+    };
+
     const handleOpenDisburse = (settlementId: string) => {
         setActiveSettlementId(settlementId);
         setReceiptRef(`CHK-${Date.now().toString().slice(-6)}`);
@@ -456,6 +491,14 @@ export default function WeeklySettlementsScreen() {
                                             <Text className="text-white font-bold text-xs">Disburse Pay</Text>
                                         </Pressable>
                                     )}
+
+                                    <Pressable
+                                        onPress={() => handleDeleteSettlement(item)}
+                                        className="px-3 bg-red-50 border border-red-200 py-2.5 rounded-xl flex-row items-center justify-center gap-1 active:bg-red-100"
+                                    >
+                                        <MaterialIcons name="delete-outline" size={16} color="#DC2626" />
+                                        <Text className="text-red-700 font-bold text-xs">Delete</Text>
+                                    </Pressable>
                                 </View>
                             </View>
                         );

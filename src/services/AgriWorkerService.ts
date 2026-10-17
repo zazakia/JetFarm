@@ -183,6 +183,20 @@ export class AgriWorkerService {
             });
         });
     }
+
+    /**
+     * Soft-delete a farm worker record
+     */
+    static async deleteWorker(
+        worker: AgriFarmWorker,
+        db: Database = globalDatabase
+    ): Promise<void> {
+        await db.write(async () => {
+            await worker.update(record => {
+                record.deletedAt = new Date();
+            });
+        });
+    }
 }
 
 export default AgriWorkerService;

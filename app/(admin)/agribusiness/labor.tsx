@@ -32,8 +32,9 @@ export default function FarmLaborScreen() {
     const [dailyRate, setDailyRate] = useState('450');
     const [savingWorker, setSavingWorker] = useState(false);
 
-    // Log Task Modal
+    // Log / Edit Task Modal
     const [taskModal, setTaskModal] = useState(false);
+    const [editingLaborLogId, setEditingLaborLogId] = useState<string | null>(null);
     const [selectedWorkerId, setSelectedWorkerId] = useState('');
     const [selectedCycleId, setSelectedCycleId] = useState('');
     const [task, setTask] = useState('Harvesting & Root Pulling');
@@ -151,7 +152,32 @@ export default function FarmLaborScreen() {
         }
     };
 
-    const handleLogTask = async () => {
+    const handleOpenCreateTask = () => {
+        setEditingLaborLogId(null);
+        setTask('Harvesting & Root Pulling');
+        setRateType('daily');
+        setUnitsCompleted('1');
+        setTaskNotes('');
+        if (workers.length > 0 && !selectedWorkerId) {
+            setSelectedWorkerId(workers[0].id);
+            setRatePerUnit(workers[0].dailyRate.toString());
+        }
+        setTaskModal(true);
+    };
+
+    const handleOpenEditTask = (log: AgriLaborLog) => {
+        setEditingLaborLogId(log.id);
+        setSelectedWorkerId(log.workerId);
+        setSelectedCycleId(log.cropCycleId || '');
+        setTask(log.task);
+        setRateType(log.rateType || 'daily');
+        setUnitsCompleted((log.unitsCompleted || 1).toString());
+        setRatePerUnit((log.ratePerUnit || 0).toString());
+        setTaskNotes(log.notes || '');
+        setTaskModal(true);
+    };
+
+    const handleSaveTask = async () => {
         if (!selectedWorkerId) {
             Alert.alert('Validation Error', 'Please select a worker.');
             return;
@@ -163,37 +189,101 @@ export default function FarmLaborScreen() {
 
         setSavingTask(true);
         try {
-            await database.write(async () => {
-                await database.get<AgriLaborLog>('agri_labor_logs').create(record => {
-                    record.workerId = selectedWorkerId;
-                    record.cropCycleId = selectedCycleId || null;
-                    record.workDate = new Date();
-                    record.task = task;
-                    record.rateType = rateType;
-                    record.unitsCompleted = units;
-                    record.ratePerUnit = rate;
-                    record.totalPay = totalPay;
-                    record.paymentStatus = 'pending';
-                    record.notes = taskNotes.trim() || null;
+            if (editingLaborLogId) {
+                // Update existing task
+                await database.write(async () => {
+                    const record = await database.get<AgriLaborLog>('agri_labor_logs').find(editingLaborLogId);
+                    await record.update(r => {
+                        r.workerId = selectedWorkerId;
+                        r.cropCycleId = selectedCycleId || null;
+                        r.task = task;
+                        r.rateType = rateType;
+                        r.unitsCompleted = units;
+                        r.ratePerUnit = rate;
+                        r.totalPay = totalPay;
+                        r.notes = taskNotes.trim() || null;
+                    });
                 });
-            });
 
-            setTaskModal(false);
-            setTaskNotes('');
-            loadData();
-            const msg = `Labor task recorded: ${formatPHP(totalPay)} (${task}) added to labor ledger.`;
-            setConfirmationMessage(msg);
-            Toast.show({
-                type: 'success',
-                text1: 'Labor Task Recorded',
-                text2: msg,
-            });
-            Alert.alert('Success', msg);
+                setTaskModal(false);
+                setTaskNotes('');
+                loadData();
+                const msg = `Labor task updated: ${formatPHP(totalPay)} (${task}).`;
+                setConfirmationMessage(msg);
+                Toast.show({
+                    type: 'success',
+                    text1: 'Labor Task Updated',
+                    text2: msg,
+                });
+                Alert.alert('Success', msg);
+            } else {
+                // Create new task
+                await database.write(async () => {
+                    await database.get<AgriLaborLog>('agri_labor_logs').create(record => {
+                        record.workerId = selectedWorkerId;
+                        record.cropCycleId = selectedCycleId || null;
+                        record.workDate = new Date();
+                        record.task = task;
+                        record.rateType = rateType;
+                        record.unitsCompleted = units;
+                        record.ratePerUnit = rate;
+                        record.totalPay = totalPay;
+                        record.paymentStatus = 'pending';
+                        record.notes = taskNotes.trim() || null;
+                    });
+                });
+
+                setTaskModal(false);
+                setTaskNotes('');
+                loadData();
+                const msg = `Labor task recorded: ${formatPHP(totalPay)} (${task}) added to labor ledger.`;
+                setConfirmationMessage(msg);
+                Toast.show({
+                    type: 'success',
+                    text1: 'Labor Task Recorded',
+                    text2: msg,
+                });
+                Alert.alert('Success', msg);
+            }
         } catch (err: any) {
             Alert.alert('Error', err?.message || 'Failed to save task log');
         } finally {
             setSavingTask(false);
         }
+    };
+
+    const handleDeleteTask = (logId: string, taskName: string) => {
+        Alert.alert(
+            'Confirm Delete',
+            `Are you sure you want to remove this labor log: "${taskName}"?`,
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Delete',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            await database.write(async () => {
+                                const log = await database.get<AgriLaborLog>('agri_labor_logs').find(logId);
+                                await log.update(r => {
+                                    r.deletedAt = new Date();
+                                });
+                            });
+                            const msg = `Labor log "${taskName}" removed.`;
+                            setConfirmationMessage(msg);
+                            Toast.show({
+                                type: 'success',
+                                text1: 'Labor Log Removed',
+                                text2: msg,
+                            });
+                            loadData();
+                        } catch (err: any) {
+                            Alert.alert('Error', err?.message || 'Failed to delete labor log');
+                        }
+                    },
+                },
+            ]
+        );
     };
 
     const handleMarkPaid = async (logId: string) => {
@@ -280,7 +370,7 @@ export default function FarmLaborScreen() {
                         <Text className="text-gray-800 font-bold text-xs">Add Worker</Text>
                     </Pressable>
                     <Pressable
-                        onPress={() => setTaskModal(true)}
+                        onPress={handleOpenCreateTask}
                         className="bg-cyan-700 px-4 py-2.5 rounded-xl flex-row items-center gap-1 shadow-sm active:bg-cyan-800"
                     >
                         <MaterialIcons name="add-task" size={18} color="#FFFFFF" />
@@ -382,14 +472,28 @@ export default function FarmLaborScreen() {
                                 <Text className="text-base font-black text-gray-900">
                                     {formatPHP(log.totalPay)}
                                 </Text>
-                                {log.paymentStatus === 'pending' && (
+                                <View className="flex-row items-center gap-1 mt-1">
                                     <Pressable
-                                        onPress={() => handleMarkPaid(log.id)}
-                                        className="mt-1 bg-emerald-700 px-2.5 py-1 rounded-lg active:bg-emerald-800"
+                                        onPress={() => handleOpenEditTask(log)}
+                                        className="p-1 rounded hover:bg-gray-100 active:bg-gray-200"
                                     >
-                                        <Text className="text-white font-bold text-[10px]">Pay Wage</Text>
+                                        <MaterialIcons name="edit" size={16} color="#4B5563" />
                                     </Pressable>
-                                )}
+                                    <Pressable
+                                        onPress={() => handleDeleteTask(log.id, log.task)}
+                                        className="p-1 rounded hover:bg-red-50 active:bg-red-100"
+                                    >
+                                        <MaterialIcons name="delete-outline" size={16} color="#EF4444" />
+                                    </Pressable>
+                                    {log.paymentStatus === 'pending' && (
+                                        <Pressable
+                                            onPress={() => handleMarkPaid(log.id)}
+                                            className="bg-emerald-700 px-2.5 py-1 rounded-lg active:bg-emerald-800 ml-1"
+                                        >
+                                            <Text className="text-white font-bold text-[10px]">Pay Wage</Text>
+                                        </Pressable>
+                                    )}
+                                </View>
                             </View>
                         </View>
                     ))}
@@ -466,7 +570,9 @@ export default function FarmLaborScreen() {
             <Modal visible={taskModal} transparent animationType="fade">
                 <View className="flex-1 bg-black/50 justify-center items-center p-4">
                     <View className="bg-white rounded-3xl p-6 w-full max-w-lg shadow-xl">
-                        <Text className="text-lg font-black text-gray-900 mb-3">Log Field Labor Task</Text>
+                        <Text className="text-lg font-black text-gray-900 mb-3">
+                            {editingLaborLogId ? 'Edit Field Labor Task' : 'Log Field Labor Task'}
+                        </Text>
 
                         <ScrollView className="max-h-[70vh]">
                             <Text className="text-xs font-bold text-gray-700 mb-1">Assign Worker *</Text>
@@ -568,14 +674,16 @@ export default function FarmLaborScreen() {
                                 <Text className="font-bold text-gray-700 text-sm">Cancel</Text>
                             </Pressable>
                             <Pressable
-                                onPress={handleLogTask}
+                                onPress={handleSaveTask}
                                 disabled={savingTask}
                                 className="flex-1 py-3 bg-cyan-700 rounded-xl items-center active:bg-cyan-800"
                             >
                                 {savingTask ? (
                                     <ActivityIndicator size="small" color="#FFFFFF" />
                                 ) : (
-                                    <Text className="font-bold text-white text-sm">Record Task</Text>
+                                    <Text className="font-bold text-white text-sm">
+                                        {editingLaborLogId ? 'Update Task' : 'Record Task'}
+                                    </Text>
                                 )}
                             </Pressable>
                         </View>

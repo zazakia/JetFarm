@@ -213,6 +213,35 @@ export default function FarmWorkersScreen() {
         }
     };
 
+    const handleDeleteWorker = (worker: AgriFarmWorker) => {
+        Alert.alert(
+            'Confirm Delete',
+            `Are you sure you want to remove worker "${worker.name}"? This will soft-delete their profile from active records.`,
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Delete',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            await AgriWorkerService.deleteWorker(worker);
+                            const msg = `Worker "${worker.name}" removed from records.`;
+                            setConfirmationMessage(msg);
+                            Toast.show({
+                                type: 'success',
+                                text1: 'Worker Removed',
+                                text2: msg,
+                            });
+                            loadData();
+                        } catch (err: any) {
+                            Alert.alert('Error', err?.message || 'Failed to delete worker');
+                        }
+                    },
+                },
+            ]
+        );
+    };
+
     const filteredWorkers = AgriWorkerService.filterWorkers(workers, {
         search: searchQuery,
         status: statusFilter,
@@ -488,6 +517,14 @@ export default function FarmWorkersScreen() {
                                     >
                                         <MaterialIcons name="edit" size={14} color="#374151" />
                                         <Text className="text-gray-700 font-bold text-xs">Edit Record</Text>
+                                    </Pressable>
+
+                                    <Pressable
+                                        onPress={() => handleDeleteWorker(worker)}
+                                        className="px-3 bg-red-50 border border-red-200 py-2 rounded-xl flex-row items-center justify-center gap-1 active:bg-red-100"
+                                    >
+                                        <MaterialIcons name="delete-outline" size={14} color="#DC2626" />
+                                        <Text className="text-red-700 font-bold text-xs">Delete</Text>
                                     </Pressable>
 
                                     <Pressable

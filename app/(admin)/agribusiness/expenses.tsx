@@ -44,8 +44,9 @@ export default function FarmExpensesScreen() {
     const [selectedCycleId, setSelectedCycleId] = useState<string>('');
     const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
-    // New Expense Modal State
+    // Expense Modal State (Create and Edit)
     const [modalVisible, setModalVisible] = useState(false);
+    const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null);
     const [formCycleId, setFormCycleId] = useState('');
     const [formCategory, setFormCategory] = useState<string>('fertilizer');
     const [formDescription, setFormDescription] = useState('');
@@ -167,7 +168,31 @@ export default function FarmExpensesScreen() {
         loadData();
     };
 
-    const handleCreateExpense = async () => {
+    const handleOpenCreateExpense = () => {
+        setEditingExpenseId(null);
+        setFormDescription('');
+        setFormAmount('');
+        setFormReceiptRef('');
+        setFormPaidBy('jet');
+        setFormCategory('fertilizer');
+        if (cycles.length > 0 && !formCycleId) {
+            setFormCycleId(cycles[0].id);
+        }
+        setModalVisible(true);
+    };
+
+    const handleOpenEditExpense = (item: { expense: AgriFarmExpense; cycleCode: string }) => {
+        setEditingExpenseId(item.expense.id);
+        setFormDescription(item.expense.description || '');
+        setFormAmount(item.expense.amount ? item.expense.amount.toString() : '');
+        setFormReceiptRef(item.expense.receiptPhotoUri || '');
+        setFormPaidBy(item.expense.paidBy as 'jet' | 'investor');
+        setFormCategory(item.expense.category || 'fertilizer');
+        setFormCycleId(item.expense.cropCycleId || (cycles[0]?.id || ''));
+        setModalVisible(true);
+    };
+
+    const handleSaveExpense = async () => {
         if (!formDescription.trim()) {
             Alert.alert('Validation Error', 'Please enter a description for this expense.');
             return;
@@ -180,53 +205,80 @@ export default function FarmExpensesScreen() {
 
         setSaving(true);
         try {
-            let createdExpense: AgriFarmExpense | null = null;
-            await database.write(async () => {
-                createdExpense = await database.get<AgriFarmExpense>('agri_farm_expenses').create((record) => {
-                    record.cropCycleId = formCycleId || null;
-                    record.parcelId = null;
-                    record.expenseDate = new Date();
-                    record.category = formCategory;
-                    record.description = formDescription.trim();
-                    record.amount = parsedAmount;
-                    record.paidBy = formPaidBy;
-                    record.receiptPhotoUri = formReceiptRef.trim() || null;
-                });
-            });
-
-            if (createdExpense) {
-                try {
-                    await AutoPostingService.postAgriFarmExpense({
-                        expenseId: (createdExpense as AgriFarmExpense).id,
-                        amount: parsedAmount,
-                        category: formCategory,
-                        description: formDescription.trim(),
-                        paidBy: formPaidBy,
-                        cropCycleId: formCycleId || null,
-                        entryDate: new Date(),
-                        postedBy: 'Operator',
+            if (editingExpenseId) {
+                // Update existing expense
+                await database.write(async () => {
+                    const rec = await database.get<AgriFarmExpense>('agri_farm_expenses').find(editingExpenseId);
+                    await rec.update((record) => {
+                        record.cropCycleId = formCycleId || null;
+                        record.category = formCategory;
+                        record.description = formDescription.trim();
+                        record.amount = parsedAmount;
+                        record.paidBy = formPaidBy;
+                        record.receiptPhotoUri = formReceiptRef.trim() || null;
                     });
-                } catch (postErr) {
-                    console.warn('[FarmExpenses] Failed to auto-post to accounting:', postErr);
+                });
+
+                setModalVisible(false);
+                const msg = `Farm expense "${formDescription.trim()}" updated successfully.`;
+                setConfirmationMessage(msg);
+                Toast.show({
+                    type: 'success',
+                    text1: 'Farm Expense Updated',
+                    text2: msg,
+                });
+                Alert.alert('Success', msg);
+                loadData();
+            } else {
+                // Create new expense
+                let createdExpense: AgriFarmExpense | null = null;
+                await database.write(async () => {
+                    createdExpense = await database.get<AgriFarmExpense>('agri_farm_expenses').create((record) => {
+                        record.cropCycleId = formCycleId || null;
+                        record.parcelId = null;
+                        record.expenseDate = new Date();
+                        record.category = formCategory;
+                        record.description = formDescription.trim();
+                        record.amount = parsedAmount;
+                        record.paidBy = formPaidBy;
+                        record.receiptPhotoUri = formReceiptRef.trim() || null;
+                    });
+                });
+
+                if (createdExpense) {
+                    try {
+                        await AutoPostingService.postAgriFarmExpense({
+                            expenseId: (createdExpense as AgriFarmExpense).id,
+                            amount: parsedAmount,
+                            category: formCategory,
+                            description: formDescription.trim(),
+                            paidBy: formPaidBy,
+                            cropCycleId: formCycleId || null,
+                            entryDate: new Date(),
+                            postedBy: 'Operator',
+                        });
+                    } catch (postErr) {
+                        console.warn('[FarmExpenses] Failed to auto-post to accounting:', postErr);
+                    }
                 }
+
+                setModalVisible(false);
+                setFormDescription('');
+                setFormAmount('');
+                setFormReceiptRef('');
+                setFormPaidBy('jet');
+                setFormCategory('fertilizer');
+
+                const msg = `Farm expense "${formDescription.trim()}" (${formatPHP(parsedAmount)}) recorded and posted to General Ledger.`;
+                setConfirmationMessage(msg);
+                Toast.show({
+                    type: 'success',
+                    text1: 'Farm Expense Recorded',
+                    text2: msg,
+                });
+                Alert.alert('Success', msg);
+                loadData();
             }
-
-            setModalVisible(false);
-            setFormDescription('');
-            setFormAmount('');
-            setFormReceiptRef('');
-            setFormPaidBy('jet');
-            setFormCategory('fertilizer');
-
-            const msg = `Farm expense "${formDescription.trim()}" (${formatPHP(parsedAmount)}) recorded and posted to General Ledger.`;
-            setConfirmationMessage(msg);
-            Toast.show({
-                type: 'success',
-                text1: 'Farm Expense Recorded',
-                text2: msg,
-            });
-            Alert.alert('Success', msg);
-            loadData();
         } catch (err: any) {
             Alert.alert('Error', err.message || 'Failed to save farm expense.');
         } finally {
@@ -250,6 +302,13 @@ export default function FarmExpensesScreen() {
                                 await rec.update((r) => {
                                     r.deletedAt = new Date();
                                 });
+                            });
+                            const msg = `Expense "${desc}" deleted.`;
+                            setConfirmationMessage(msg);
+                            Toast.show({
+                                type: 'success',
+                                text1: 'Expense Deleted',
+                                text2: msg,
                             });
                             loadData();
                         } catch (err: any) {
@@ -321,7 +380,7 @@ export default function FarmExpensesScreen() {
                         <Text className="text-white text-xs font-semibold ml-1">Command Center</Text>
                     </Pressable>
                     <Pressable
-                        onPress={() => setModalVisible(true)}
+                        onPress={handleOpenCreateExpense}
                         className="flex-row items-center bg-amber-500 px-3 py-1.5 rounded-lg active:bg-amber-600 shadow-sm"
                     >
                         <MaterialIcons name="add" size={18} color="#FFFFFF" />
@@ -984,12 +1043,20 @@ export default function FarmExpensesScreen() {
                                         )}
                                     </View>
 
-                                    <Pressable
-                                        onPress={() => handleDeleteExpense(item.expense.id, item.expense.description)}
-                                        className="p-1 rounded hover:bg-red-50 active:bg-red-100"
-                                    >
-                                        <MaterialIcons name="delete-outline" size={18} color="#EF4444" />
-                                    </Pressable>
+                                    <View className="flex-row items-center gap-1">
+                                        <Pressable
+                                            onPress={() => handleOpenEditExpense(item)}
+                                            className="p-1 rounded hover:bg-gray-100 active:bg-gray-200"
+                                        >
+                                            <MaterialIcons name="edit" size={18} color="#4B5563" />
+                                        </Pressable>
+                                        <Pressable
+                                            onPress={() => handleDeleteExpense(item.expense.id, item.expense.description)}
+                                            className="p-1 rounded hover:bg-red-50 active:bg-red-100"
+                                        >
+                                            <MaterialIcons name="delete-outline" size={18} color="#EF4444" />
+                                        </Pressable>
+                                    </View>
                                 </View>
                             </View>
                         );
@@ -1005,8 +1072,15 @@ export default function FarmExpensesScreen() {
                     <View className="bg-white rounded-3xl p-6 w-full max-w-lg border border-gray-100 shadow-2xl">
                         <View className="flex-row items-center justify-between mb-4 border-b border-gray-100 pb-3">
                             <View className="flex-row items-center">
-                                <MaterialIcons name="add-circle" size={24} color="#047857" className="mr-2" />
-                                <Text className="text-lg font-black text-gray-900">Record Farm Expense</Text>
+                                <MaterialIcons
+                                    name={editingExpenseId ? "edit" : "add-circle"}
+                                    size={24}
+                                    color="#047857"
+                                    className="mr-2"
+                                />
+                                <Text className="text-lg font-black text-gray-900">
+                                    {editingExpenseId ? "Edit Farm Expense" : "Record Farm Expense"}
+                                </Text>
                             </View>
                             <Pressable onPress={() => setModalVisible(false)} className="p-1">
                                 <MaterialIcons name="close" size={20} color="#6B7280" />
@@ -1170,14 +1244,16 @@ export default function FarmExpensesScreen() {
                                     <Text className="text-gray-700 font-bold text-sm">Cancel</Text>
                                 </Pressable>
                                 <Pressable
-                                    onPress={handleCreateExpense}
+                                    onPress={handleSaveExpense}
                                     disabled={saving}
                                     className="flex-1 py-3 bg-emerald-800 rounded-xl items-center active:bg-emerald-900 shadow-sm"
                                 >
                                     {saving ? (
                                         <ActivityIndicator size="small" color="#FFFFFF" />
                                     ) : (
-                                        <Text className="text-white font-bold text-sm">Save Expense</Text>
+                                        <Text className="text-white font-bold text-sm">
+                                            {editingExpenseId ? "Update Expense" : "Save Expense"}
+                                        </Text>
                                     )}
                                 </Pressable>
                             </View>

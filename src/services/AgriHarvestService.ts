@@ -194,5 +194,51 @@ export class AgriHarvestService {
             latestHarvestDate: logs[logs.length - 1].harvestDate,
         };
     }
+
+    /**
+     * Update an existing harvest weigh-in record
+     */
+    static async updateHarvestLog(
+        log: AgriHarvestLog,
+        data: {
+            grossWeightKg?: number;
+            tareWeightKg?: number;
+            qualityGrade?: string;
+            truckPlateNumber?: string | null;
+            weighInSupervisor?: string | null;
+            notes?: string | null;
+        },
+        db: Database = globalDatabase
+    ): Promise<void> {
+        const gross = data.grossWeightKg !== undefined ? data.grossWeightKg : log.grossWeightKg;
+        const tare = data.tareWeightKg !== undefined ? data.tareWeightKg : log.tareWeightKg;
+        const netWeightKg = this.calculateNetWeight(gross, tare);
+
+        await db.write(async () => {
+            await log.update(record => {
+                if (data.grossWeightKg !== undefined) record.grossWeightKg = data.grossWeightKg;
+                if (data.tareWeightKg !== undefined) record.tareWeightKg = data.tareWeightKg;
+                record.netWeightKg = netWeightKg;
+                if (data.qualityGrade !== undefined) record.qualityGrade = data.qualityGrade;
+                if (data.truckPlateNumber !== undefined) record.truckPlateNumber = data.truckPlateNumber;
+                if (data.weighInSupervisor !== undefined) record.weighInSupervisor = data.weighInSupervisor;
+                if (data.notes !== undefined) record.notes = data.notes;
+            });
+        });
+    }
+
+    /**
+     * Soft-delete a harvest weigh-in record
+     */
+    static async deleteHarvestLog(
+        log: AgriHarvestLog,
+        db: Database = globalDatabase
+    ): Promise<void> {
+        await db.write(async () => {
+            await log.update(record => {
+                record.deletedAt = new Date();
+            });
+        });
+    }
 }
 export default AgriHarvestService;

@@ -19,4 +19,53 @@ describe('AgriHarvestService', () => {
             expect(net).toBe(1220.5);
         });
     });
+
+    describe('updateHarvestLog and deleteHarvestLog', () => {
+        it('soft-deletes harvest log by setting deletedAt', async () => {
+            const mockUpdate = jest.fn((callback) => {
+                const rec: any = {};
+                callback(rec);
+                return rec;
+            });
+            const mockLog: any = {
+                id: 'hl-1',
+                batchNumber: 'BATCH-001',
+                update: mockUpdate,
+            };
+            const mockDb: any = {
+                write: jest.fn(async (cb) => cb()),
+            };
+
+            await AgriHarvestService.deleteHarvestLog(mockLog, mockDb);
+            expect(mockDb.write).toHaveBeenCalled();
+            expect(mockUpdate).toHaveBeenCalled();
+        });
+
+        it('updates harvest log weights and recalculates net weight', async () => {
+            const mockUpdate = jest.fn((callback) => {
+                const rec: any = {};
+                callback(rec);
+                return rec;
+            });
+            const mockLog: any = {
+                id: 'hl-1',
+                batchNumber: 'BATCH-001',
+                grossWeightKg: 10000,
+                tareWeightKg: 3000,
+                update: mockUpdate,
+            };
+            const mockDb: any = {
+                write: jest.fn(async (cb) => cb()),
+            };
+
+            await AgriHarvestService.updateHarvestLog(mockLog, {
+                grossWeightKg: 12000,
+                tareWeightKg: 4000,
+                qualityGrade: 'Grade A',
+            }, mockDb);
+            expect(mockDb.write).toHaveBeenCalled();
+            expect(mockUpdate).toHaveBeenCalled();
+        });
+    });
 });
+

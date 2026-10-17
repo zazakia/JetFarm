@@ -121,4 +121,27 @@ describe('AgriWorkerService', () => {
             expect(metrics.pendingAmount).toBe(0);
         });
     });
+
+    describe('deleteWorker', () => {
+        it('soft-deletes worker by setting deletedAt', async () => {
+            const mockUpdate = jest.fn((callback) => {
+                const rec: any = {};
+                callback(rec);
+                return rec;
+            });
+            const mockWorker: any = {
+                id: 'w-1',
+                name: 'Juan dela Cruz',
+                update: mockUpdate,
+            };
+            const mockDb: any = {
+                write: jest.fn(async (cb) => cb()),
+            };
+
+            await AgriWorkerService.deleteWorker(mockWorker, mockDb);
+            expect(mockDb.write).toHaveBeenCalled();
+            expect(mockUpdate).toHaveBeenCalled();
+        });
+    });
 });
+

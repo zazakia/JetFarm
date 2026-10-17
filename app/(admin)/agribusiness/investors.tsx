@@ -27,6 +27,7 @@ export default function InvestorsScreen() {
 
     // Modals
     const [createInvestorModal, setCreateInvestorModal] = useState(false);
+    const [editingInvestor, setEditingInvestor] = useState<AgriInvestor | null>(null);
     const [companyName, setCompanyName] = useState('BioGreen Agri Solutions');
     const [contactPerson, setContactPerson] = useState('Engr. Robert Lee');
     const [contactNumber, setContactNumber] = useState('0918-555-1234');
@@ -92,7 +93,25 @@ export default function InvestorsScreen() {
         loadData();
     };
 
-    const handleCreateInvestor = async () => {
+    const handleOpenCreateInvestor = () => {
+        setEditingInvestor(null);
+        setCompanyName('');
+        setContactPerson('');
+        setContactNumber('');
+        setOfftakeRate('4.00');
+        setCreateInvestorModal(true);
+    };
+
+    const handleOpenEditInvestor = (inv: AgriInvestor) => {
+        setEditingInvestor(inv);
+        setCompanyName(inv.companyName);
+        setContactPerson(inv.contactPerson || '');
+        setContactNumber(inv.contactNumber || '');
+        setOfftakeRate((inv.defaultOfftakePricePerKg || 4.0).toString());
+        setCreateInvestorModal(true);
+    };
+
+    const handleSaveInvestor = async () => {
         if (!companyName.trim()) {
             Alert.alert('Validation Error', 'Please enter company name.');
             return;
@@ -100,30 +119,125 @@ export default function InvestorsScreen() {
 
         setSavingInvestor(true);
         try {
-            await database.write(async () => {
-                await database.get<AgriInvestor>('agri_investors').create(record => {
-                    record.companyName = companyName.trim();
-                    record.contactPerson = contactPerson.trim() || null;
-                    record.contactNumber = contactNumber.trim() || null;
-                    record.defaultOfftakePricePerKg = parseFloat(offtakeRate) || 4.0;
+            if (editingInvestor) {
+                // Update existing investor
+                await database.write(async () => {
+                    const inv = await database.get<AgriInvestor>('agri_investors').find(editingInvestor.id);
+                    await inv.update(record => {
+                        record.companyName = companyName.trim();
+                        record.contactPerson = contactPerson.trim() || null;
+                        record.contactNumber = contactNumber.trim() || null;
+                        record.defaultOfftakePricePerKg = parseFloat(offtakeRate) || 4.0;
+                    });
                 });
-            });
 
-            setCreateInvestorModal(false);
-            loadData();
-            const msg = `Investor "${companyName.trim()}" registered successfully!`;
-            setConfirmationMessage(msg);
-            Toast.show({
-                type: 'success',
-                text1: 'Investor Registered',
-                text2: msg,
-            });
-            Alert.alert('Success', msg);
+                setCreateInvestorModal(false);
+                setEditingInvestor(null);
+                loadData();
+                const msg = `Investor "${companyName.trim()}" updated successfully!`;
+                setConfirmationMessage(msg);
+                Toast.show({
+                    type: 'success',
+                    text1: 'Investor Updated',
+                    text2: msg,
+                });
+                Alert.alert('Success', msg);
+            } else {
+                // Create new investor
+                await database.write(async () => {
+                    await database.get<AgriInvestor>('agri_investors').create(record => {
+                        record.companyName = companyName.trim();
+                        record.contactPerson = contactPerson.trim() || null;
+                        record.contactNumber = contactNumber.trim() || null;
+                        record.defaultOfftakePricePerKg = parseFloat(offtakeRate) || 4.0;
+                    });
+                });
+
+                setCreateInvestorModal(false);
+                loadData();
+                const msg = `Investor "${companyName.trim()}" registered successfully!`;
+                setConfirmationMessage(msg);
+                Toast.show({
+                    type: 'success',
+                    text1: 'Investor Registered',
+                    text2: msg,
+                });
+                Alert.alert('Success', msg);
+            }
         } catch (err: any) {
             Alert.alert('Error', err?.message || 'Failed to save investor');
         } finally {
             setSavingInvestor(false);
         }
+    };
+
+    const handleDeleteInvestor = (inv: AgriInvestor) => {
+        Alert.alert(
+            'Confirm Delete',
+            `Are you sure you want to remove investor "${inv.companyName}"?`,
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Delete',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            await database.write(async () => {
+                                const record = await database.get<AgriInvestor>('agri_investors').find(inv.id);
+                                await record.update(r => {
+                                    r.deletedAt = new Date();
+                                });
+                            });
+                            const msg = `Investor "${inv.companyName}" removed.`;
+                            setConfirmationMessage(msg);
+                            Toast.show({
+                                type: 'success',
+                                text1: 'Investor Removed',
+                                text2: msg,
+                            });
+                            setSelectedInvestorId('');
+                            loadData();
+                        } catch (err: any) {
+                            Alert.alert('Error', err?.message || 'Failed to delete investor');
+                        }
+                    },
+                },
+            ]
+        );
+    };
+
+    const handleDeleteLedgerEntry = (entry: AgriInvestorLedger) => {
+        Alert.alert(
+            'Confirm Delete',
+            `Are you sure you want to remove this ledger entry (${formatPHP(entry.amount)})?`,
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Delete',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            await database.write(async () => {
+                                const record = await database.get<AgriInvestorLedger>('agri_investor_ledgers').find(entry.id);
+                                await record.update(r => {
+                                    r.deletedAt = new Date();
+                                });
+                            });
+                            const msg = `Ledger entry removed.`;
+                            setConfirmationMessage(msg);
+                            Toast.show({
+                                type: 'success',
+                                text1: 'Entry Removed',
+                                text2: msg,
+                            });
+                            loadData();
+                        } catch (err: any) {
+                            Alert.alert('Error', err?.message || 'Failed to delete ledger entry');
+                        }
+                    },
+                },
+            ]
+        );
     };
 
     const handleRecordCapital = async () => {
@@ -213,7 +327,7 @@ export default function InvestorsScreen() {
                     </Text>
                 </View>
                 <Pressable
-                    onPress={() => setCreateInvestorModal(true)}
+                    onPress={handleOpenCreateInvestor}
                     className="bg-indigo-700 px-4 py-2.5 rounded-xl flex-row items-center gap-1.5 shadow-sm active:bg-indigo-800"
                 >
                     <MaterialIcons name="add" size={20} color="#FFFFFF" />
@@ -277,10 +391,24 @@ export default function InvestorsScreen() {
                                 Contact: {selectedInvestor.contactPerson || 'N/A'} ({selectedInvestor.contactNumber || 'No phone'})
                             </Text>
                         </View>
-                        <View className="bg-indigo-800/80 px-3 py-1.5 rounded-full border border-indigo-600">
-                            <Text className="text-indigo-100 text-xs font-bold">
-                                Rate: {formatPHP(selectedInvestor.defaultOfftakePricePerKg)} / kg
-                            </Text>
+                        <View className="flex-row items-center gap-2">
+                            <View className="bg-indigo-800/80 px-3 py-1.5 rounded-full border border-indigo-600">
+                                <Text className="text-indigo-100 text-xs font-bold">
+                                    Rate: {formatPHP(selectedInvestor.defaultOfftakePricePerKg)} / kg
+                                </Text>
+                            </View>
+                            <Pressable
+                                onPress={() => handleOpenEditInvestor(selectedInvestor)}
+                                className="bg-indigo-800/90 p-2 rounded-xl border border-indigo-700 active:bg-indigo-700"
+                            >
+                                <MaterialIcons name="edit" size={16} color="#FFFFFF" />
+                            </Pressable>
+                            <Pressable
+                                onPress={() => handleDeleteInvestor(selectedInvestor)}
+                                className="bg-rose-900/60 p-2 rounded-xl border border-rose-700 active:bg-rose-800"
+                            >
+                                <MaterialIcons name="delete-outline" size={16} color="#FECDD3" />
+                            </Pressable>
                         </View>
                     </View>
 
@@ -367,6 +495,12 @@ export default function InvestorsScreen() {
                                 <Text className="text-[10px] text-gray-400">
                                     {new Date(tx.transactionDate).toISOString().split('T')[0]}
                                 </Text>
+                                <Pressable
+                                    onPress={() => handleDeleteLedgerEntry(tx)}
+                                    className="p-1 rounded hover:bg-red-50 active:bg-red-100 mt-1"
+                                >
+                                    <MaterialIcons name="delete-outline" size={16} color="#EF4444" />
+                                </Pressable>
                             </View>
                         </View>
                     ))}
@@ -377,7 +511,9 @@ export default function InvestorsScreen() {
             <Modal visible={createInvestorModal} transparent animationType="fade">
                 <View className="flex-1 bg-black/50 justify-center items-center p-4">
                     <View className="bg-white rounded-3xl p-6 w-full max-w-md shadow-xl">
-                        <Text className="text-lg font-black text-gray-900 mb-3">Register Off-Take Investor</Text>
+                        <Text className="text-lg font-black text-gray-900 mb-3">
+                            {editingInvestor ? 'Edit Off-Take Investor' : 'Register Off-Take Investor'}
+                        </Text>
 
                         <Text className="text-xs font-bold text-gray-700 mb-1">Company Name *</Text>
                         <TextInput
@@ -424,14 +560,16 @@ export default function InvestorsScreen() {
                                 <Text className="font-bold text-gray-700 text-sm">Cancel</Text>
                             </Pressable>
                             <Pressable
-                                onPress={handleCreateInvestor}
+                                onPress={handleSaveInvestor}
                                 disabled={savingInvestor}
                                 className="flex-1 py-3 bg-indigo-700 rounded-xl items-center active:bg-indigo-800"
                             >
                                 {savingInvestor ? (
                                     <ActivityIndicator size="small" color="#FFFFFF" />
                                 ) : (
-                                    <Text className="font-bold text-white text-sm">Save Investor</Text>
+                                    <Text className="font-bold text-white text-sm">
+                                        {editingInvestor ? 'Update Investor' : 'Save Investor'}
+                                    </Text>
                                 )}
                             </Pressable>
                         </View>
