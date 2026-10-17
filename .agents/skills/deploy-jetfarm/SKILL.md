@@ -66,7 +66,20 @@ npx jest --no-coverage
 - **PHP Currency Compliance**: Ensure currency display strictly uses `formatPHP()` or `₱` format across all screens.
 - **Branding & Version Number Display**: Confirm `AppLogo`, `SidebarContent`, `login.tsx`, and download CTAs display the live application version (`v{getAppVersion()}`).
 
-### Gate 2.6: WatermelonDB ↔ Supabase Sync Contract
+### Gate 2.6: Database Schema Migrations & Status Check
+Check for pending database schema migrations before building or deploying:
+```powershell
+# 1. Dry run / status check of pending Supabase migrations on production database
+npm run db:migrate
+
+# 2. Verify schema columns, constraints, and tables match live database
+npm run db:migrate:verify
+
+# 3. If there are pending migrations, apply them carefully:
+npm run db:migrate:apply
+```
+
+### Gate 2.7: WatermelonDB ↔ Supabase Sync Contract
 Verify sync schema registration and production table mapping:
 ```powershell
 # 1. Schema contract regression test
@@ -76,12 +89,12 @@ npx jest src/database/schemaContracts.regression.test.ts
 node scripts/verify-sync-integrity.mjs --production
 ```
 
-### Gate 2.7: Double-Entry Accounting & Financial Parity
+### Gate 2.8: Double-Entry Accounting & Financial Parity
 - Verify that `chart_of_accounts`, `journal_entries`, and `journal_entry_lines` are mapped in `src/services/syncTableContract.json`.
 - Ensure all business unit operations trigger balanced debit/credit entries.
 - Verify PostgreSQL database trigger `trg_enforce_balanced_journal` is active on Supabase to reject unbalanced journals.
 
-### Gate 2.8: Playwright E2E Test Suite
+### Gate 2.9: Playwright E2E Test Suite
 Run automated browser tests simulating real operations:
 ```powershell
 npm run test:e2e
