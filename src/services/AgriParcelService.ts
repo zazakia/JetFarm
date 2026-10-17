@@ -1,14 +1,26 @@
 import { Database, Q } from '@nozbe/watermelondb';
+import randomId from '@nozbe/watermelondb/utils/common/randomId';
 import { database as globalDatabase } from '../database';
 import AgriParcel from '../database/models/AgriParcel';
 import AgriLandOwner from '../database/models/AgriLandOwner';
 import AgriCropCycle from '../database/models/AgriCropCycle';
+import AgriParcelBlock from '../database/models/AgriParcelBlock';
+import { ActionLogService, LogParams } from './ActionLogService';
+import { AuthService } from './AuthService';
+import uuid from 'react-native-uuid';
+import { AgriBlockService, prepareRequiredAudit, readParcelGeometry } from './AgriBlockService';
+import { assertAgriDatabaseUsable, runAuditedAgriBatch, writeAgriDatabase } from './AgriWriteSafety';
 import {
     GPSCoordinate,
     serializeGpsCoordinates,
+    isValidCoordinate,
 } from '../utils/coordinates';
+import { measureParcelGeometry, validateParcelGeometry } from '../utils/parcelGeometry';
 
 export type { GPSCoordinate };
+
+/** Cycle statuses that still occupy a parcel and block its deletion. */
+const OPEN_CYCLE_STATUS_VALUES = ['planning', 'land_prep', 'planted', 'growing', 'harvesting'];
 
 export interface CreateParcelInput {
     name: string;
@@ -16,46 +28,46 @@ export interface CreateParcelInput {
     landOwnerId: string;
     areaHectares: number;
     locationAddress?: string;
-    gpsCoordinates?: GPSCoordinate[];
+    gpsCoordinates?: GPSCoordinate[] | null;
     soilType?: string;
     status?: string;
 }
 
 export class AgriParcelService {
-    /**
-     * Calculates area of a closed GPS polygon in hectares using projected planar Shoelace formula.
-     * 1 hectare = 10,000 square meters.
-     */
+    /** Legacy display/saved-hectares wrapper; shared geometry calculations remain unrounded. */
     static calculatePolygonAreaHectares(coords: GPSCoordinate[]): number {
         if (!coords || coords.length < 3) return 0;
+        return Number(measureParcelGeometry({ outer: coords, holes: [] }).areaHectares.toFixed(4));
+    }
 
-        const R = 6378137; // Earth radius in meters
-        const rad = Math.PI / 180;
-
-        // Calculate average latitude for projection
-        const avgLat = coords.reduce((sum, c) => sum + c.latitude, 0) / coords.length;
-        const avgLatRad = avgLat * rad;
-        const cosAvgLat = Math.cos(avgLatRad);
-
-        // Convert coordinates to planar meters
-        const points = coords.map(c => ({
-            x: R * c.longitude * rad * cosAvgLat,
-            y: R * c.latitude * rad,
-        }));
-
-        // Shoelace formula
-        let area = 0;
-        const n = points.length;
-        for (let i = 0; i < n; i++) {
-            const j = (i + 1) % n;
-            area += points[i].x * points[j].y;
-            area -= points[j].x * points[i].y;
+    /** Null/empty and a valid legacy point are supported; every new boundary must be valid. */
+    private static validateGpsWrite(coords: GPSCoordinate[] | null | undefined): void {
+        if (coords == null) return;
+        if (!Array.isArray(coords) || coords.some(p => !p || !isValidCoordinate(p.latitude, p.longitude))) {
+            throw new Error('Invalid GPS coordinates');
         }
+        if (coords.length === 0 || coords.length === 1) return;
+        const errors = validateParcelGeometry({ outer: coords, holes: [] });
+        if (errors.length) throw new Error(`Invalid GPS geometry: ${errors.join('; ')}`);
+    }
 
-        const areaSqMeters = Math.abs(area) / 2;
-        const areaHectares = areaSqMeters / 10000;
+    /**
+     * Resolves the operator identity recorded on audit trail entries.
+     */
+    private static async resolveAuditUser(performedBy?: string): Promise<string> {
+        return performedBy || (await AuthService.getCurrentUserId()) || 'system';
+    }
 
-        return Number(areaHectares.toFixed(4));
+    private static prepareParcelAudit(db: Database, params: LogParams[], user: string): any[] {
+        const carriesMapping = params.some(param => [param.oldData, param.newData].some(data => data &&
+            (data.gps_coordinates || data.gps_exclusions || data.layout_revision > 0 || data.boundary_revision > 0)));
+        const logs = carriesMapping ? prepareRequiredAudit(db, params, user)
+            : new ActionLogService(db).prepareLogActionsSync(params, user);
+        // Unmapped registry edits also require audits, but keep their existing remote scope.
+        if (!Array.isArray(logs) || logs.length !== params.length || logs.some(log => !log || log.table !== 'action_logs')) {
+            throw new Error('Required audit records could not be prepared');
+        }
+        return logs;
     }
 
     /**
@@ -63,28 +75,42 @@ export class AgriParcelService {
      */
     static async createParcel(
         input: CreateParcelInput,
-        db: Database = globalDatabase
+        db: Database = globalDatabase,
+        performedBy?: string
     ): Promise<AgriParcel> {
-        let parcel: AgriParcel | null = null;
+        assertAgriDatabaseUsable(db);
+        this.validateGpsWrite(input.gpsCoordinates);
+        // Snapshot caller-owned fields before identity resolution or FIFO scheduling.
+        const command = { ...input, gpsCoordinates: serializeGpsCoordinates(input.gpsCoordinates) };
+        const auditUser = await this.resolveAuditUser(performedBy);
 
-        await db.write(async () => {
-            parcel = await db.get<AgriParcel>('agri_parcels').create(record => {
-                record.name = input.name;
-                record.code = input.code || `PCL-${Date.now().toString().slice(-4)}`;
-                record.landOwnerId = input.landOwnerId;
-                record.areaHectares = input.areaHectares;
-                record.locationAddress = input.locationAddress || null;
-                record.gpsCoordinates = serializeGpsCoordinates(input.gpsCoordinates);
-                record.soilType = input.soilType || 'Loam';
-                record.status = input.status || 'available';
+        return writeAgriDatabase(db, async () => {
+            const now = Date.now();
+            const values = {
+                id: randomId(), name: command.name, code: command.code || `PCL-${now.toString().slice(-4)}`,
+                land_owner_id: command.landOwnerId, area_hectares: command.areaHectares,
+                location_address: command.locationAddress || null, gps_coordinates: command.gpsCoordinates,
+                gps_exclusions: null, boundary_revision: 0, layout_revision: 0, boundary_saved_at: null,
+                soil_type: command.soilType || 'Loam', status: command.status || 'available',
+                created_at: now, updated_at: now, deleted_at: null,
+            };
+            const collection = db.get<AgriParcel>('agri_parcels');
+            // Legacy-schema migration fixtures have no mapping columns yet; audit only persisted fields.
+            const snapshot = Object.fromEntries(Object.entries(values).filter(([column]) => column === 'id' || collection.schema.columns[column]));
+            const audits = this.prepareParcelAudit(db, [{ entityType: 'agri_parcels', entityId: values.id,
+                action: 'CREATE', newData: { ...snapshot, _status: 'created', _changed: '' } }], auditUser);
+            let parcel!: AgriParcel;
+            await runAuditedAgriBatch(db, () => {
+                parcel = collection.prepareCreate(record => {
+                    record._raw.id = values.id;
+                    for (const [column, value] of Object.entries(snapshot)) {
+                        if (column !== 'id') record._setRaw(column, value);
+                    }
+                });
+                return [parcel, ...audits];
             });
+            return parcel;
         });
-
-        if (!parcel) {
-            throw new Error('Failed to create parcel');
-        }
-
-        return parcel;
     }
 
     /**
@@ -93,23 +119,106 @@ export class AgriParcelService {
     static async updateParcel(
         parcelId: string,
         updates: Partial<CreateParcelInput>,
+        db: Database = globalDatabase,
+        performedBy?: string
+    ): Promise<AgriParcel> {
+        assertAgriDatabaseUsable(db);
+        this.validateGpsWrite(updates.gpsCoordinates);
+        const command = { ...updates, ...(updates.gpsCoordinates === undefined ? {} : {
+            gpsCoordinates: updates.gpsCoordinates?.map(point => ({ ...point })) ?? null,
+        }) };
+        let parcel = await db.get<AgriParcel>('agri_parcels').find(parcelId);
+        // Capture before awaiting identity/writer scheduling; never use the later cached revision.
+        const expectedRevision = parcel.layoutRevision;
+        const operationId = command.gpsCoordinates !== undefined ? uuid.v4() as string : undefined;
+        const auditUser = await this.resolveAuditUser(performedBy);
+        const hasGps = command.gpsCoordinates !== undefined;
+        if (hasGps) {
+            if (!command.gpsCoordinates?.length) {
+                await AgriBlockService.clearBoundary({ parcelId, expectedRevision, operationId: operationId! }, db, auditUser);
+            } else {
+                const oldGeometry = readParcelGeometry(parcel);
+                await AgriBlockService.saveBoundary({ parcelId, expectedRevision, operationId: operationId!,
+                    geometry: { outer: command.gpsCoordinates,
+                        holes: command.gpsCoordinates.length === 1 ? [] : oldGeometry.holes } }, db, auditUser);
+            }
+        }
+        const hasMetadata = Object.entries(command).some(([key, value]) => value !== undefined
+            && key !== 'gpsCoordinates' && !(hasGps && key === 'areaHectares'));
+        // GPS delegates own their FIFO/writer. Metadata enters separately, never nests that gate.
+        if (hasMetadata) await writeAgriDatabase(db, async () => {
+            // A preceding sync can remove the model while this command awaits the FIFO.
+            // Missing/soft-deleted targets are ordinary validation errors, before preparation.
+            parcel = await db.get<AgriParcel>('agri_parcels').find(parcelId);
+            if (parcel.deletedAt) throw new Error('Cannot update a deleted parcel');
+            const oldData = { ...parcel._raw };
+            const values = {
+                ...(command.name === undefined ? {} : { name: command.name }),
+                ...(command.code === undefined ? {} : { code: command.code }),
+                ...(command.landOwnerId === undefined ? {} : { land_owner_id: command.landOwnerId }),
+                // A GPS command owns measured (polygon) or registered (clear/point) hectares.
+                ...(hasGps || command.areaHectares === undefined ? {} : { area_hectares: command.areaHectares }),
+                ...(command.locationAddress === undefined ? {} : { location_address: command.locationAddress }),
+                ...(command.soilType === undefined ? {} : { soil_type: command.soilType }),
+                ...(command.status === undefined ? {} : { status: command.status }),
+                updated_at: Date.now(),
+            };
+            const audits = this.prepareParcelAudit(db, [{ entityType: 'agri_parcels', entityId: parcelId,
+                action: 'UPDATE', oldData, newData: { ...oldData, ...values } }], auditUser);
+            await runAuditedAgriBatch(db, () => [parcel.prepareUpdate(record => {
+                for (const [column, value] of Object.entries(values)) record._setRaw(column, value);
+            }), ...audits]);
+        });
+        return parcel;
+    }
+
+    /**
+     * Soft-delete a parcel. Blocked while the parcel still carries an open crop
+     * cycle so harvest and settlement history never becomes orphaned.
+     */
+    static async deleteParcel(
+        parcelId: string,
+        performedBy?: string,
         db: Database = globalDatabase
     ): Promise<AgriParcel> {
-        const parcel = await db.get<AgriParcel>('agri_parcels').find(parcelId);
+        assertAgriDatabaseUsable(db);
+        let parcel = await db.get<AgriParcel>('agri_parcels').find(parcelId);
 
-        await db.write(async () => {
-            await parcel.update(record => {
-                if (updates.name !== undefined) record.name = updates.name;
-                if (updates.code !== undefined) record.code = updates.code;
-                if (updates.landOwnerId !== undefined) record.landOwnerId = updates.landOwnerId;
-                if (updates.areaHectares !== undefined) record.areaHectares = updates.areaHectares;
-                if (updates.locationAddress !== undefined) record.locationAddress = updates.locationAddress;
-                if (updates.gpsCoordinates !== undefined) {
-                    record.gpsCoordinates = serializeGpsCoordinates(updates.gpsCoordinates);
-                }
-                if (updates.soilType !== undefined) record.soilType = updates.soilType;
-                if (updates.status !== undefined) record.status = updates.status;
-            });
+        const openCycles = await db.get<AgriCropCycle>('agri_crop_cycles').query(
+            Q.where('parcel_id', parcelId),
+            Q.where('deleted_at', null),
+            Q.where('status', Q.oneOf(OPEN_CYCLE_STATUS_VALUES))
+        ).fetch();
+
+        if (openCycles.length > 0) {
+            const codes = openCycles.map(c => c.cycleCode).join(', ');
+            throw new Error(
+                `Cannot delete this parcel: it still has an active crop cycle (${codes}). Complete or delete those cycles first.`
+            );
+        }
+
+        const auditUser = await this.resolveAuditUser(performedBy);
+
+        await writeAgriDatabase(db, async () => {
+            parcel = await db.get<AgriParcel>('agri_parcels').find(parcelId);
+            if (parcel.deletedAt) throw new Error('Cannot delete an already deleted parcel');
+            const blocks = await db.get<AgriParcelBlock>('agri_parcel_blocks').query(
+                Q.where('parcel_id', parcelId), Q.where('deleted_at', null), Q.where('status', 'active')
+            ).fetchCount();
+            if (blocks) throw new Error('Cannot delete parcel with retained blocks; archive them first');
+            // Recheck inside the writer so an intervening crop creation cannot be orphaned.
+            if (await db.get<AgriCropCycle>('agri_crop_cycles').query(
+                Q.where('parcel_id', parcelId), Q.where('deleted_at', null),
+                Q.where('status', Q.oneOf(OPEN_CYCLE_STATUS_VALUES))
+            ).fetchCount()) throw new Error('Cannot delete parcel with an active crop cycle');
+            const oldData = { ...parcel._raw };
+            const now = Date.now();
+            const audits = this.prepareParcelAudit(db, [{ entityType: 'agri_parcels', entityId: parcelId,
+                action: 'DELETE', oldData }], auditUser);
+            await runAuditedAgriBatch(db, () => [parcel.prepareUpdate(record => {
+                record.deletedAt = new Date(now);
+                record.updatedAt = new Date(now);
+            }), ...audits]);
         });
 
         return parcel;
@@ -122,12 +231,14 @@ export class AgriParcelService {
         statusFilter?: string,
         db: Database = globalDatabase
     ): Promise<Array<{ parcel: AgriParcel; landOwner: AgriLandOwner | null; activeCycle: AgriCropCycle | null }>> {
+        assertAgriDatabaseUsable(db);
         const clauses: any[] = [Q.where('deleted_at', null)];
         if (statusFilter && statusFilter !== 'all') {
             clauses.push(Q.where('status', statusFilter));
         }
 
         const parcels = await db.get<AgriParcel>('agri_parcels').query(...clauses).fetch();
+        assertAgriDatabaseUsable(db);
         const results = [];
 
         for (const parcel of parcels) {
@@ -154,6 +265,7 @@ export class AgriParcelService {
             });
         }
 
+        assertAgriDatabaseUsable(db);
         return results;
     }
 }

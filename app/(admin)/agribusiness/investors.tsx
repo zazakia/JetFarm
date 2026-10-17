@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import { usePageContentStyle } from '../../../src/hooks/useResponsiveLayout';
 import { View, Text, ScrollView, Pressable, ActivityIndicator, TextInput, Modal, Alert, RefreshControl } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -14,6 +15,7 @@ import Toast from '../../../src/components/AppToast';
 
 export default function InvestorsScreen() {
     const router = useRouter();
+    const pageContentStyle = usePageContentStyle();
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [confirmationMessage, setConfirmationMessage] = useState<string | null>(null);
@@ -199,12 +201,12 @@ export default function InvestorsScreen() {
     return (
         <ScrollView
             className="flex-1 bg-gray-50"
-            contentContainerStyle={{ padding: 20 }}
+            contentContainerStyle={pageContentStyle}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         >
             {/* Header */}
-            <View className="flex-row justify-between items-center mb-6">
-                <View>
+            <View className="flex-row flex-wrap justify-between items-center mb-6">
+                <View className="flex-1 min-w-0 mr-3">
                     <Text className="text-2xl font-black text-gray-900">Investor Capital & Off-Take</Text>
                     <Text className="text-sm text-gray-500 mt-0.5">
                         Track partner funding (BioGreen), harvested off-take deliveries & running balance

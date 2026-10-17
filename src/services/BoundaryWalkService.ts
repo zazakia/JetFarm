@@ -24,7 +24,7 @@ export const DEFAULT_WALK_SETTINGS: WalkSettings = {
 export function isFixAccepted(fix: GPSFix, settings: WalkSettings): boolean {
     if (!fix || !fix.coordinate) return false;
     if (!isValidCoordinate(fix.coordinate.latitude, fix.coordinate.longitude)) return false;
-    if (fix.accuracyMeters == null) return true;
+    if (fix.accuracyMeters == null || !Number.isFinite(fix.accuracyMeters) || fix.accuracyMeters < 0) return false;
     return fix.accuracyMeters <= settings.maxAccuracyMeters;
 }
 

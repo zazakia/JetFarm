@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
+import { usePageContentStyle } from '../../../src/hooks/useResponsiveLayout';
 import { View, Text, ScrollView, Pressable, ActivityIndicator, TextInput, Modal, Alert, RefreshControl } from 'react-native';
-import { useRouter, useFocusEffect } from 'expo-router';
+import { useRouter, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { database } from '../../../src/database';
 import AgriParcel from '../../../src/database/models/AgriParcel';
@@ -10,15 +11,19 @@ import { LookupDataService } from '../../../src/services/LookupDataService';
 import { DynamicSearchBar } from '../../../src/components/DynamicSearchBar';
 import { useDynamicSearch } from '../../../src/hooks/useDynamicSearch';
 import { TransactionConfirmationBanner } from '../../../src/components/TransactionConfirmationBanner';
+import ConfirmDialog from '../../../src/components/ConfirmDialog';
 import Toast from '../../../src/components/AppToast';
 
 export default function ParcelsRegistryScreen() {
     const router = useRouter();
+    const { mapRegistration } = useLocalSearchParams<{ mapRegistration?: string }>();
+    const pageContentStyle = usePageContentStyle();
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [statusFilter, setStatusFilter] = useState('all');
     const [parcelsList, setParcelsList] = useState<any[]>([]);
     const [confirmationMessage, setConfirmationMessage] = useState<string | null>(null);
+    const [confirmationTitle, setConfirmationTitle] = useState('Parcel Registered Successfully');
 
     const {
         query: searchQuery,
@@ -40,6 +45,8 @@ export default function ParcelsRegistryScreen() {
     // Modal state
     const [modalVisible, setModalVisible] = useState(false);
     const [saving, setSaving] = useState(false);
+    const [editingParcelId, setEditingParcelId] = useState<string | null>(null);
+    const [editingOwnerName, setEditingOwnerName] = useState<string | null>(null);
     const [parcelName, setParcelName] = useState('');
     const [parcelCode, setParcelCode] = useState('');
     const [ownerName, setOwnerName] = useState('');
@@ -48,6 +55,17 @@ export default function ParcelsRegistryScreen() {
     const [locationAddress, setLocationAddress] = useState('');
     const [soilType, setSoilType] = useState('Loam');
     const [soilTypeOptions, setSoilTypeOptions] = useState<string[]>([]);
+
+    // Delete confirmation (Alert.alert is a no-op on react-native-web).
+    // A single dialog instance is reused for confirm + error so two RN modals
+    // never overlap while one is mid-close.
+    const [parcelToDelete, setParcelToDelete] = useState<any | null>(null);
+    const [dialog, setDialog] = useState<{
+        mode: 'confirm' | 'alert';
+        title: string;
+        message: string;
+        confirmLabel?: string;
+    } | null>(null);
 
     const loadParcels = async () => {
         try {
@@ -74,20 +92,76 @@ export default function ParcelsRegistryScreen() {
         loadParcels();
     };
 
-    const handleCreateParcel = async () => {
-        if (!parcelName.trim() || !ownerName.trim() || !areaHectares.trim()) {
-            Alert.alert('Validation Error', 'Please enter parcel name, landowner name, and area in hectares.');
+    const resetForm = () => {
+        setParcelName('');
+        setParcelCode('');
+        setOwnerName('');
+        setOwnerPhone('');
+        setAreaHectares('');
+        setLocationAddress('');
+        setSoilType('Loam');
+        setEditingParcelId(null);
+        setEditingOwnerName(null);
+    };
+
+    const openCreateModal = () => {
+        resetForm();
+        setModalVisible(true);
+    };
+
+    const handleOpenEdit = (parcel: any, landOwner: any) => {
+        setEditingParcelId(parcel.id);
+        setEditingOwnerName(landOwner?.name || null);
+        setParcelName(parcel.name || '');
+        setParcelCode(parcel.code || '');
+        setOwnerName(landOwner?.name || '');
+        setOwnerPhone(landOwner?.contactNumber || '');
+        setAreaHectares(String(parcel.areaHectares ?? ''));
+        setLocationAddress(parcel.locationAddress || '');
+        setSoilType(parcel.soilType || 'Loam');
+        setModalVisible(true);
+    };
+
+    const measureOnMap = mapRegistration === '1' && !editingParcelId;
+    const handleSaveParcel = async () => {
+        if (!parcelName.trim() || (!measureOnMap && !areaHectares.trim())) {
+            Alert.alert('Validation Error', 'Please enter parcel name and area in hectares.');
+            return;
+        }
+        if (!editingParcelId && !ownerName.trim()) {
+            Alert.alert('Validation Error', 'Please enter landowner name.');
             return;
         }
 
-        const ha = parseFloat(areaHectares);
-        if (isNaN(ha) || ha <= 0) {
+        // Zero means explicitly unmeasured in the mapping registration flow only.
+        const ha = measureOnMap ? 0 : parseFloat(areaHectares);
+        if (!measureOnMap && (isNaN(ha) || ha <= 0)) {
             Alert.alert('Validation Error', 'Please enter a valid positive number for area in hectares.');
             return;
         }
 
         setSaving(true);
         try {
+            if (editingParcelId) {
+                await AgriParcelService.updateParcel(editingParcelId, {
+                    name: parcelName.trim(),
+                    code: parcelCode.trim() || undefined,
+                    areaHectares: ha,
+                    locationAddress: locationAddress.trim() || undefined,
+                    soilType: soilType || 'Loam',
+                });
+
+                setModalVisible(false);
+                const msg = `Parcel "${parcelName.trim()}" updated successfully${editingOwnerName ? ` (landowner ${editingOwnerName} and contract terms unchanged)` : ''}.`;
+                setConfirmationTitle('Parcel Updated Successfully');
+                setConfirmationMessage(msg);
+                Toast.show({ type: 'success', text1: 'Parcel Updated', text2: msg });
+                resetForm();
+                loadParcels();
+                Alert.alert('Success', msg);
+                return;
+            }
+
             // 1. Create Land Owner first
             let landOwner: AgriLandOwner | null = null;
             await database.write(async () => {
@@ -102,7 +176,7 @@ export default function ParcelsRegistryScreen() {
             if (!landOwner) throw new Error('Failed to create landowner');
 
             // 2. Create Parcel
-            await AgriParcelService.createParcel({
+            const registeredParcel = await AgriParcelService.createParcel({
                 name: parcelName.trim(),
                 code: parcelCode.trim() || undefined,
                 landOwnerId: (landOwner as AgriLandOwner).id,
@@ -113,7 +187,10 @@ export default function ParcelsRegistryScreen() {
             });
 
             setModalVisible(false);
-            const msg = `Parcel "${parcelName.trim()}" (${parseFloat(areaHectares) || 1} ha) registered successfully with standard ₱1.00/kg & ₱25k minimum guarantee!`;
+            const msg = measureOnMap
+                ? `Parcel "${parcelName.trim()}" registered. Area is unmeasured until you review and save its mapped boundary.`
+                : `Parcel "${parcelName.trim()}" (${ha} ha) registered successfully with standard ₱1.00/kg & ₱25k minimum guarantee!`;
+            setConfirmationTitle('Parcel Registered Successfully');
             setConfirmationMessage(msg);
             Toast.show({
                 type: 'success',
@@ -121,39 +198,73 @@ export default function ParcelsRegistryScreen() {
                 text2: msg,
             });
 
-            setParcelName('');
-            setParcelCode('');
-            setOwnerName('');
-            setOwnerPhone('');
-            setAreaHectares('');
-            setLocationAddress('');
+            resetForm();
             loadParcels();
-            Alert.alert('Success', msg);
+            if (measureOnMap) {
+                router.push({ pathname: '/(admin)/agribusiness/mapping', params: { parcelId: registeredParcel.id } });
+            } else Alert.alert('Success', msg);
         } catch (error: any) {
-            Alert.alert('Error', error?.message || 'Failed to register parcel');
+            Alert.alert('Error', error?.message || 'Failed to save parcel');
         } finally {
             setSaving(false);
+        }
+    };
+
+    const handleDeleteParcel = (parcel: any) => {
+        setParcelToDelete(parcel);
+        setDialog({
+            mode: 'confirm',
+            title: 'Delete Land Parcel',
+            message: `Are you sure you want to remove parcel "${parcel.name}" (${parcel.code || 'no code'})? This records a deletion in the audit log and hides it from the registry.`,
+            confirmLabel: 'Delete',
+        });
+    };
+
+    const closeDialog = () => {
+        setDialog(null);
+        setParcelToDelete(null);
+    };
+
+    const handleDialogConfirm = async () => {
+        if (dialog?.mode !== 'confirm' || !parcelToDelete) return;
+
+        const target = parcelToDelete;
+        try {
+            await AgriParcelService.deleteParcel(target.id);
+            closeDialog();
+            const msg = `Parcel "${target.name}" deleted and logged in the audit trail.`;
+            setConfirmationTitle('Parcel Deleted');
+            setConfirmationMessage(msg);
+            Toast.show({ type: 'success', text1: 'Parcel Deleted', text2: msg });
+            loadParcels();
+        } catch (error: any) {
+            setParcelToDelete(null);
+            setDialog({
+                mode: 'alert',
+                title: 'Cannot Delete Parcel',
+                message: error?.message || 'Failed to delete parcel. The attempt was logged.',
+            });
         }
     };
 
     return (
         <ScrollView
             className="flex-1 bg-gray-50"
-            contentContainerStyle={{ padding: 20 }}
+            contentContainerStyle={pageContentStyle}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         >
             {/* Header */}
             <View className="flex-row justify-between items-center mb-6">
-                <View>
-                    <Text className="text-2xl font-black text-gray-900">Land Parcels Registry</Text>
-                    <Text className="text-sm text-gray-500 mt-0.5">
+                <View className="flex-1 min-w-0 mr-3">
+                    <Text className="text-2xl font-black text-gray-900" numberOfLines={2}>Land Parcels Registry</Text>
+                    <Text className="text-sm text-gray-500 mt-0.5" numberOfLines={2}>
                         Track land parcels, acreage, soil quality, and landowners
                     </Text>
                 </View>
                 <Pressable
-                    onPress={() => setModalVisible(true)}
+                    onPress={openCreateModal}
                     testID="register-parcel-button"
-                    className="bg-emerald-700 px-4 py-2.5 rounded-xl flex-row items-center gap-1.5 shadow-sm active:bg-emerald-800"
+                    className="bg-emerald-700 px-4 py-2.5 rounded-xl flex-row items-center gap-1.5 shadow-sm active:bg-emerald-800 shrink-0"
                 >
                     <MaterialIcons name="add" size={20} color="#FFFFFF" />
                     <Text className="text-white font-bold text-sm">Register Parcel</Text>
@@ -163,7 +274,7 @@ export default function ParcelsRegistryScreen() {
             {/* Inline Confirmation Banner */}
             {confirmationMessage && (
                 <TransactionConfirmationBanner
-                    title="Parcel Registered Successfully"
+                    title={confirmationTitle}
                     message={confirmationMessage}
                     onDismiss={() => setConfirmationMessage(null)}
                 />
@@ -178,7 +289,7 @@ export default function ParcelsRegistryScreen() {
             />
 
             {/* Filter Tabs */}
-            <View className="flex-row gap-2 mb-5 overflow-x-auto">
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row gap-2 mb-5">
                 {[
                     { id: 'all', label: 'All Parcels' },
                     { id: 'available', label: 'Available' },
@@ -189,7 +300,7 @@ export default function ParcelsRegistryScreen() {
                     <Pressable
                         key={tab.id}
                         onPress={() => setStatusFilter(tab.id)}
-                        className={`px-4 py-2 rounded-xl border ${
+                        className={`px-4 py-2 rounded-xl border shrink-0 ${
                             statusFilter === tab.id
                                 ? 'bg-emerald-800 border-emerald-800'
                                 : 'bg-white border-gray-200 active:bg-gray-100'
@@ -204,7 +315,7 @@ export default function ParcelsRegistryScreen() {
                         </Text>
                     </Pressable>
                 ))}
-            </View>
+            </ScrollView>
 
             {/* Parcels List */}
             {loading ? (
@@ -232,7 +343,7 @@ export default function ParcelsRegistryScreen() {
                         </Pressable>
                     ) : (
                         <Pressable
-                            onPress={() => setModalVisible(true)}
+                            onPress={openCreateModal}
                             className="bg-emerald-700 px-5 py-2 rounded-xl"
                         >
                             <Text className="text-white font-bold text-sm">Add Parcel</Text>
@@ -240,12 +351,12 @@ export default function ParcelsRegistryScreen() {
                     )}
                 </View>
             ) : (
-                <View className="gap-3">
+                <View className="flex-row flex-wrap justify-between gap-3">
                     {filteredParcels.map(({ parcel, landOwner, activeCycle }: any) => (
                         <View
                             key={parcel.id}
                             testID={`parcel-card-${parcel.id}`}
-                            className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm"
+                            className="w-full md:w-[48%] bg-white p-5 rounded-2xl border border-gray-200 shadow-sm"
                         >
                             <View className="flex-row justify-between items-start mb-2">
                                 <View>
@@ -274,6 +385,24 @@ export default function ParcelsRegistryScreen() {
                                     <Text className="text-xs text-gray-500">
                                         {(parcel.areaHectares * 10000).toLocaleString()} m²
                                     </Text>
+                                    <View className="flex-row gap-2 mt-2">
+                                        <Pressable
+                                            onPress={() => handleOpenEdit(parcel, landOwner)}
+                                            testID={`parcel-edit-${parcel.id}`}
+                                            className="flex-row items-center gap-1 bg-gray-100 px-2.5 py-1.5 rounded-lg active:bg-gray-200"
+                                        >
+                                            <MaterialIcons name="edit" size={14} color="#374151" />
+                                            <Text className="text-gray-700 font-bold text-xs">Edit</Text>
+                                        </Pressable>
+                                        <Pressable
+                                            onPress={() => handleDeleteParcel(parcel)}
+                                            testID={`parcel-delete-${parcel.id}`}
+                                            className="flex-row items-center gap-1 bg-red-50 border border-red-200 px-2.5 py-1.5 rounded-lg active:bg-red-100"
+                                        >
+                                            <MaterialIcons name="delete-outline" size={14} color="#DC2626" />
+                                            <Text className="text-red-700 font-bold text-xs">Delete</Text>
+                                        </Pressable>
+                                    </View>
                                 </View>
                             </View>
 
@@ -330,7 +459,9 @@ export default function ParcelsRegistryScreen() {
                 <View className="flex-1 bg-black/50 justify-center items-center p-4">
                     <View className="bg-white rounded-3xl p-6 w-full max-w-lg shadow-xl">
                         <View className="flex-row justify-between items-center mb-4">
-                            <Text className="text-xl font-black text-gray-900">Register Land Parcel</Text>
+                            <Text className="text-xl font-black text-gray-900">
+                                {editingParcelId ? 'Edit Land Parcel' : 'Register Land Parcel'}
+                            </Text>
                             <Pressable onPress={() => setModalVisible(false)} className="p-1">
                                 <MaterialIcons name="close" size={24} color="#6B7280" />
                             </Pressable>
@@ -357,14 +488,24 @@ export default function ParcelsRegistryScreen() {
                                 className="bg-gray-50 border border-gray-300 rounded-xl p-3 text-sm text-gray-900 mb-3"
                             />
 
-                            <Text className="text-xs font-bold text-gray-700 mb-1">Land Owner Name *</Text>
+                            <Text className="text-xs font-bold text-gray-700 mb-1">
+                                {editingParcelId ? 'Land Owner (unchanged)' : 'Land Owner Name *'}
+                            </Text>
+                            {editingParcelId && (
+                                <Text className="text-xs text-amber-700 mb-1">
+                                    Registered under {editingOwnerName || 'Unassigned'} — ₱1.00/kg and ₱25,000 guaranteed minimum stay locked.
+                                </Text>
+                            )}
                             <TextInput
                                 value={ownerName}
                                 onChangeText={setOwnerName}
                                 placeholder="e.g. Don Ramon Valderrama"
                                 placeholderTextColor="#9CA3AF"
+                                editable={!editingParcelId}
                                 testID="landowner-name-input"
-                                className="bg-gray-50 border border-gray-300 rounded-xl p-3 text-sm text-gray-900 mb-3"
+                                className={`border border-gray-300 rounded-xl p-3 text-sm mb-3 ${
+                                    editingParcelId ? 'bg-gray-100 text-gray-500' : 'bg-gray-50 text-gray-900'
+                                }`}
                             />
 
                             <Text className="text-xs font-bold text-gray-700 mb-1">Land Owner Contact Phone</Text>
@@ -373,19 +514,22 @@ export default function ParcelsRegistryScreen() {
                                 onChangeText={setOwnerPhone}
                                 placeholder="0917-XXX-XXXX"
                                 placeholderTextColor="#9CA3AF"
+                                editable={!editingParcelId}
                                 className="bg-gray-50 border border-gray-300 rounded-xl p-3 text-sm text-gray-900 mb-3"
                             />
 
-                            <Text className="text-xs font-bold text-gray-700 mb-1">Area (Hectares) *</Text>
-                            <TextInput
-                                value={areaHectares}
-                                onChangeText={setAreaHectares}
-                                placeholder="e.g. 3.5"
-                                keyboardType="numeric"
-                                placeholderTextColor="#9CA3AF"
-                                testID="parcel-area-input"
-                                className="bg-gray-50 border border-gray-300 rounded-xl p-3 text-sm text-gray-900 mb-3"
-                            />
+                            {measureOnMap ? <Text className="text-sm text-green-800 mb-3">Area will be measured from your mapped boundary. The parcel is explicitly unmeasured until review and Save.</Text> : <>
+                                <Text className="text-xs font-bold text-gray-700 mb-1">Area (Hectares) *</Text>
+                                <TextInput
+                                    value={areaHectares}
+                                    onChangeText={setAreaHectares}
+                                    placeholder="e.g. 3.5"
+                                    keyboardType="numeric"
+                                    placeholderTextColor="#9CA3AF"
+                                    testID="parcel-area-input"
+                                    className="bg-gray-50 border border-gray-300 rounded-xl p-3 text-sm text-gray-900 mb-3"
+                                />
+                            </>}
 
                             <Text className="text-xs font-bold text-gray-700 mb-1">Location Address</Text>
                             <TextInput
@@ -444,7 +588,7 @@ export default function ParcelsRegistryScreen() {
                                 <Text className="font-bold text-gray-700 text-sm">Cancel</Text>
                             </Pressable>
                             <Pressable
-                                onPress={handleCreateParcel}
+                                onPress={handleSaveParcel}
                                 disabled={saving}
                                 testID="save-parcel-button"
                                 className="flex-1 py-3 bg-emerald-700 rounded-xl items-center active:bg-emerald-800"
@@ -452,13 +596,27 @@ export default function ParcelsRegistryScreen() {
                                 {saving ? (
                                     <ActivityIndicator size="small" color="#FFFFFF" />
                                 ) : (
-                                    <Text className="font-bold text-white text-sm">Save Parcel</Text>
+                                    <Text className="font-bold text-white text-sm">
+                                        {editingParcelId ? 'Update Parcel' : 'Save Parcel'}
+                                    </Text>
                                 )}
                             </Pressable>
                         </View>
                     </View>
                 </View>
             </Modal>
+
+            {/* Delete Confirmation (web-safe: Alert.alert is a no-op on react-native-web) */}
+            <ConfirmDialog
+                visible={!!dialog}
+                mode={dialog?.mode || 'confirm'}
+                title={dialog?.title || ''}
+                message={dialog?.message || ''}
+                confirmLabel={dialog?.confirmLabel}
+                onConfirm={handleDialogConfirm}
+                onCancel={closeDialog}
+                isDestructive={dialog?.mode !== 'alert'}
+            />
         </ScrollView>
     );
 }

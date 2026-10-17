@@ -1,141 +1,132 @@
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { View } from 'react-native';
 import L from 'leaflet';
-import {
-    MapContainer,
-    TileLayer,
-    Polygon,
-    Marker,
-    CircleMarker,
-    useMap,
-    useMapEvents,
-} from 'react-leaflet';
+import { MapContainer, TileLayer, Polygon, Polyline, Marker, CircleMarker, Tooltip, useMap, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
-import { ParcelMapProps, PARCEL_MAP_DEFAULT_HEIGHT } from './types';
-import { GPSCoordinate } from '../../utils/coordinates';
+import { ParcelMapFeature, ParcelMapProps } from './types';
+import { GPSCoordinate, distanceMeters, isValidCoordinate } from '../../utils/coordinates';
 import { PARCEL_MAP_DEFAULT_CENTER } from './webview-html';
+import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
+import { Colors } from '../../constants/colors';
 
-const PARCEL_COLOR = '#0F766E';
-const LIVE_COLOR = '#2563EB';
+const positions = (coords: GPSCoordinate[]): [number, number][] => coords.map(c => [c.latitude, c.longitude]);
+const featureColor = (feature: ParcelMapFeature) => feature.selected ? Colors.error : feature.kind === 'parcel' || feature.status === 'completed' ? Colors.success : feature.status === 'in_progress' ? Colors.info : Colors.warning;
+const vertexIcon = (index: number, selected: boolean) => L.divIcon({
+    className: 'parcel-vertex-icon',
+    html: `<div data-vertex-index="${index}" style="width:44px;height:44px;display:flex;align-items:center;justify-content:center"><div style="width:${selected ? 22 : 16}px;height:${selected ? 22 : 16}px;border-radius:50%;background:${selected ? Colors.info : Colors.error};border:2px solid ${Colors.surface};box-sizing:border-box"></div></div>`,
+    iconSize: [44, 44], iconAnchor: [22, 22],
+});
 
-const vertexIcon = (index: number) =>
-    L.divIcon({
-        className: 'parcel-vertex-icon',
-        html: `<div data-vertex-index="${index}" style="width:14px;height:14px;border-radius:7px;background:${PARCEL_COLOR};border:2px solid #FFFFFF;box-sizing:border-box;"></div>`,
-        iconSize: [14, 14],
-        iconAnchor: [7, 7],
-    });
-
-/** Fits the map to the polygon whenever the vertex list materially changes. */
-function FitBounds({ coordinates }: { coordinates: GPSCoordinate[] }) {
+function MapViewport({ coordinates, features, selectedFeatureId, fitRequest, height }: ParcelMapProps & { height: number }) {
     const map = useMap();
-    const lastSig = useRef('');
-
+    const lastKey = useRef('');
     useEffect(() => {
-        const sig = coordinates.map((c) => `${c.latitude.toFixed(6)},${c.longitude.toFixed(6)}`).join('|');
-        if (sig === lastSig.current) return;
-        lastSig.current = sig;
-
-        if (coordinates.length === 0) {
-            map.setView(PARCEL_MAP_DEFAULT_CENTER, 13);
-        } else if (coordinates.length === 1) {
-            map.setView([coordinates[0].latitude, coordinates[0].longitude], 16);
-        } else {
-            const bounds = L.latLngBounds(coordinates.map((c) => [c.latitude, c.longitude] as [number, number]));
-            map.fitBounds(bounds.pad(0.15));
-        }
-    }, [coordinates, map]);
-
+        const key = `${selectedFeatureId ?? ''}|${fitRequest ?? 0}`;
+        if (key === lastKey.current) return;
+        const target = features?.find(feature => feature.id === selectedFeatureId)?.coordinates ?? coordinates;
+        if (target.length === 0) return;
+        lastKey.current = key;
+        if (target.length === 1) map.setView(positions(target)[0], 17);
+        else map.fitBounds(L.latLngBounds(positions(target)).pad(0.15));
+    }, [coordinates, features, selectedFeatureId, fitRequest, map]);
+    useEffect(() => { map.invalidateSize(); }, [height, map]);
     return null;
 }
 
-/** Forwards map clicks as vertex additions when editable. */
-function MapGestures({ editable, coordinates, onChange }: {
-    editable: boolean;
-    coordinates: GPSCoordinate[];
-    onChange?: (next: GPSCoordinate[]) => void;
-}) {
-    useMapEvents({
-        click: (e) => {
-            if (!editable || !onChange) return;
-            onChange([...coordinates, { latitude: e.latlng.lat, longitude: e.latlng.lng }]);
-        },
-    });
+function mapCoordinate(latitude: number, rawLongitude: number): GPSCoordinate | null {
+    if (!Number.isFinite(rawLongitude)) return null;
+    const longitude = rawLongitude >= -180 && rawLongitude <= 180 ? rawLongitude : ((rawLongitude + 180) % 360 + 360) % 360 - 180;
+    return isValidCoordinate(latitude, longitude) ? { latitude, longitude } : null;
+}
+
+function MapGestures({ editable, coordinates, onChange }: ParcelMapProps) {
+    useMapEvents({ click: event => {
+        const point = mapCoordinate(event.latlng.lat, event.latlng.lng);
+        if (editable && onChange && point) onChange([...coordinates, point]);
+    } });
     return null;
 }
 
-export function ParcelMap({
-    coordinates,
-    onChange,
-    editable = false,
-    height = PARCEL_MAP_DEFAULT_HEIGHT,
-    liveCoordinate = null,
-}: ParcelMapProps) {
-    const positions = useMemo(
-        () => coordinates.map((c) => [c.latitude, c.longitude] as [number, number]),
-        [coordinates]
-    );
+function EdgeLabels({ coordinates, closed }: { coordinates: GPSCoordinate[]; closed: boolean }) {
+    const map = useMap();
+    const [zoom, setZoom] = useState(map.getZoom());
+    useEffect(() => {
+        const update = () => setZoom(map.getZoom());
+        map.on('zoomend', update);
+        return () => { map.off('zoomend', update); };
+    }, [map]);
+    if (zoom < 15 || coordinates.length < 2) return null;
+    const count = closed ? coordinates.length : coordinates.length - 1;
+    return <>{coordinates.slice(0, count).map((a, index) => {
+        const b = coordinates[(index + 1) % coordinates.length];
+        const meters = distanceMeters(a, b);
+        const icon = L.divIcon({ className: 'parcel-edge-length', html: `<span style="font:12px sans-serif;padding:3px 5px;border-radius:5px;background:${Colors.surface};color:${Colors.text};white-space:nowrap">${meters.toFixed(1)} m</span>`, iconSize: [70, 20], iconAnchor: [35, 10] });
+        return <Marker key={`edge-${index}`} position={[(a.latitude + b.latitude) / 2, (a.longitude + b.longitude) / 2]} icon={icon}
+            bubblingMouseEvents={false} eventHandlers={{ click: event => { if (event.originalEvent) L.DomEvent.stopPropagation(event.originalEvent); } }} />;
+    })}</>;
+}
+
+export function ParcelMap(props: ParcelMapProps) {
+    const layout = useResponsiveLayout();
+    const { coordinates, onChange, editable = false, liveCoordinate = null, features = [], holes = [] } = props;
+    const mapHeight = props.height ?? layout.mapHeight;
+    const closed = props.closed ?? coordinates.length >= 3;
+    const boundary = useMemo(() => [positions(coordinates), ...holes.map(positions)], [coordinates, holes]);
 
     return (
-        <View
-            style={{ height, width: '100%', borderRadius: 12, overflow: 'hidden' }}
-            testID="parcel-map"
-        >
-            <MapContainer
-                center={PARCEL_MAP_DEFAULT_CENTER}
-                zoom={13}
-                style={{ height: '100%', width: '100%' }}
-                attributionControl
-            >
-                <TileLayer
-                    attribution="Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics"
-                    url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-                    maxZoom={19}
-                />
-                <FitBounds coordinates={coordinates} />
-                <MapGestures editable={editable} coordinates={coordinates} onChange={onChange} />
-                {positions.length >= 2 && (
-                    <Polygon
-                        positions={positions}
-                        pathOptions={{ color: PARCEL_COLOR, weight: 2, fillColor: PARCEL_COLOR, fillOpacity: 0.2 }}
-                    />
-                )}
-                {editable
-                    ? coordinates.map((c, i) => (
-                        <Marker
-                            key={`${i}-${c.latitude.toFixed(6)}-${c.longitude.toFixed(6)}`}
-                            position={[c.latitude, c.longitude]}
-                            icon={vertexIcon(i)}
-                            draggable
-                            eventHandlers={{
-                                dragend: (e) => {
-                                    const ll = (e.target as L.Marker).getLatLng();
-                                    onChange?.(coordinates.map((prev, idx) => (idx === i ? { latitude: ll.lat, longitude: ll.lng } : prev)));
-                                },
-                                click: () => {
-                                    onChange?.(coordinates.filter((_, idx) => idx !== i));
-                                },
-                            }}
-                        />
-                    ))
-                    : coordinates.map((c, i) => (
-                        <Marker
-                            key={`${i}-${c.latitude.toFixed(6)}-${c.longitude.toFixed(6)}`}
-                            position={[c.latitude, c.longitude]}
-                            icon={vertexIcon(i)}
-                            interactive={false}
-                        />
-                    ))}
-                {liveCoordinate && (
-                    <CircleMarker
-                        center={[liveCoordinate.latitude, liveCoordinate.longitude]}
-                        radius={7}
-                        pathOptions={{ color: LIVE_COLOR, fillColor: LIVE_COLOR, fillOpacity: 0.7, weight: 2 }}
-                    />
-                )}
+        <View style={{ height: mapHeight, width: '100%', borderRadius: 12, overflow: 'hidden' }} testID="parcel-map">
+            <MapContainer center={PARCEL_MAP_DEFAULT_CENTER} zoom={13} style={{ height: '100%', width: '100%' }} attributionControl>
+                <TileLayer key={props.mapLayer ?? 'satellite'}
+                    attribution={props.mapLayer === 'street' ? '&copy; OpenStreetMap contributors' : 'Tiles &copy; Esri, Maxar, Earthstar Geographics'}
+                    url={props.mapLayer === 'street' ? 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png' : 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'} maxZoom={19} />
+                <MapViewport {...props} height={mapHeight} />
+                <MapGestures {...props} editable={editable} />
+                {features.filter(feature => feature.coordinates.length >= 3).map(feature => {
+                    const label = feature.labelCoordinate ?? feature.coordinates[0];
+                    const select: L.LeafletEventHandlerFn = event => {
+                        const originalEvent = (event as L.LeafletMouseEvent).originalEvent;
+                        if (originalEvent) L.DomEvent.stopPropagation(originalEvent);
+                        if (!editable) props.onFeatureSelect?.(feature.id);
+                    };
+                    return <React.Fragment key={feature.id}>
+                        {/* Leaflet creates interactive SVG targets on mount; remount only the area when drawing toggles. */}
+                        <Polygon key={editable ? 'drawing' : 'browse'} positions={[positions(feature.coordinates), ...(feature.holes ?? []).map(positions)]}
+                            interactive={!editable} bubblingMouseEvents={false}
+                            pathOptions={{ color: featureColor(feature), fillColor: featureColor(feature), fillOpacity: feature.selected ? 0.22 : 0.18, weight: feature.selected ? 4 : 2, dashArray: feature.kind === 'block' ? '5 3' : undefined }}
+                            eventHandlers={{ click: select }} />
+                        <Marker position={[label.latitude, label.longitude]} bubblingMouseEvents={false}
+                            icon={L.divIcon({ className: 'parcel-label-anchor', html: '', iconSize: [0, 0] })} eventHandlers={{ click: select }}>
+                            <Tooltip position={[label.latitude, label.longitude]} permanent interactive
+                                direction="center" opacity={0.9} eventHandlers={{ click: select }}>
+                                {feature.selected ? 'Selected · ' : ''}{feature.name}{feature.areaHectares != null ? ` · ${feature.areaHectares.toFixed(2)} ha` : ''}
+                            </Tooltip>
+                        </Marker>
+                    </React.Fragment>;
+                })}
+                {coordinates.length >= 2 && (closed && coordinates.length >= 3
+                    ? <Polygon positions={boundary} interactive={false} pathOptions={{ color: Colors.error, weight: 4, fillColor: Colors.success, fillOpacity: 0.22 }} />
+                    : <Polyline positions={boundary[0]} interactive={false} pathOptions={{ color: Colors.error, weight: 3, dashArray: '6 5' }} />)}
+                {editable && coordinates.map((coordinate, index) => (
+                    <Marker key={index} position={[coordinate.latitude, coordinate.longitude]}
+                        icon={vertexIcon(index, props.selectedVertexIndex === index)} draggable bubblingMouseEvents={false}
+                        eventHandlers={{
+                            dragend: event => {
+                                const point = (event.target as L.Marker).getLatLng();
+                                const accepted = mapCoordinate(point.lat, point.lng);
+                                if (accepted) onChange?.(coordinates.map((old, i) => i === index ? accepted : old));
+                            },
+                            click: event => {
+                                if (event.originalEvent) L.DomEvent.stopPropagation(event.originalEvent);
+                                props.onVertexSelect?.(index);
+                            },
+                        }} />
+                ))}
+                {props.showEdgeLengths && <EdgeLabels coordinates={coordinates} closed={closed} />}
+                {liveCoordinate && <CircleMarker center={[liveCoordinate.latitude, liveCoordinate.longitude]} radius={7}
+                    bubblingMouseEvents={false} eventHandlers={{ click: event => { if (event.originalEvent) L.DomEvent.stopPropagation(event.originalEvent); } }}
+                    pathOptions={{ color: Colors.info, fillColor: Colors.info, fillOpacity: 0.7, weight: 2 }} />}
             </MapContainer>
         </View>
     );
 }
-
 export default ParcelMap;

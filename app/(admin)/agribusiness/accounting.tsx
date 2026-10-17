@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import { usePageContentStyle } from '../../../src/hooks/useResponsiveLayout';
 import { View, Text, ScrollView, RefreshControl, Pressable, Alert, ActivityIndicator } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -14,6 +15,7 @@ import { format } from 'date-fns';
 
 export default function AgribusinessAccountingScreen() {
     const router = useRouter();
+    const pageContentStyle = usePageContentStyle();
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [isReconciling, setIsReconciling] = useState(false);
@@ -147,13 +149,13 @@ export default function AgribusinessAccountingScreen() {
     return (
         <ScrollView
             className="flex-1 bg-gray-50"
-            contentContainerStyle={{ padding: 20 }}
+            contentContainerStyle={pageContentStyle}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         >
             {/* Header Banner */}
             <View className="bg-emerald-900 rounded-3xl p-6 text-white mb-6 shadow-md">
-                <View className="flex-row justify-between items-start">
-                    <View>
+                <View className="flex-row flex-wrap justify-between items-start gap-y-2">
+                    <View className="flex-1 min-w-0 mr-2">
                         <View className="flex-row items-center gap-2 mb-1">
                             <MaterialIcons name="account-balance" size={28} color="#FFFFFF" />
                             <Text className="text-white text-2xl font-black">Agri Farm General Ledger</Text>

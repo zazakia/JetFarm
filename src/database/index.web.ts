@@ -83,6 +83,10 @@ import SalesReturn from './models/SalesReturn';
 import SalesReturnLine from './models/SalesReturnLine';
 import PosSession from './models/PosSession';
 import AgriParcel from './models/AgriParcel';
+import AgriParcelBlock from './models/AgriParcelBlock';
+import AgriBlockAssignment from './models/AgriBlockAssignment';
+import AgriBlockProgress from './models/AgriBlockProgress';
+import AgriPendingLayoutOperation from './models/AgriPendingLayoutOperation';
 import AgriLandOwner from './models/AgriLandOwner';
 import AgriInvestor from './models/AgriInvestor';
 import AgriCropCycle from './models/AgriCropCycle';
@@ -98,8 +102,12 @@ import AgriInvestorLedger from './models/AgriInvestorLedger';
 // This is required for compatibility with Supabase UUID columns.
 setGenerator(() => uuid.v4() as string);
 
+// Persistent storage identity, not a schema version. Keep v48 offline history in place;
+// schema upgrades still run through mySchema and myMigrations on this same database.
+export const WEB_DATABASE_NAME = 'poscursor-v48';
+
 const adapter = new LokiJSAdapter({
-    dbName: `poscursor-v${mySchema.version}`,
+    dbName: WEB_DATABASE_NAME,
     schema: mySchema,
     migrations: myMigrations,
     useWebWorker: false,
@@ -209,6 +217,10 @@ export const database = new Database({
         SalesReturnLine,
         PosSession,
         AgriParcel,
+        AgriParcelBlock,
+        AgriBlockAssignment,
+        AgriBlockProgress,
+        AgriPendingLayoutOperation,
         AgriLandOwner,
         AgriInvestor,
         AgriCropCycle,

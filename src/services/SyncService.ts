@@ -8,6 +8,9 @@ import { useSyncStore } from '../stores/syncStore';
 import { ErrorService, ErrorType } from './ErrorService';
 import syncTableContract from './syncTableContract.json';
 import {
+    assertAgriDatabaseUsable, quarantineAgriDatabase, withAgriDatabaseOperation, withAgriSyncWriteScope,
+} from './AgriWriteSafety';
+import {
     syncAuditLogService,
     SyncAuditEventInput,
     SyncAuditFailureInput,
@@ -45,10 +48,56 @@ export const LOW_PRIORITY_SYNC_TABLES = [
     'loan_products',
 ];
 
-// Local WatermelonDB table names
-export const SYNC_TABLES = CONFIG_SYNC_ENABLED
+// These domains require verified atomic layout cloud support, not independent
+// upserts/pulls. Config sync does NOT enable them; no validated layout RPC exists yet.
+const DEFERRED_LAYOUT_TABLES = new Set([
+    'agri_parcel_blocks', 'agri_block_assignments', 'agri_block_progress',
+    ...syncTableContract.localOnlyTables,
+]);
+const NEW_PARCEL_GEOMETRY_COLUMNS = [
+    'gps_exclusions', 'boundary_revision', 'layout_revision', 'boundary_saved_at',
+];
+const MANAGED_PARCEL_GEOMETRY_COLUMNS = [
+    'gps_coordinates', 'area_hectares', ...NEW_PARCEL_GEOMETRY_COLUMNS,
+];
+
+function parseAuditObject(value: unknown): Record<string, any> | null {
+    try {
+        const parsed = typeof value === 'string' ? JSON.parse(value) : value;
+        return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : null;
+    } catch {
+        return null;
+    }
+}
+
+function isLocalMappingAudit(record: any): boolean {
+    if (DEFERRED_LAYOUT_TABLES.has(record.entity_type)) return true;
+    const oldData = parseAuditObject(record.old_data);
+    const newData = parseAuditObject(record.new_data);
+    const hasScope = (value: unknown, parsed: Record<string, any> | null) => parsed
+        ? parsed.sync_scope === 'agri_mapping_local'
+        : typeof value === 'string' && value.trimStart().startsWith('{') &&
+            /"sync_scope"\s*:\s*"agri_mapping_local"/.test(value);
+    // The audit sanitizer can truncate JSON mid-object. Such a payload with
+    // mapping signals cannot be proven unrelated, so retain it conservatively.
+    // Valid JSON still requires a TOP-LEVEL scope, not a nested marker.
+    if (hasScope(record.old_data, oldData) || hasScope(record.new_data, newData)) return true;
+    if (record.entity_type !== 'agri_parcels') return false;
+    // Older parcel layout audits predate the explicit scope marker, including clear commands.
+    if (newData) return Object.prototype.hasOwnProperty.call(newData, 'geometry') &&
+        typeof newData.operationId === 'string' && newData.operationId.length > 0 &&
+        (Object.prototype.hasOwnProperty.call(newData, 'targetRevision') ||
+            Object.prototype.hasOwnProperty.call(newData, 'requestJson'));
+    return typeof record.new_data === 'string' && record.new_data.trimStart().startsWith('{') &&
+        /"geometry"\s*:/.test(record.new_data) && /"operationId"\s*:\s*"[^"]+"/.test(record.new_data) &&
+        /"(?:targetRevision|requestJson)"\s*:/.test(record.new_data);
+}
+
+// Local WatermelonDB table names eligible for generic sync.
+export const SYNC_TABLES = (CONFIG_SYNC_ENABLED
     ? [...CONFIG_SYNC_TABLES, ...CORE_SYNC_TABLES]
-    : CORE_SYNC_TABLES;
+    : CORE_SYNC_TABLES).filter(table => !DEFERRED_LAYOUT_TABLES.has(table));
+const ENABLED_SYNC_TABLES = new Set(SYNC_TABLES);
 
 // Mapping from WatermelonDB local table name → Supabase remote table name
 export const REMOTE_TABLE_MAP: Record<string, string> = syncTableContract.remoteTableMap;
@@ -140,7 +189,8 @@ function formatSupabaseError(error: any): string {
 }
 
 function isPermanentSyncError(error: unknown): boolean {
-    return ['schema', 'permission', 'auth', 'constraint'].includes(getSyncFailureKind(error));
+    return (error as any)?.code === 'AGRI_DATABASE_REOPEN_REQUIRED' ||
+        ['schema', 'permission', 'auth', 'constraint'].includes(getSyncFailureKind(error));
 }
 
 const MIN_SYNC_INTERVAL = 60000; // 60 seconds cooldown
@@ -291,6 +341,9 @@ export class SyncService {
         file_cases: ['filed_date', 'created_at', 'updated_at', 'deleted_at'],
         borrowers: ['date_accepted', 'pmes_date', 'spouse_date_of_birth', 'termination_date'],
         loans: ['approved_at', 'delinquent_since'],
+        agri_parcel_blocks: ['created_at', 'updated_at', 'deleted_at'],
+        agri_block_assignments: ['start_date', 'due_date', 'created_at', 'updated_at', 'deleted_at'],
+        agri_block_progress: ['update_date', 'created_at', 'updated_at'],
     };
 
     private static isBigIntField(tableName: string, fieldName: string): boolean {
@@ -395,9 +448,15 @@ export class SyncService {
     }
 
     private async writeAudit<T>(operation: () => Promise<T>): Promise<T | null> {
+        assertAgriDatabaseUsable(this.db);
         try {
             return await operation();
         } catch (error) {
+            assertAgriDatabaseUsable(this.db);
+            // The concrete default writes only files/AsyncStorage, not WDB. An
+            // injected callback has no read-only contract and may have mutated
+            // cached models before rejecting; never blindly swallow its failure.
+            if (this.audit !== syncAuditLogService) throw quarantineAgriDatabase(this.db, error);
             console.warn('[SyncService] Detailed sync audit persistence failed', error);
             useSyncStore.getState().setSyncProgress({
                 auditPersistenceWarning: 'Detailed sync log could not be saved on this device. The data sync itself will continue.',
@@ -445,6 +504,7 @@ export class SyncService {
      * Entry point for sync check
      */
     public async checkAndSync(options: { force?: boolean; localChange?: boolean; reason?: string } = {}): Promise<void> {
+        assertAgriDatabaseUsable(this.db);
         if (this.isSyncing) {
             console.log('[SyncService] Sync already in progress, skipping checkAndSync...');
             useSyncStore.getState().setSyncProgress({
@@ -461,6 +521,7 @@ export class SyncService {
      * Uses a single query per table (Q.oneOf) instead of 3 separate queries.
      */
     public async updatePendingCount(): Promise<number> {
+        assertAgriDatabaseUsable(this.db);
         try {
             let totalPending = 0;
             for (const tableName of SYNC_TABLES) {
@@ -487,6 +548,7 @@ export class SyncService {
      * Performs the actual synchronization
      */
     public async sync(force: boolean = false, options: { localChange?: boolean; reason?: string } = {}): Promise<void> {
+        assertAgriDatabaseUsable(this.db);
         if (this.isSyncing) {
             console.log('[SyncService] Sync already in progress, skipping...');
             useSyncStore.getState().setSyncProgress({
@@ -495,6 +557,18 @@ export class SyncService {
             return;
         }
 
+        // Reserve synchronously: duplicate requests must skip even while we wait
+        // for a domain operation. Never wrap synchronize in a WatermelonDB writer.
+        this.isSyncing = true;
+        try {
+            await withAgriDatabaseOperation(this.db, () => this.syncWithinOperation(force, options));
+        } finally {
+            this.isSyncing = false;
+        }
+    }
+
+    /** Non-reentrant: caller owns the operation gate through retries, ACK and audit. */
+    private async syncWithinOperation(force: boolean, options: { localChange?: boolean; reason?: string }): Promise<void> {
         const store = useSyncStore.getState();
 
         // Offline devices should not start a regular sync cycle.
@@ -541,7 +615,6 @@ export class SyncService {
             }
         }
 
-        this.isSyncing = true;
         const startTime = Date.now();
         console.log('[SyncService] Starting sync cycle...');
 
@@ -562,7 +635,6 @@ export class SyncService {
                 errorMessage: null,
                 lastSyncAt: new Date(),
             });
-            this.isSyncing = false;
             return;
         }
 
@@ -632,13 +704,14 @@ export class SyncService {
             let totalPulled = 0;
             let syncAttempt = 0;
             await withRetry(async () => {
+                assertAgriDatabaseUsable(this.db);
                 syncAttempt += 1;
                 this.activeAuditAttempt = syncAttempt;
                 if (this.auditSessionActive) {
                     await this.writeAudit(() => this.audit.startAttempt(syncAttempt));
                 }
-                return synchronize({
-                database: this.db,
+                return withAgriSyncWriteScope(this.db, view => synchronize({
+                database: view,
                 // sendCreatedAsUpdated: true tells WatermelonDB to treat local
                 // 'created' records as 'updated' on push. Combined with our pull
                 // strategy (all active records go into the 'updated' array),
@@ -652,6 +725,7 @@ export class SyncService {
                 // watermark to a newly added table or column.
                 migrationsEnabledAtVersion: 11,
                 pullChanges: async ({ lastPulledAt, migration }) => {
+                    assertAgriDatabaseUsable(this.db);
                     return await perf.measure('Sync.Pull', async () => {
                         // Use a 2-second look-back safety window to ensure no records are missed
                         // due to network latency or database commit timing differences.
@@ -778,6 +852,7 @@ export class SyncService {
                         store.setSyncProgress({ currentModel: 'Pull complete', progress: 0.8 });
                         console.log(`[SyncService] Pulled all ${total} tables in ${Date.now() - pullStartTime}ms (${totalPulled} rows total)`);
 
+                        assertAgriDatabaseUsable(this.db);
                         return { changes, timestamp: serverTime };
                     });
                 },
@@ -788,9 +863,11 @@ export class SyncService {
                         const experimentalRejectedIds = await this.pushChangesToSupabase(changes, lastPulledAt);
 
                         const duration = Date.now() - pushStartTime;
-                        const totalPushed = Object.values(changes as any).reduce((sum: number, t: any) => {
-                            return sum + (t.created?.length ?? 0) + (t.updated?.length ?? 0) + (t.deleted?.length ?? 0);
-                        }, 0) as number;
+                        const totalPushed = Object.entries(changes as any).reduce((sum: number, [table, t]: [string, any]) => {
+                            const pending = new Set(experimentalRejectedIds[table] || []);
+                            return sum + [...(t.created || []), ...(t.updated || [])].filter(record => !pending.has(record.id)).length
+                                + (t.deleted || []).filter(id => !pending.has(id)).length;
+                        }, 0);
 
                         if (totalPushed > 0) {
                             store.addLog({
@@ -806,7 +883,7 @@ export class SyncService {
                         return { experimentalRejectedIds };
                     });
                 },
-            });
+            }));
             });
 
             // Post-sync integrity check: warn if unsync'd loan records remain
@@ -851,11 +928,15 @@ export class SyncService {
                 console.log('[SyncService] Ignored concurrent sync error (already syncing)');
                 return;
             }
-            if (this.auditSessionActive) {
-                await this.writeAudit(() => this.audit.failSession({
-                    code: error?.code,
-                    failureKind: getSyncFailureKind(error),
-                }));
+            // Failure callbacks can write locally too. Never invoke one on a
+            // quarantined Database; if it itself fails, report that uncertainty.
+            if (this.auditSessionActive && error?.code !== 'AGRI_DATABASE_REOPEN_REQUIRED') {
+                try {
+                    await this.writeAudit(() => this.audit.failSession({
+                        code: error?.code,
+                        failureKind: getSyncFailureKind(error),
+                    }));
+                } catch (auditError) { error = auditError; }
             }
             ErrorService.handleError(error, 'SyncService.sync', ErrorType.SYNC);
             const errStore = useSyncStore.getState();
@@ -869,9 +950,9 @@ export class SyncService {
                 message: 'Sync failed',
                 detail: ErrorService.getUserMessage(error, 'Unknown sync error'),
             });
+            if (error?.code === 'AGRI_DATABASE_REOPEN_REQUIRED') throw error;
         } finally {
             this.auditSessionActive = false;
-            this.isSyncing = false;
         }
     }
 
@@ -932,11 +1013,63 @@ export class SyncService {
         return Number.isFinite(parsedValue) ? parsedValue : null;
     }
 
+    private async getPendingLayoutParcelIds(parcelIds: string[]): Promise<Set<string> | null> {
+        assertAgriDatabaseUsable(this.db);
+        if (parcelIds.length === 0) return new Set();
+        try {
+            const operations = await this.db.collections.get('agri_pending_layout_operations').query(
+                Q.where('parcel_id', Q.oneOf(Array.from(new Set(parcelIds)))),
+                Q.where('state', Q.notEq('acknowledged'))
+            ).fetch();
+            assertAgriDatabaseUsable(this.db);
+            return new Set(operations.map(operation => String(operation._raw['parcel_id'])));
+        } catch (error) {
+            assertAgriDatabaseUsable(this.db);
+            // Missing/unreadable local outbox is not evidence of no pending layout.
+            console.warn('[SyncService] Cannot verify pending parcel layouts; retaining local changes.', error);
+            return null;
+        }
+    }
+
+    private async getLocalMappingAuditRejectedIds(upserts: any[], deleted: string[]): Promise<Set<string>> {
+        const rejected = new Set<string>(upserts.filter(isLocalMappingAudit).map(record => record.id));
+        if (!deleted.length) return rejected;
+        assertAgriDatabaseUsable(this.db);
+        try {
+            const identityClause = Q.where('id', Q.oneOf(deleted));
+            const query = this.db.collections.get('action_logs').query(identityClause).serialize();
+            // WDB queries normally exclude tombstones. Read raw by ID, without
+            // that implicit filter, using the portable Loki/SQLite adapter API.
+            // Never hydrate deleted models: sync destroys acknowledged tombstones
+            // via the adapter and would leave collection.find()'s cache stale.
+            const identities = await this.db.adapter.unsafeQueryRaw({
+                ...query, description: { ...query.description, where: [identityClause] },
+            });
+            assertAgriDatabaseUsable(this.db);
+            const byId = new Map(identities.map(raw => [raw.id, raw]));
+            for (const id of deleted) {
+                const raw = byId.get(id);
+                if (!raw || typeof raw.entity_type !== 'string' || !raw.entity_type.trim() || isLocalMappingAudit(raw)) {
+                    rejected.add(id);
+                }
+            }
+        } catch {
+            assertAgriDatabaseUsable(this.db);
+            // Missing/unreadable identity is not evidence of an unrelated audit.
+            for (const id of deleted) rejected.add(id);
+        }
+        return rejected;
+    }
+
     private async fetchTableChanges(
         localTableName: string,
         lastSyncDate: string | null,
         upperBoundDate: string | null = null
     ) {
+        assertAgriDatabaseUsable(this.db);
+        if (DEFERRED_LAYOUT_TABLES.has(localTableName)) {
+            return { created: [], updated: [], deleted: [] };
+        }
         const tableName = REMOTE_TABLE_MAP[localTableName] ?? localTableName;
         if (OPTIONAL_REMOTE_TABLES.has(localTableName) && this.unavailableOptionalRemoteTables.has(localTableName)) {
             return { created: [], updated: [], deleted: [] };
@@ -953,6 +1086,7 @@ export class SyncService {
             let activeHasMore = true;
 
             while (activeHasMore) {
+                assertAgriDatabaseUsable(this.db);
                 let pageQuery = this.supabase
                     .from(tableName)
                     .select('*')
@@ -1006,6 +1140,7 @@ export class SyncService {
             let deletedHasMore = true;
 
             while (deletedHasMore) {
+                assertAgriDatabaseUsable(this.db);
                 let delPageQuery = this.supabase
                     .from(tableName)
                     .select('id,deleted_at')
@@ -1046,6 +1181,35 @@ export class SyncService {
                 }
             }
 
+            if (localTableName === 'agri_parcels') {
+                const pendingParcelIds = await this.getPendingLayoutParcelIds([
+                    ...allActive.map(record => record.id), ...allDeleted.map(record => record.id),
+                ]);
+                if (pendingParcelIds === null) {
+                    throw new Error('Sync schema/configuration: cannot verify the local parcel layout outbox');
+                }
+                const localParcels = allActive.length ? await this.db.collections.get('agri_parcels').query(
+                    Q.where('id', Q.oneOf(allActive.map(record => record.id)))
+                ).fetch() : [];
+                assertAgriDatabaseUsable(this.db);
+                const localById = new Map(localParcels.map(parcel => [parcel.id, parcel._raw]));
+                allActive = allActive.filter(record => !pendingParcelIds.has(record.id) || localById.has(record.id))
+                    .map(record => {
+                        const local = localById.get(record.id);
+                        const protectedColumns = pendingParcelIds.has(record.id)
+                            ? MANAGED_PARCEL_GEOMETRY_COLUMNS : NEW_PARCEL_GEOMETRY_COLUMNS;
+                        const safeRecord = { ...record };
+                        // WDB defaults absent remote columns before merging _changed.
+                        // Preserve local geometry even when it is not in _changed.
+                        for (const column of protectedColumns) {
+                            if (local) safeRecord[column] = local[column];
+                            else delete safeRecord[column];
+                        }
+                        return safeRecord;
+                    });
+                allDeleted = allDeleted.filter(record => !pendingParcelIds.has(record.id));
+            }
+
             // All records go to `updated` — WatermelonDB will auto-create
             // any records not present locally (see sendCreatedAsUpdated flag).
             const created: any[] = [];
@@ -1082,15 +1246,20 @@ export class SyncService {
                 updated.push(record);
             }
 
+            assertAgriDatabaseUsable(this.db);
             return { created, updated, deleted };
         } catch (err) {
+            assertAgriDatabaseUsable(this.db);
             throw ErrorService.handleError(err, `SyncService.fetchTableChanges(${localTableName})`, ErrorType.SYNC);
         }
     }
 
     private async pushChangesToSupabase(changes: any, lastPulledAt?: number) {
+        assertAgriDatabaseUsable(this.db);
         try {
             const store = useSyncStore.getState();
+            // Inspect ALL changes, including local-only/disabled tables. Silently
+            // filtering a table acknowledges its rows (and destroys deleted tombstones).
             const tableNames = Object.keys(changes || {}).sort((a, b) => {
                 const indexA = SYNC_TABLES.indexOf(a);
                 const indexB = SYNC_TABLES.indexOf(b);
@@ -1128,6 +1297,16 @@ export class SyncService {
                         ...incomingDeletes,
                     ].filter(Boolean);
                     auditFailureRecordIds = incomingIds;
+                    if (!ENABLED_SYNC_TABLES.has(localTableName)) {
+                        if (incomingIds.length) rejectedIds[localTableName] = incomingIds;
+                        await this.recordAudit({
+                            attempt: this.activeAuditAttempt, direction: 'push', source: 'watermelon', target: 'supabase',
+                            localTable: localTableName, remoteTable: remoteName,
+                            operation: 'generic-sync-disabled', recordIds: incomingIds, result: 'deferred',
+                        });
+                        i++;
+                        continue;
+                    }
                     if (OPTIONAL_REMOTE_TABLES.has(localTableName) && this.unavailableOptionalRemoteTables.has(localTableName)) {
                         if (incomingIds.length > 0) {
                             rejectedIds[localTableName] = incomingIds;
@@ -1146,14 +1325,32 @@ export class SyncService {
                         i++;
                         continue;
                     }
+                    const pendingParcelIds = localTableName === 'agri_parcels'
+                        ? await this.getPendingLayoutParcelIds(incomingIds) : new Set<string>();
+                    if (pendingParcelIds === null) {
+                        if (incomingIds.length) rejectedIds[localTableName] = incomingIds;
+                        i++;
+                        continue;
+                    }
+                    // SAFE DISABLED: no sparse metadata upserts for pending parents.
+                    // They can violate NOT NULL or resurrect a remote tombstone. Keep
+                    // the entire dirty row until scoped atomic layout publication exists.
+                    const deferredIds = localTableName === 'action_logs'
+                        ? await this.getLocalMappingAuditRejectedIds(incomingUpserts, incomingDeletes) : pendingParcelIds;
+                    if (deferredIds.size) rejectedIds[localTableName] = Array.from(deferredIds);
+                    const eligibleUpserts = incomingUpserts.filter((record: any) => !deferredIds.has(record.id));
+                    const eligibleDeletes = incomingDeletes.filter((id: string) => !deferredIds.has(id));
+                    assertAgriDatabaseUsable(this.db);
                     const conflictingIds = await this.findConflictingRemoteIds(
                         remoteName,
-                        [...incomingUpserts, ...incomingDeletes.map((id: string) => ({ id }))],
+                        [...eligibleUpserts, ...eligibleDeletes.map((id: string) => ({ id }))],
                         lastPulledAt
                     );
 
                     if (conflictingIds.size > 0) {
-                        rejectedIds[localTableName] = Array.from(conflictingIds);
+                        rejectedIds[localTableName] = Array.from(new Set([
+                            ...(rejectedIds[localTableName] || []), ...conflictingIds,
+                        ]));
                         store.addLog({
                             timestamp: new Date(),
                             type: 'error',
@@ -1174,8 +1371,8 @@ export class SyncService {
                         });
                     }
 
-                    const createdToPush = (created ?? []).filter((record: any) => record?.id && typeof record.id === 'string' && record.id.trim() !== '' && !conflictingIds.has(record.id));
-                    const updatedToPush = (updated ?? []).filter((record: any) => record?.id && typeof record.id === 'string' && record.id.trim() !== '' && !conflictingIds.has(record.id));
+                    const createdToPush = (created ?? []).filter((record: any) => record?.id && typeof record.id === 'string' && record.id.trim() !== '' && !deferredIds.has(record.id) && !conflictingIds.has(record.id));
+                    const updatedToPush = (updated ?? []).filter((record: any) => record?.id && typeof record.id === 'string' && record.id.trim() !== '' && !deferredIds.has(record.id) && !conflictingIds.has(record.id));
                     const toUpsert = [...createdToPush, ...updatedToPush]
                         .map(record => this.sanitizeRecord(record, localTableName));
 
@@ -1225,6 +1422,7 @@ export class SyncService {
                     auditFailureOperation = 'upsert';
                     auditFailureRecordIds = [...createdToPush, ...updatedToPush].map((record: any) => record.id);
                     if (toUpsert.length > 0) {
+                        assertAgriDatabaseUsable(this.db);
                         const upsertOptions = TABLE_UPSERT_OPTIONS[localTableName] || TABLE_UPSERT_OPTIONS[remoteName];
                         const { error } = await withSyncTimeout(
                             this.supabase.from(remoteName).upsert(toUpsert, upsertOptions),
@@ -1266,11 +1464,12 @@ export class SyncService {
                         durationMs: Date.now() - startTime,
                     });
 
-                    const deletesToPush = incomingDeletes.filter((id: string) => !conflictingIds.has(id));
+                    const deletesToPush = eligibleDeletes.filter((id: string) => !conflictingIds.has(id));
                     auditFailureOperation = 'soft-delete';
                     auditFailureRecordIds = deletesToPush;
 
                     if (deletesToPush.length > 0) {
+                        assertAgriDatabaseUsable(this.db);
                         const serverSafeTimestamp = Date.now() + this.clockOffset;
                         const deletedAt = this.getRemoteTimestampValue(
                             localTableName,
@@ -1312,7 +1511,7 @@ export class SyncService {
                     const createdCount = created?.length ?? 0;
                     const updatedCount = updated?.length ?? 0;
                     const deletedCount = deleted?.length ?? 0;
-                    const totalTablePushed = Math.max(0, createdCount + updatedCount + deletedCount - conflictingIds.size);
+                    const totalTablePushed = Math.max(0, createdCount + updatedCount + deletedCount - (rejectedIds[localTableName]?.length || 0));
 
                     if (totalTablePushed > 0) {
                         const duration = Date.now() - startTime;
@@ -1426,8 +1625,12 @@ export class SyncService {
                 throw new Error(`Push failed for ${failures.length} table(s): ${failures.join('; ')}`);
             }
 
+            // A concurrent local batch may have become uncertain during remote I/O.
+            // Never let that push result clean cached rows or destroy tombstones.
+            assertAgriDatabaseUsable(this.db);
             return rejectedIds;
         } catch (err) {
+            assertAgriDatabaseUsable(this.db);
             ErrorService.handleError(err, 'SyncService.pushChangesToSupabase', ErrorType.SYNC);
             throw ErrorService.handleError(err, 'SyncService');
         }
@@ -1565,7 +1768,11 @@ export class SyncService {
 
     private sanitizeRecord(record: any, tableName: string) {
         const { _status, _changed, ...clean } = record;
-        // tablesWithoutUpdatedAt calculation removed
+        // New geometry columns (including nulls) do not exist on the legacy API.
+        // Only verified layout cloud support may publish them, never generic upsert.
+        if (tableName === 'agri_parcels') {
+            for (const column of NEW_PARCEL_GEOMETRY_COLUMNS) delete clean[column];
+        }
 
         // Convert epoch milliseconds → ISO strings for Supabase TIMESTAMPTZ columns
         SyncService.DATE_FIELDS.forEach(field => {

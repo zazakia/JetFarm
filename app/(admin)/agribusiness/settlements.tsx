@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import { usePageContentStyle } from '../../../src/hooks/useResponsiveLayout';
 import { View, Text, ScrollView, Pressable, ActivityIndicator, TextInput, Modal, Alert, RefreshControl } from 'react-native';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -17,6 +18,7 @@ export default function WeeklySettlementsScreen() {
     const params = useLocalSearchParams();
     const router = useRouter();
 
+    const pageContentStyle = usePageContentStyle();
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [calculating, setCalculating] = useState(false);
@@ -245,7 +247,7 @@ export default function WeeklySettlementsScreen() {
     return (
         <ScrollView
             className="flex-1 bg-gray-50"
-            contentContainerStyle={{ padding: 20 }}
+            contentContainerStyle={pageContentStyle}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         >
             {/* Header */}

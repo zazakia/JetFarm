@@ -84,6 +84,10 @@ import SalesReturn from './models/SalesReturn';
 import SalesReturnLine from './models/SalesReturnLine';
 import PosSession from './models/PosSession';
 import AgriParcel from './models/AgriParcel';
+import AgriParcelBlock from './models/AgriParcelBlock';
+import AgriBlockAssignment from './models/AgriBlockAssignment';
+import AgriBlockProgress from './models/AgriBlockProgress';
+import AgriPendingLayoutOperation from './models/AgriPendingLayoutOperation';
 import AgriLandOwner from './models/AgriLandOwner';
 import AgriInvestor from './models/AgriInvestor';
 import AgriCropCycle from './models/AgriCropCycle';
@@ -178,6 +182,10 @@ const modelClasses = [
     SalesReturnLine,
     PosSession,
     AgriParcel,
+    AgriParcelBlock,
+    AgriBlockAssignment,
+    AgriBlockProgress,
+    AgriPendingLayoutOperation,
     AgriLandOwner,
     AgriInvestor,
     AgriCropCycle,

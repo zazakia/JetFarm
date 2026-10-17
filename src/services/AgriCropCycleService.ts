@@ -3,8 +3,12 @@ import { database as globalDatabase } from '../database';
 import AgriCropCycle from '../database/models/AgriCropCycle';
 import AgriParcel from '../database/models/AgriParcel';
 import AgriGrowthCheckin from '../database/models/AgriGrowthCheckin';
+import AgriHarvestLog from '../database/models/AgriHarvestLog';
 import AgriInvestor from '../database/models/AgriInvestor';
 import AgriLandOwner from '../database/models/AgriLandOwner';
+import AgriWeeklySettlement from '../database/models/AgriWeeklySettlement';
+import { ActionLogService, LogParams } from './ActionLogService';
+import { AuthService } from './AuthService';
 
 export interface CreateCropCycleInput {
     parcelId: string;
@@ -22,6 +26,11 @@ export interface CreateCropCycleInput {
     offtakePricePerKg?: number;
     notes?: string;
 }
+
+export type UpdateCropCycleInput = Partial<CreateCropCycleInput> & {
+    status?: string;
+    actualHarvestDate?: Date;
+};
 
 export interface GrowthCheckinInput {
     cropCycleId: string;
@@ -44,11 +53,19 @@ export class AgriCropCycleService {
     }
 
     /**
+     * Resolves the operator identity recorded on audit trail entries.
+     */
+    private static async resolveAuditUser(performedBy?: string): Promise<string> {
+        return performedBy || (await AuthService.getCurrentUserId()) || 'system';
+    }
+
+    /**
      * Start a new crop cycle on a parcel
      */
     static async createCropCycle(
         input: CreateCropCycleInput,
-        db: Database = globalDatabase
+        db: Database = globalDatabase,
+        performedBy?: string
     ): Promise<AgriCropCycle> {
         const parcel = await db.get<AgriParcel>('agri_parcels').find(input.parcelId);
         let landOwner: AgriLandOwner | null = null;
@@ -80,6 +97,7 @@ export class AgriCropCycleService {
         const cycleCode = input.cycleCode || `CYC-${year}-${(parcel.code || parcel.name).replace(/\s+/g, '').toUpperCase()}`;
 
         let cycle: AgriCropCycle | null = null;
+        const auditUser = await this.resolveAuditUser(performedBy);
 
         await db.write(async () => {
             cycle = await db.get<AgriCropCycle>('agri_crop_cycles').create(record => {
@@ -105,11 +123,124 @@ export class AgriCropCycleService {
             await parcel.update(p => {
                 p.status = 'planted';
             });
+
+            const logParams: LogParams[] = [{
+                entityType: 'agri_crop_cycles',
+                entityId: cycle.id,
+                action: 'CREATE',
+                newData: { ...cycle._raw },
+            }];
+            await db.batch(...new ActionLogService(db).prepareLogActionsSync(logParams, auditUser));
         });
 
         if (!cycle) {
             throw new Error('Failed to create crop cycle');
         }
+
+        return cycle;
+    }
+
+    /**
+     * Update an existing crop cycle (agronomy, contract terms, status, or parcel assignment)
+     */
+    static async updateCropCycle(
+        cycleId: string,
+        updates: UpdateCropCycleInput,
+        db: Database = globalDatabase,
+        performedBy?: string
+    ): Promise<AgriCropCycle> {
+        const cycle = await db.get<AgriCropCycle>('agri_crop_cycles').find(cycleId);
+
+        let targetParcel: AgriParcel | null = null;
+        if (updates.parcelId && updates.parcelId !== cycle.parcelId) {
+            targetParcel = await db.get<AgriParcel>('agri_parcels').find(updates.parcelId);
+        }
+
+        const oldData = { ...cycle._raw };
+        const auditUser = await this.resolveAuditUser(performedBy);
+
+        await db.write(async () => {
+            await cycle.update(record => {
+                if (updates.parcelId !== undefined) record.parcelId = updates.parcelId;
+                if (updates.cycleCode !== undefined) record.cycleCode = updates.cycleCode;
+                if (updates.cropType !== undefined) record.cropType = updates.cropType;
+                if (updates.variety !== undefined) record.variety = updates.variety;
+                if (updates.plantingDate !== undefined) record.plantingDate = updates.plantingDate;
+                if (updates.targetHarvestDate !== undefined) record.targetHarvestDate = updates.targetHarvestDate;
+                if (updates.actualHarvestDate !== undefined) record.actualHarvestDate = updates.actualHarvestDate;
+                if (updates.areaPlantedHa !== undefined) record.areaPlantedHa = updates.areaPlantedHa;
+                if (updates.status !== undefined) record.status = updates.status;
+                if (updates.expectedYieldKg !== undefined) record.expectedYieldKg = updates.expectedYieldKg;
+                if (updates.capitalAllocated !== undefined) record.capitalAllocated = updates.capitalAllocated;
+                if (updates.landOwnerRatePerKg !== undefined) record.landOwnerRatePerKg = updates.landOwnerRatePerKg;
+                if (updates.landOwnerGuaranteedMin !== undefined) record.landOwnerGuaranteedMin = updates.landOwnerGuaranteedMin;
+                if (updates.offtakePricePerKg !== undefined) record.offtakePricePerKg = updates.offtakePricePerKg;
+                if (updates.investorId !== undefined) record.investorId = updates.investorId || null;
+                if (updates.notes !== undefined) record.notes = updates.notes || null;
+            });
+
+            if (targetParcel) {
+                await targetParcel.update(p => {
+                    p.status = 'planted';
+                });
+            }
+
+            const logParams: LogParams[] = [{
+                entityType: 'agri_crop_cycles',
+                entityId: cycleId,
+                action: 'UPDATE',
+                oldData,
+                newData: { ...cycle._raw },
+            }];
+            await db.batch(...new ActionLogService(db).prepareLogActionsSync(logParams, auditUser));
+        });
+
+        return cycle;
+    }
+
+    /**
+     * Soft-delete a crop cycle. Blocked once the cycle carries financial history
+     * (harvest weigh-ins or weekly settlements) so payouts stay traceable.
+     */
+    static async deleteCropCycle(
+        cycleId: string,
+        performedBy?: string,
+        db: Database = globalDatabase
+    ): Promise<AgriCropCycle> {
+        const cycle = await db.get<AgriCropCycle>('agri_crop_cycles').find(cycleId);
+
+        const [harvestLogs, settlements] = await Promise.all([
+            db.get<AgriHarvestLog>('agri_harvest_logs').query(
+                Q.where('crop_cycle_id', cycleId),
+                Q.where('deleted_at', null)
+            ).fetch(),
+            db.get<AgriWeeklySettlement>('agri_weekly_settlements').query(
+                Q.where('crop_cycle_id', cycleId),
+                Q.where('deleted_at', null)
+            ).fetch(),
+        ]);
+
+        if (harvestLogs.length > 0 || settlements.length > 0) {
+            throw new Error(
+                `Cannot delete cycle ${cycle.cycleCode}: it already has ${harvestLogs.length} harvest weigh-in(s) and ${settlements.length} weekly settlement(s). Correct those records first.`
+            );
+        }
+
+        const auditUser = await this.resolveAuditUser(performedBy);
+
+        await db.write(async () => {
+            await cycle.update(record => {
+                record.deletedAt = new Date();
+            });
+
+            const logParams: LogParams[] = [{
+                entityType: 'agri_crop_cycles',
+                entityId: cycleId,
+                action: 'DELETE',
+                oldData: { ...cycle._raw },
+            }];
+            await db.batch(...new ActionLogService(db).prepareLogActionsSync(logParams, auditUser));
+        });
 
         return cycle;
     }

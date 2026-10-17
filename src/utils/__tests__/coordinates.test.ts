@@ -3,6 +3,7 @@ import {
     serializeGpsCoordinates,
     isValidCoordinate,
     distanceMeters,
+    parseGpsCoordinatesStrict,
 } from '../coordinates';
 
 describe('coordinates utils', () => {
@@ -63,6 +64,21 @@ describe('coordinates utils', () => {
                 { latitude: 8.3545, longitude: 124.8624 },
             ];
             expect(parseGpsCoordinates(serializeGpsCoordinates(coords))).toEqual(coords);
+        });
+    });
+
+    describe('parseGpsCoordinatesStrict', () => {
+        it('retains valid legacy points and nullable boundaries', () => {
+            expect(parseGpsCoordinatesStrict('8.3667, 124.8667')).toEqual([{ latitude: 8.3667, longitude: 124.8667 }]);
+            expect(parseGpsCoordinatesStrict(null)).toEqual([]);
+            expect(parseGpsCoordinatesStrict('')).toEqual([]);
+            expect(parseGpsCoordinatesStrict('[]')).toEqual([]);
+            const coordinates = [{ latitude: 8, longitude: 125 }];
+            expect(parseGpsCoordinatesStrict(JSON.stringify(coordinates))).toEqual(coordinates);
+        });
+
+        it.each(['8junk,125', ',125', '8,', '[null]', '[{"latitude":"8","longitude":125}]', '[{"latitude":91,"longitude":125}]', '[broken'])('never filters corrupt storage %j', raw => {
+            expect(() => parseGpsCoordinatesStrict(raw)).toThrow(/corrupt/i);
         });
     });
 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { usePageContentStyle } from '../../../src/hooks/useResponsiveLayout';
 import { View, Text, ScrollView, Pressable, ActivityIndicator, TextInput, Platform, Modal, Alert, RefreshControl } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -16,6 +17,7 @@ export default function AgriImplementationReportScreen() {
     const router = useRouter();
     const params = useLocalSearchParams();
 
+    const pageContentStyle = usePageContentStyle();
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [cycles, setCycles] = useState<AgriCropCycle[]>([]);
@@ -114,11 +116,11 @@ export default function AgriImplementationReportScreen() {
     return (
         <ScrollView
             className="flex-1 bg-gray-50"
-            contentContainerStyle={{ padding: 20 }}
+            contentContainerStyle={pageContentStyle}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         >
             {/* Top Navigation Bar */}
-            <View className="flex-row items-center justify-between mb-4">
+            <View className="flex-row flex-wrap items-center justify-between gap-y-2 mb-4">
                 <Pressable
                     onPress={() => router.back()}
                     className="flex-row items-center gap-1.5 px-3 py-2 bg-white rounded-xl border border-gray-200 shadow-sm active:bg-gray-100"
@@ -127,7 +129,7 @@ export default function AgriImplementationReportScreen() {
                     <Text className="text-gray-700 font-bold text-xs">Back to Hub</Text>
                 </Pressable>
 
-                <View className="flex-row items-center gap-2">
+                <View className="flex-row flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
                     <Pressable
                         onPress={() => router.push('/(admin)/agribusiness/expenses?view=steps' as any)}
                         className="flex-row items-center gap-1.5 px-3 py-2 bg-emerald-50 rounded-xl border border-emerald-200 active:bg-emerald-100"

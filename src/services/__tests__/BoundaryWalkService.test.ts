@@ -31,8 +31,14 @@ describe('BoundaryWalkService', () => {
             expect(isFixAccepted(fix(8, 125, 10.01), SETTINGS)).toBe(false);
         });
 
-        it('accepts fixes with unknown accuracy', () => {
-            expect(isFixAccepted(fix(8, 125, null), SETTINGS)).toBe(true);
+        it('rejects fixes with unknown accuracy instead of silently recording them', () => {
+            expect(isFixAccepted(fix(8, 125, null), SETTINGS)).toBe(false);
+        });
+
+        it('rejects negative and nonfinite accuracy', () => {
+            expect(isFixAccepted(fix(8, 125, -1), SETTINGS)).toBe(false);
+            expect(isFixAccepted(fix(8, 125, NaN), SETTINGS)).toBe(false);
+            expect(isFixAccepted(fix(8, 125, Infinity), SETTINGS)).toBe(false);
         });
 
         it('rejects fixes with invalid or NaN coordinates', () => {

@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import { usePageContentStyle } from '../../../src/hooks/useResponsiveLayout';
 import {
     View,
     Text,
@@ -19,6 +20,7 @@ import { AgriWorkerService } from '../../../src/services/AgriWorkerService';
 import { formatPHP } from '../../../src/utils/currency';
 import { Q } from '@nozbe/watermelondb';
 import Toast from '../../../src/components/AppToast';
+import { BlockTaskDirectory } from '../../../src/components/ParcelMap/BlockTaskDirectory';
 
 const SPECIALIZATION_OPTIONS = [
     'General Field Crew',
@@ -33,6 +35,7 @@ const SPECIALIZATION_OPTIONS = [
 
 export default function FarmWorkersScreen() {
     const router = useRouter();
+    const pageContentStyle = usePageContentStyle();
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
 
@@ -220,12 +223,12 @@ export default function FarmWorkersScreen() {
     return (
         <ScrollView
             className="flex-1 bg-gray-50"
-            contentContainerStyle={{ padding: 20 }}
+            contentContainerStyle={pageContentStyle}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         >
             {/* Top Navigation & Header */}
-            <View className="flex-row justify-between items-start mb-6">
-                <View>
+            <View className="flex-row flex-wrap justify-between items-start mb-6">
+                <View className="flex-1 min-w-0 mr-3">
                     <Pressable
                         onPress={() => router.back()}
                         className="flex-row items-center gap-1 mb-2 active:opacity-70"
@@ -241,7 +244,7 @@ export default function FarmWorkersScreen() {
                     </Text>
                 </View>
 
-                <View className="flex-row gap-2">
+                <View className="flex-row flex-wrap gap-2 shrink-0">
                     <Pressable
                         onPress={() => router.push('/(admin)/agribusiness/labor' as any)}
                         className="bg-gray-100 border border-gray-300 px-3.5 py-2.5 rounded-xl flex-row items-center gap-1.5 active:bg-gray-200"
@@ -258,6 +261,8 @@ export default function FarmWorkersScreen() {
                     </Pressable>
                 </View>
             </View>
+
+            <BlockTaskDirectory />
 
             {/* Inline Confirmation Banner */}
             {confirmationMessage && (

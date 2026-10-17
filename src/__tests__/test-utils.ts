@@ -74,6 +74,10 @@ import DeviceRegistry from '../database/models/DeviceRegistry';
 import EmployeeLeave from '../database/models/EmployeeLeave';
 import FranchiseRoyaltyLedger from '../database/models/FranchiseRoyaltyLedger';
 import AgriParcel from '../database/models/AgriParcel';
+import AgriParcelBlock from '../database/models/AgriParcelBlock';
+import AgriBlockAssignment from '../database/models/AgriBlockAssignment';
+import AgriBlockProgress from '../database/models/AgriBlockProgress';
+import AgriPendingLayoutOperation from '../database/models/AgriPendingLayoutOperation';
 import AgriLandOwner from '../database/models/AgriLandOwner';
 import AgriInvestor from '../database/models/AgriInvestor';
 import AgriCropCycle from '../database/models/AgriCropCycle';
@@ -159,6 +163,10 @@ export const modelClasses = [
     EmployeeLeave,
     FranchiseRoyaltyLedger,
     AgriParcel,
+    AgriParcelBlock,
+    AgriBlockAssignment,
+    AgriBlockProgress,
+    AgriPendingLayoutOperation,
     AgriLandOwner,
     AgriInvestor,
     AgriCropCycle,

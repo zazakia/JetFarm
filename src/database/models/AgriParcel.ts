@@ -10,6 +10,10 @@ export default class AgriParcel extends Model {
     @field('area_hectares') areaHectares!: number
     @field('location_address') locationAddress!: string | null
     @field('gps_coordinates') gpsCoordinates!: string | null // JSON coordinates string
+    @field('gps_exclusions') gpsExclusions!: string | null // JSON array of exclusion rings
+    @field('boundary_revision') boundaryRevision!: number
+    @field('layout_revision') layoutRevision!: number
+    @date('boundary_saved_at') boundarySavedAt!: Date | null
     @field('soil_type') soilType!: string | null
     @field('status') status!: string // available, land_prep, planted, harvesting, fallow
 

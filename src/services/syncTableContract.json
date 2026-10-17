@@ -89,7 +89,13 @@
     "agri_farm_workers",
     "agri_labor_logs",
     "agri_weekly_settlements",
-    "agri_investor_ledgers"
+    "agri_investor_ledgers",
+    "agri_parcel_blocks",
+    "agri_block_assignments",
+    "agri_block_progress"
+  ],
+  "localOnlyTables": [
+    "agri_pending_layout_operations"
   ],
   "remoteTableMap": {
     "user_profiles": "user_profiles",
@@ -179,7 +185,10 @@
     "agri_farm_workers": "agri_farm_workers",
     "agri_labor_logs": "agri_labor_logs",
     "agri_weekly_settlements": "agri_weekly_settlements",
-    "agri_investor_ledgers": "agri_investor_ledgers"
+    "agri_investor_ledgers": "agri_investor_ledgers",
+    "agri_parcel_blocks": "agri_parcel_blocks",
+    "agri_block_assignments": "agri_block_assignments",
+    "agri_block_progress": "agri_block_progress"
   },
   "requiredRemoteColumns": {
     "borrowers": [

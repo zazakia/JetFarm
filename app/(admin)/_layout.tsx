@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { TABLET_BREAKPOINT } from '../../src/utils/responsiveLayout';
 import { View, Text, Pressable, useWindowDimensions, Modal, SafeAreaView } from 'react-native';
 import { Slot, usePathname, useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -50,7 +51,7 @@ function FeatureDisabledNotice({ featureName }: { featureName: string }) {
 
 export default function AdminShellLayout() {
     const { width } = useWindowDimensions();
-    const isDesktop = width >= 720;
+    const isDesktop = width >= TABLET_BREAKPOINT;
     const [drawerOpen, setDrawerOpen] = useState(false);
     const [searchModalOpen, setSearchModalOpen] = useState(false);
     const pathname = usePathname();
@@ -180,7 +181,7 @@ export default function AdminShellLayout() {
                     return (
                         <SafeAreaView className="bg-blue-900 shadow-sm z-10">
                             <View className="flex-row items-center justify-between p-4">
-                                <View className="flex-row items-center">
+                                <View className="flex-row items-center flex-1 min-w-0 mr-2">
                                     {showBackButton ? (
                                         <Pressable onPress={() => router.back()} className="mr-4 p-1 active:bg-white/10 rounded-full">
                                             <MaterialIcons name="arrow-back" size={28} color="#FFFFFF" />
@@ -190,9 +191,11 @@ export default function AdminShellLayout() {
                                             <MaterialIcons name="menu" size={28} color="#FFFFFF" />
                                         </Pressable>
                                     )}
-                                    <Text className="text-white text-lg font-bold tracking-wide">{currentTitle}</Text>
+                                    <Text className="text-white text-lg font-bold tracking-wide flex-1" numberOfLines={1}>
+                                        {currentTitle}
+                                    </Text>
                                 </View>
-                                <View className="flex-row items-center">
+                                <View className="flex-row items-center shrink-0">
                                     <SyncStatusBadge />
                                     <Pressable
                                         testID="mobile-search-button"

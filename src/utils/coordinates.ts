@@ -79,6 +79,33 @@ export function serializeGpsCoordinates(coords: GPSCoordinate[] | null | undefin
     return JSON.stringify(coords);
 }
 
+/** Full decimal input only: no partial parseFloat, exponent, hex or empty values. */
+export function parseCoordinateNumber(raw: string): number | null {
+    if (typeof raw !== 'string' || !/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/.test(raw.trim())) return null;
+    const value = Number(raw.trim());
+    return Number.isFinite(value) ? value : null;
+}
+
+/** Strict storage reader for writes/review: never filters a corrupt vertex. */
+export function parseGpsCoordinatesStrict(raw: string | null | undefined): GPSCoordinate[] {
+    if (raw == null || raw.trim() === '') return [];
+    const text = raw.trim();
+    let entries: unknown;
+    if (text.startsWith('[')) {
+        try { entries = JSON.parse(text); } catch { throw new Error('Corrupt GPS coordinates'); }
+    } else {
+        const parts = text.split(',');
+        const latitude = parts.length === 2 ? parseCoordinateNumber(parts[0]) : null;
+        const longitude = parts.length === 2 ? parseCoordinateNumber(parts[1]) : null;
+        if (latitude === null || longitude === null) throw new Error('Corrupt GPS coordinates');
+        entries = [{ latitude, longitude }];
+    }
+    if (!Array.isArray(entries) || entries.some(entry =>
+        !entry || typeof entry !== 'object' || !isValidCoordinate(entry.latitude, entry.longitude)
+    )) throw new Error('Corrupt GPS coordinates');
+    return entries.map(({ latitude, longitude }) => ({ latitude, longitude }));
+}
+
 const EARTH_RADIUS_METERS = 6378137;
 
 /** Great-circle distance in meters (haversine). */

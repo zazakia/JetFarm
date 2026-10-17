@@ -1,5 +1,7 @@
 import { synchronize } from '@nozbe/watermelondb/sync';
 import { SyncService } from '../SyncService';
+import { DefaultSyncAuditStorage } from '../SyncAuditLogService';
+import { assertAgriDatabaseUsable } from '../AgriWriteSafety';
 
 jest.mock('@nozbe/watermelondb/sync', () => ({
     synchronize: jest.fn(),
@@ -473,21 +475,17 @@ describe('SyncService pull failure regressions', () => {
         expect(JSON.stringify(audit.failSession.mock.calls)).not.toContain('jane@example.com');
     });
 
-    it('does not fail a successful sync when detailed log persistence is unavailable', async () => {
-        const audit = {
-            beginSession: jest.fn().mockRejectedValue(new Error('filesystem unavailable')),
-            startAttempt: jest.fn(),
-            record: jest.fn(),
-            recordFailure: jest.fn(),
-            completeSession: jest.fn(),
-            failSession: jest.fn(),
-        };
-        service = new SyncService((service as any).db, mockSupabase, audit as any);
-        jest.spyOn(service, 'updatePendingCount').mockResolvedValue(0);
+    it('does not fail a successful sync when the default detailed log storage is unavailable', async () => {
+        // Exercise the actual default audit service at its storage boundary. An
+        // opaque injected callback has no storage-only contract and may write WDB.
+        jest.spyOn(DefaultSyncAuditStorage.prototype, 'saveSessions')
+            .mockRejectedValueOnce(new Error('filesystem unavailable'));
         (synchronize as jest.Mock).mockResolvedValueOnce(undefined);
 
         await service.sync(true);
 
+        expect(synchronize).toHaveBeenCalledTimes(1);
+        expect(() => assertAgriDatabaseUsable((service as any).db)).not.toThrow();
         expect(mockSetSyncProgress).toHaveBeenCalledWith(expect.objectContaining({ status: 'completed' }));
         expect(mockSetSyncProgress).toHaveBeenCalledWith(expect.objectContaining({
             auditPersistenceWarning: expect.stringMatching(/detailed sync log/i),

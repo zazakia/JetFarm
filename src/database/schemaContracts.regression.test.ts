@@ -44,6 +44,31 @@ function tableColumns(tableName: string) {
 }
 
 describe('local/remote schema regression contracts', () => {
+    it('appends an additive v49 layout migration matching the local schema', () => {
+        const { mySchema } = require('./schema');
+        const { myMigrations } = require('./migrations');
+        expect(mySchema.version).toBe(49);
+        const migrations = myMigrations.sortedMigrations;
+        expect(migrations.filter((m: any) => m.toVersion === 49)).toHaveLength(1);
+        const steps = migrations.find((m: any) => m.toVersion === 49).steps;
+        const added = steps.find((s: any) => s.type === 'add_columns');
+        expect(added.table).toBe('agri_parcels');
+        expect(added.columns.map((c: any) => c.name).sort()).toEqual([
+            'boundary_revision', 'boundary_saved_at', 'gps_exclusions', 'layout_revision',
+        ]);
+        for (const step of steps.filter((s: any) => s.type === 'create_table')) {
+            expect(step.schema).toEqual(mySchema.tables[step.schema.name]);
+        }
+        expect(steps.filter((s: any) => s.type === 'create_table')).toHaveLength(4);
+        for (const file of ['index.ts', 'index.web.ts', '../__tests__/test-utils.ts']) {
+            const source = fs.readFileSync(path.join(process.cwd(), 'src', 'database', file), 'utf8');
+            for (const model of ['AgriParcelBlock', 'AgriBlockAssignment', 'AgriBlockProgress', 'AgriPendingLayoutOperation']) {
+                expect(source).toContain(`import ${model} from`);
+                expect(source).toMatch(new RegExp(`modelClasses[\\s\\S]*\\b${model}\\b`));
+            }
+        }
+    });
+
     it('publishes one machine-readable sync contract for the app and integrity verifier', () => {
         const contractPath = path.join(process.cwd(), 'src', 'services', 'syncTableContract.json');
 
@@ -360,8 +385,13 @@ describe('local/remote schema regression contracts', () => {
             const remote = remoteColumnsByTable();
             const local = localSchemaTables();
 
+            // Task 2 is LOCAL persistence only. Task 6 must replace these exact deferrals
+            // with the transactional remote schema contract before config-sync activation.
+            const pendingRemoteTables = new Set(['agri_parcel_blocks', 'agri_block_assignments', 'agri_block_progress']);
+            const pendingParcelColumns = new Set(['gps_exclusions', 'boundary_revision', 'layout_revision', 'boundary_saved_at']);
             const offenders: string[] = [];
             for (const table of synced) {
+                if (pendingRemoteTables.has(table)) continue;
                 const remoteName = remoteMap[table] ?? table;
                 const remoteColumns = remote[remoteName];
                 if (!remoteColumns) {
@@ -370,7 +400,8 @@ describe('local/remote schema regression contracts', () => {
                 }
                 // deleted_at is always sent by the soft-delete upsert, even with no local deletion.
                 const required = new Set([...(local[table] ?? []), 'deleted_at']);
-                const missing = [...required].filter((column) => !remoteColumns.has(column));
+                const missing = [...required].filter((column) => !remoteColumns.has(column)
+                    && !(table === 'agri_parcels' && pendingParcelColumns.has(column)));
                 if (missing.length) offenders.push(`${table} -> ${remoteName}: ${missing.sort().join(', ')}`);
             }
 
@@ -571,7 +602,16 @@ describe('local/remote schema regression contracts', () => {
     });
 
     describe('sync engine completeness and exhaustiveness check', () => {
-        const ALLOWED_UNSYNCED_TABLES = new Set<string>();
+        const ALLOWED_UNSYNCED_TABLES = new Set<string>(['agri_pending_layout_operations']);
+
+        it('declares the immutable layout outbox local-only without a generic remote mapping', () => {
+            const contract = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'src', 'services', 'syncTableContract.json'), 'utf8'));
+            expect(contract.localOnlyTables).toEqual(['agri_pending_layout_operations']);
+            expect([...contract.coreTables, ...contract.configTables]).not.toContain('agri_pending_layout_operations');
+            expect(contract.remoteTableMap).not.toHaveProperty('agri_pending_layout_operations');
+            // SyncService.gpsSafety exercises actual push handlers and WDB ACK retention.
+            // Silently filtering this table would falsely acknowledge its unsent operations.
+        });
 
         function getSchemaTables(): string[] {
             const schema = fs.readFileSync(path.join(process.cwd(), 'src', 'database', 'schema.ts'), 'utf8');

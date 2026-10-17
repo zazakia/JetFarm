@@ -1,309 +1,342 @@
-import { test, expect, type Page } from '@playwright/test';
-import { loginAsAdmin, safeNavigate } from './playwright-auth';
+import { test, expect } from '@playwright/test';
+import { safeNavigate } from './playwright-auth';
+import {
+  MAPPING_ROUTE, PARCELS_ROUTE, OUTER, OUTER_HA,
+  localAdmin, mappingReady, registerUnmeasuredParcel, registerSecondParcel,
+  vertexRows, vertexMarkers, boundaryPaths, filledPaths, chooseMode,
+  addVertex, addPoints, drawOuterManually, expectDialog, acknowledge,
+  openReview, reviewAndSave, tapMap, markerCenters,
+} from './mapping-helpers';
 
 /**
- * GPS Boundary Mapping module E2E (web build).
- *
- * Covers what the Jest screen tests cannot: the real react-leaflet map mounting
- * inside the exported bundle, vertices rendering as an interactive SVG polygon,
- * the cross-platform ConfirmDialog flow (`Alert.alert` is a no-op on
- * react-native-web), and boundary persistence across screen navigation.
- *
- * The suite is self-contained: local web E2E mode signs in through
- * AuthService.quickSignIn with a local session, so remote rows are never synced
- * into the browser. Each test registers its own parcels through the parcels
- * screen, which also keeps the spec honest about the real operator entry point.
+ * Approved GPS UX acceptance labels (GPS-*) are local traceability names, not
+ * invented external requirement IDs. These replace the obsolete form-only flow:
+ * explicit intent, open line -> Close boundary -> review -> saved, selection not
+ * deletion, and draft clearing distinct from audited saved-geometry clearing.
+ * Real Leaflet, UI-created disposable fixtures, and local harness auth only.
+ * Browser RED/baseline execution is deferred while the parent edits the app.
  */
-
-const MAPPING_ROUTE = '/agribusiness/mapping';
-const PARCELS_ROUTE = '/agribusiness/parcels';
-
-const BUKIDNON_VERTICES: Array<[string, string]> = [
-  ['8.364043', '124.864014'],
-  ['8.369357', '124.864014'],
-  ['8.369357', '124.869386'],
-];
-
-async function openParcelsScreen(page: Page) {
-  // loginAsAdmin already clears the first-run onboarding tour overlay.
-  await loginAsAdmin(page);
-  await safeNavigate(page, PARCELS_ROUTE, 'Land Parcels Registry');
-}
-
-/** Registers a parcel through the real UI and returns its WatermelonDB id. */
-async function createParcel(page: Page, name: string, code: string): Promise<string> {
-  await page.getByTestId('register-parcel-button').click();
-
-  await page.getByTestId('parcel-name-input').fill(name);
-  await page.getByTestId('parcel-code-input').fill(code);
-  await page.getByTestId('landowner-name-input').fill('E2E Landowner');
-  await page.getByTestId('parcel-area-input').fill('4.2');
-  await page.getByTestId('save-parcel-button').click();
-
-  // The modal closes on success and the card appears in the registry.
-  await expect(page.getByTestId('parcel-name-input')).toHaveCount(0);
-  const card = page.locator('[data-testid^="parcel-card-"]').filter({ hasText: name }).first();
-  await expect(card).toBeVisible();
-
-  const testId = await card.getAttribute('data-testid');
-  if (!testId || !testId.startsWith('parcel-card-')) {
-    throw new Error(`Parcel card is missing its data-testid (got ${String(testId)})`);
-  }
-  return testId.replace('parcel-card-', '');
-}
-
-/** Login, register `parcelCount` parcels (name → id), then open the mapping screen. */
-async function seedParcels(page: Page, count = 1): Promise<Record<string, string>> {
-  await openParcelsScreen(page);
-  const ids: Record<string, string> = {};
-  for (let i = 1; i <= count; i++) {
-    const name = `E2E Parcel ${i}`;
-    ids[name] = await createParcel(page, name, `E2EP-${i}`);
-  }
-  return ids;
-}
-
-async function openMappingScreen(page: Page, parcelCount = 1): Promise<Record<string, string>> {
-  const ids = await seedParcels(page, parcelCount);
-
-  // A target text is required: safeNavigate otherwise waits for 'networkidle',
-  // which never settles here because the live satellite tile layer keeps
-  // requesting tiles.
-  await safeNavigate(page, MAPPING_ROUTE, 'GPS Boundary Mapping');
-  await expect(page.locator('[data-testid^="parcel-chip-"]').first()).toBeVisible();
-  return ids;
-}
-
-const vertexRows = (page: Page) => page.locator('[data-testid^="remove-vertex-"]');
-const vertexCount = (page: Page) => vertexRows(page).count();
-
-async function dialogTitle(page: Page): Promise<string> {
-  return (await page.getByTestId('confirm-dialog-title').textContent())?.trim() ?? '';
-}
-
-async function addVertex(page: Page, lat: string, lon: string) {
-  await page.getByPlaceholder('Latitude (e.g. 8.3512)').fill(lat);
-  await page.getByPlaceholder('Longitude (e.g. 124.8621)').fill(lon);
-  await page.getByTestId('add-vertex').click();
-}
-
-async function addTriangle(page: Page) {
-  for (const [lat, lon] of BUKIDNON_VERTICES) {
-    await addVertex(page, lat, lon);
-  }
-  await expect.poll(() => vertexCount(page)).toBe(3);
-}
-
-async function acknowledgeDialog(page: Page) {
-  await expect(page.getByTestId('confirm-dialog')).toBeVisible();
-  await page.getByTestId('confirm-dialog-confirm').click();
-  await expect(page.getByTestId('confirm-dialog')).toHaveCount(0);
-}
-
-test.describe('GPS Boundary Mapping', () => {
-  test.beforeEach(async ({ page }) => {
-    test.setTimeout(300000);
-    await page.setDefaultTimeout(30000);
+test.describe('GPS Parcel Mapping approved browser UX', () => {
+  test.use({ viewport: { width: 1440, height: 1000 } });
+  test.beforeEach(async ({ page, baseURL }) => {
+    test.setTimeout(180000);
+    await localAdmin(page, baseURL);
   });
 
-  test('mounts the live map and saves a manually captured boundary', async ({ page }) => {
-    await openMappingScreen(page);
-
-    // A real Leaflet map replaces the old static "shape preview" placeholder.
-    await expect(page.locator('.leaflet-container')).toBeVisible();
-    await expect(page.getByText('Shoelace Geodesic Projection')).toHaveCount(0);
-
-    // A brand-new parcel has no boundary yet.
-    await expect(page.getByTestId('empty-boundary-state')).toBeVisible();
-    expect(await vertexCount(page)).toBe(0);
-
-    await addTriangle(page);
-
-    // The polygon only appears once the boundary can close.
-    await expect(page.locator('.leaflet-overlay-pane path.leaflet-interactive')).toBeVisible();
+  test('GPS-AREA replaces unmeasured hectares only after explicit close, review and save', async ({ page }) => {
+    await registerUnmeasuredParcel(page);
+    await drawOuterManually(page);
     await expect(page.getByTestId('unsaved-badge')).toBeVisible();
-    await expect(page.getByText(/Auto-Calculated Perimeter Area/i).first()).toBeVisible();
-    // Area is derived from the vertices, never typed in.
-    await expect(page.getByText(/\d+\.\d{4}/).first()).toBeVisible();
+    await expect(page.getByTestId('parcel-details-panel')).toContainText('Registered area: 0.0000 ha');
+    await expect(page.getByTestId('parcel-details-panel')).toContainText('4.9568 ha');
+    await expect(page.getByTestId('parcel-details-panel')).toContainText('49,568 m²');
+    await expect(page.getByTestId('parcel-details-panel')).toContainText('Outer perimeter');
 
-    await page.getByTestId('save-boundary').click();
-    await expect(page.getByTestId('confirm-dialog')).toBeVisible();
-    expect(await dialogTitle(page)).toBe('Boundary Saved');
-    await expect(page.getByTestId('confirm-dialog-message')).toContainText('3 GPS vertices');
-    await acknowledgeDialog(page);
-    await expect(page.getByTestId('unsaved-badge')).toHaveCount(0);
-
-    // Ensure map tiles have finished loading so screenshots capture real cartography
-    await page.locator('.leaflet-tile-loaded').first().waitFor({ state: 'visible', timeout: 15000 }).catch(() => {});
-    await page.waitForTimeout(1500);
-
-    await page.screenshot({ path: 'docs/images/mapping-boundary-saved.png', fullPage: true });
-    // Close-up of the rendered polygon for the module docs.
-    await page.locator('.leaflet-container').screenshot({ path: 'docs/images/mapping-polygon.png' });
-  });
-
-  test('rejects an out-of-range coordinate with inline feedback', async ({ page }) => {
-    await openMappingScreen(page);
-
-    await addVertex(page, '999', '124.86');
-    await expect(page.getByTestId('vertex-input-error')).toBeVisible();
-    expect(await vertexCount(page)).toBe(0);
-    await expect(page.getByTestId('unsaved-badge')).toHaveCount(0);
-
-    // Fixing the value clears the error and appends the vertex.
-    await addVertex(page, BUKIDNON_VERTICES[0][0], BUKIDNON_VERTICES[0][1]);
-    await expect(page.getByTestId('vertex-input-error')).toHaveCount(0);
-    await expect.poll(() => vertexCount(page)).toBe(1);
-    await expect(page.getByTestId('unsaved-badge')).toBeVisible();
-  });
-
-  test('blocks saving an incomplete boundary with an acknowledge-only dialog', async ({ page }) => {
-    await openMappingScreen(page);
-
-    await addVertex(page, BUKIDNON_VERTICES[0][0], BUKIDNON_VERTICES[0][1]);
-    await addVertex(page, BUKIDNON_VERTICES[1][0], BUKIDNON_VERTICES[1][1]);
-    await expect.poll(() => vertexCount(page)).toBe(2);
-
-    await page.getByTestId('save-boundary').click();
-    await expect(page.getByTestId('confirm-dialog')).toBeVisible();
-    expect(await dialogTitle(page)).toBe('Boundary Incomplete');
-
-    // Informational dialog: a single OK action, no destructive second button.
-    await expect(page.getByTestId('confirm-dialog-cancel')).toHaveCount(0);
-    await expect(page.getByTestId('confirm-dialog-confirm')).toContainText('OK');
-
-    await acknowledgeDialog(page);
-    expect(await vertexCount(page)).toBe(2);
-    await expect(page.getByTestId('unsaved-badge')).toBeVisible();
-  });
-
-  test('confirms before discarding unsaved edits when switching parcels', async ({ page }) => {
-    await openMappingScreen(page, 2);
-    const chips = page.locator('[data-testid^="parcel-chip-"]');
-    expect(await chips.count()).toBe(2);
-
-    const chipA = await chips.nth(0).getAttribute('data-testid');
-    const chipB = await chips.nth(1).getAttribute('data-testid');
-    expect(chipA).not.toBe(chipB);
-
-    // Pin the starting parcel (clicking the already-selected chip is a no-op).
-    await page.locator(`[data-testid="${chipA}"]`).click();
-    await addVertex(page, BUKIDNON_VERTICES[0][0], BUKIDNON_VERTICES[0][1]);
-    await expect.poll(() => vertexCount(page)).toBe(1);
-
-    await page.locator(`[data-testid="${chipB}"]`).click();
-    await expect(page.getByTestId('confirm-dialog')).toBeVisible();
-    expect(await dialogTitle(page)).toBe('Unsaved Changes');
-    await expect(page.getByTestId('confirm-dialog-confirm')).toContainText('Discard');
-
-    // "Keep Editing" preserves the work and stays on the same parcel.
+    await openReview(page, OUTER_HA, 0);
     await page.getByTestId('confirm-dialog-cancel').click();
     await expect(page.getByTestId('confirm-dialog')).toHaveCount(0);
-    expect(await vertexCount(page)).toBe(1);
     await expect(page.getByTestId('unsaved-badge')).toBeVisible();
+    await expect(page.getByTestId('parcel-details-panel')).toContainText('Registered area: 0.0000 ha');
+    await expect(vertexRows(page)).toHaveCount(4);
+    await expect(filledPaths(page)).toHaveCount(1);
 
-    // "Discard" switches parcels and clears the dirty flag.
-    await page.locator(`[data-testid="${chipB}"]`).click();
-    await page.getByTestId('confirm-dialog-confirm').click();
+    await reviewAndSave(page, OUTER_HA, 0);
+    await expect(vertexMarkers(page)).toHaveCount(0); // Browse is not an edit mode.
+    await expect(filledPaths(page)).toHaveCount(1);
+    await page.screenshot({
+      path: `D:/GitHub/JetFarm/tmp/systematic-test-matrix/gps-browser-saved-${Date.now()}.png`,
+      fullPage: true,
+    });
+  });
+
+  const invalidCoordinates = [
+    { name: 'latitude above 90', lat: '90.000001', lon: '0' },
+    { name: 'latitude below -90', lat: '-90.000001', lon: '0' },
+    { name: 'longitude above 180', lat: '0', lon: '180.000001' },
+    { name: 'longitude below -180', lat: '0', lon: '-180.000001' },
+    { name: 'trailing latitude text', lat: '0.001north', lon: '0' },
+    { name: 'trailing longitude text', lat: '0', lon: '0.001east' },
+    { name: 'missing latitude', lat: '', lon: '0' },
+    { name: 'missing longitude', lat: '0', lon: '' },
+    { name: 'NaN', lat: 'NaN', lon: '0' },
+    { name: 'Infinity', lat: '0', lon: 'Infinity' },
+  ];
+  for (const { name, lat, lon } of invalidCoordinates) {
+    test(`GPS-VALID rejects ${name} without mutating the draft`, async ({ page }) => {
+      await registerUnmeasuredParcel(page);
+      await chooseMode(page, 'manual');
+      await addVertex(page, lat, lon);
+      await expect(page.getByTestId('vertex-input-error')).toContainText('Enter full decimal degrees');
+      await expect(vertexRows(page)).toHaveCount(0);
+      await expect(vertexMarkers(page)).toHaveCount(0);
+      await expect(boundaryPaths(page)).toHaveCount(0);
+      await expect(page.getByTestId('unsaved-badge')).toHaveCount(0);
+      await expect(page.getByRole('textbox', { name: 'Latitude in decimal degrees', exact: true })).toHaveValue(lat);
+      await expect(page.getByRole('textbox', { name: 'Longitude in decimal degrees', exact: true })).toHaveValue(lon);
+      await addPoints(page, [OUTER[0]]);
+      await expect(page.getByTestId('vertex-input-error')).toHaveCount(0);
+      await expect(page.getByRole('textbox', { name: 'Latitude in decimal degrees', exact: true })).toHaveValue('');
+      await expect(page.getByRole('textbox', { name: 'Longitude in decimal degrees', exact: true })).toHaveValue('');
+      await expect(page.getByTestId('unsaved-badge')).toBeVisible();
+    });
+  }
+
+  for (const count of [0, 1, 2]) {
+    test(`GPS-INCOMPLETE rejects review/save with ${count} points and retains those points`, async ({ page }) => {
+      await registerUnmeasuredParcel(page);
+      await chooseMode(page, 'manual');
+      await addPoints(page, OUTER.slice(0, count));
+      await page.getByTestId('save-boundary').click();
+      await expectDialog(page, 'Boundary Incomplete');
+      await expect(page.getByTestId('confirm-dialog-message')).toContainText('at least three non-crossing vertices');
+      await acknowledge(page, 'Boundary Incomplete');
+      await expect(vertexRows(page)).toHaveCount(count);
+      await expect(vertexMarkers(page)).toHaveCount(count);
+      await expect(filledPaths(page)).toHaveCount(0);
+      await expect(page.getByTestId('parcel-details-panel')).toContainText('Registered area: 0.0000 ha');
+      await expect(page.getByTestId('unsaved-badge')).toHaveCount(count ? 1 : 0);
+    });
+  }
+
+  for (const invalid of [
+    { name: 'crossing ring', points: [OUTER[0], OUTER[2], OUTER[1], OUTER[3]], message: /self-intersects/ },
+    { name: 'duplicate adjacent vertex', points: [OUTER[0], OUTER[1], OUTER[1], OUTER[2], OUTER[3]], message: /duplicate vertex/ },
+  ]) {
+    test(`GPS-TOPOLOGY refuses to close or save a ${invalid.name}`, async ({ page }) => {
+      await registerUnmeasuredParcel(page);
+      await chooseMode(page, 'manual');
+      await addPoints(page, invalid.points);
+      await page.getByTestId('close-boundary').click();
+      await expect(page.getByTestId('vertex-input-error')).toContainText(invalid.message);
+      await expect(filledPaths(page)).toHaveCount(0);
+      await expect(page.getByTestId('measured-hectares')).toHaveCount(0);
+      await page.getByTestId('save-boundary').click();
+      await expectDialog(page, 'Boundary Invalid');
+      await expect(page.getByTestId('confirm-dialog-message')).toContainText(invalid.message);
+      await acknowledge(page, 'Boundary Invalid');
+      await expect(vertexRows(page)).toHaveCount(invalid.points.length);
+      await expect(vertexMarkers(page)).toHaveCount(invalid.points.length);
+      await expect(page.getByTestId('unsaved-badge')).toBeVisible();
+    });
+  }
+
+  test('GPS-MODES Browse never adds points; Draw boundary consumes real Leaflet taps', async ({ page }) => {
+    await registerUnmeasuredParcel(page);
+    await expect(page.getByTestId('boundary-editor-panel')).toHaveCount(0);
+    await tapMap(page, 0.35, 0.4);
+    await expect(vertexMarkers(page)).toHaveCount(0);
+    await expect(boundaryPaths(page)).toHaveCount(0);
     await expect(page.getByTestId('unsaved-badge')).toHaveCount(0);
-    expect(await vertexCount(page)).toBe(0);
-    await expect(page.getByTestId('empty-boundary-state')).toContainText('E2E Parcel');
 
-    // Returning to parcel A proves the discard really committed — the unsaved
-    // vertex is gone, and no stale geometry bled over from parcel B either.
-    await page.locator(`[data-testid="${chipA}"]`).click();
-    await expect(page.getByTestId('confirm-dialog')).toHaveCount(0);
-    expect(await vertexCount(page)).toBe(0);
-    await expect(page.getByTestId('empty-boundary-state')).toBeVisible();
-  });
-
-  test('edits the boundary directly on the map', async ({ page }) => {
-    await openMappingScreen(page);
-
-    const map = page.locator('.leaflet-container');
-    await expect(map).toBeVisible();
-
-    // The map translates upward as soon as a vertex row appears (measured: the
-    // container moved y 491 -> 400 after the first click), so every click has to
-    // be measured against the box as it is at click time. A box cached before
-    // the first click points below the map and the click is silently lost.
-    const clickMap = async (xFraction: number, yFraction: number) => {
-      const box = await map.boundingBox();
-      expect(box).not.toBeNull();
-      if (!box) return;
-      await page.mouse.click(box.x + box.width * xFraction, box.y + box.height * yFraction);
-    };
-
-    // Start from an empty parcel so the click cannot land on the polygon path
-    // (an interactive L.Polygon swallows the map click by design).
-    expect(await vertexCount(page)).toBe(0);
-
-    // A map click adds the first vertex.
-    await clickMap(0.5, 0.5);
-    await expect.poll(() => vertexCount(page)).toBe(1);
-
-    // FitBounds re-frames the map on that vertex; a second click elsewhere adds
-    // another, which is what the coordinates list below reflects.
-    await clickMap(0.1, 0.85);
-    await expect.poll(() => vertexCount(page)).toBe(2);
+    await chooseMode(page, 'boundary');
+    await tapMap(page, 0.5, 0.5);
+    await expect(vertexRows(page)).toHaveCount(1);
+    await expect(vertexMarkers(page)).toHaveCount(1);
+    // First-point fit is observable through the actual projected marker position.
+    await expect.poll(async () => {
+      const box = await page.locator('.leaflet-container').boundingBox();
+      const [point] = await markerCenters(page);
+      return !!box && !!point && Math.abs(point.x - (box.x + box.width / 2)) < 3 &&
+        Math.abs(point.y - (box.y + box.height / 2)) < 3;
+    }).toBe(true);
+    await tapMap(page, 0.22, 0.72);
+    await expect(vertexRows(page)).toHaveCount(2);
+    await tapMap(page, 0.76, 0.72);
+    await expect(vertexRows(page)).toHaveCount(3);
+    await expect(vertexMarkers(page)).toHaveCount(3);
+    await expect(filledPaths(page)).toHaveCount(0);
+    await page.getByTestId('close-boundary').click();
+    await expect(filledPaths(page)).toHaveCount(1);
+    await expect(filledPaths(page)).toHaveAttribute('d', /z\s*$/i);
     await expect(page.getByTestId('unsaved-badge')).toBeVisible();
-
-    // Tapping a vertex marker removes it again.
-    await page.locator('.leaflet-marker-icon').first().click({ force: true });
-    await expect.poll(() => vertexCount(page)).toBe(1);
   });
 
-  test('clears the whole boundary only after confirmation', async ({ page }) => {
-    await openMappingScreen(page);
-    await addTriangle(page);
+  test('GPS-SELECT selecting a real marker does not delete until the explicit Delete action', async ({ page }) => {
+    await registerUnmeasuredParcel(page);
+    await drawOuterManually(page);
+    await page.getByRole('button', { name: 'Fit selected geometry', exact: true }).click();
+    const before = await vertexRows(page).allTextContents();
+    const marker = vertexMarkers(page).first();
+    await marker.click();
+    await expect(vertexRows(page)).toHaveText(before);
+    await expect(vertexMarkers(page)).toHaveCount(4);
+    await expect(filledPaths(page)).toHaveCount(1);
+    // The selected vertex has a visible, larger dot, not a silently removed row.
+    await expect.poll(() => marker.locator('[data-vertex-index="0"] > div').evaluate(el =>
+      el.getBoundingClientRect().width
+    )).toBe(22);
+    await page.getByRole('button', { name: 'Delete vertex 1', exact: true }).click();
+    await expect(vertexRows(page)).toHaveCount(3);
+    await expect(vertexMarkers(page)).toHaveCount(3);
+    await expect(vertexRows(page)).toHaveText(before.slice(1).map((text, index) => text.replace(/^\d+\./, `${index + 1}.`)));
+    await expect(filledPaths(page)).toHaveCount(0); // Deletion reopens the draft.
+    await page.getByTestId('mapping-undo').click();
+    await expect(vertexRows(page)).toHaveText(before);
+    await expect(vertexMarkers(page)).toHaveCount(4);
+    await expect(filledPaths(page)).toHaveCount(1);
+    await page.getByTestId('mapping-redo').click();
+    await expect(vertexMarkers(page)).toHaveCount(3);
+  });
 
-    await page.getByTestId('clear-boundary').click();
-    await expect(page.getByTestId('confirm-dialog')).toBeVisible();
-    expect(await dialogTitle(page)).toBe('Clear Boundary');
+  test('GPS-DRAG dragging a Leaflet vertex changes coordinates and shape without adding or deleting vertices', async ({ page }) => {
+    await registerUnmeasuredParcel(page);
+    await drawOuterManually(page);
+    await page.getByRole('button', { name: 'Fit selected geometry', exact: true }).click();
+    const row = page.getByTestId('select-vertex-0');
+    const coordinatesBefore = await row.textContent();
+    const pathBefore = await filledPaths(page).getAttribute('d');
+    const marker = vertexMarkers(page).first();
+    await marker.scrollIntoViewIfNeeded();
+    const box = await marker.boundingBox();
+    if (!box) throw new Error('Cannot drag an invisible vertex');
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(box.x + box.width / 2 + 25, box.y + box.height / 2 - 25, { steps: 12 });
+    await page.mouse.up();
+    await expect(row).not.toHaveText(coordinatesBefore || '');
+    await expect(vertexRows(page)).toHaveCount(4);
+    await expect(vertexMarkers(page)).toHaveCount(4);
+    await expect(boundaryPaths(page)).not.toHaveAttribute('d', pathBefore || '');
+    await expect(filledPaths(page)).toHaveCount(0);
+    await expect(page.getByTestId('parcel-details-panel')).toContainText('Registered area: 0.0000 ha');
+    await page.getByTestId('mapping-undo').click();
+    await expect(row).toHaveText(coordinatesBefore || '');
+    await expect(filledPaths(page)).toHaveCount(1);
+  });
 
-    // Cancel leaves the boundary intact.
+  test('GPS-SWITCH Keep Editing preserves the selected parcel; Discard removes its unsaved geometry', async ({ page }) => {
+    const idA = await registerUnmeasuredParcel(page, 'Synthetic Parcel A');
+    const idB = await registerSecondParcel(page, 'Synthetic Parcel B');
+    await page.getByTestId(`parcel-mapping-link-${idA}`).click();
+    await mappingReady(page, idA);
+    await chooseMode(page, 'manual');
+    await addPoints(page, [OUTER[0]]);
+    await page.getByTestId(`parcel-chip-${idB}`).click();
+    await expectDialog(page, 'Unsaved Changes');
+    await expect(page.getByTestId('confirm-dialog-confirm')).toHaveText('Discard');
     await page.getByTestId('confirm-dialog-cancel').click();
     await expect(page.getByTestId('confirm-dialog')).toHaveCount(0);
-    expect(await vertexCount(page)).toBe(3);
+    await expect(page.getByTestId(`parcel-chip-${idA}`)).toHaveAttribute('aria-pressed', 'true');
+    await expect(vertexRows(page)).toHaveCount(1);
+    await expect(vertexMarkers(page)).toHaveCount(1);
 
-    // Confirm empties it and restores the empty-state guidance.
-    await page.getByTestId('clear-boundary').click();
+    await page.getByTestId(`parcel-chip-${idB}`).click();
+    await expectDialog(page, 'Unsaved Changes');
     await page.getByTestId('confirm-dialog-confirm').click();
-    await expect.poll(() => vertexCount(page)).toBe(0);
-    await expect(page.getByTestId('empty-boundary-state')).toBeVisible();
-  });
-
-  test('persists a saved boundary and honours the parcel-card deep link', async ({ page }) => {
-    const ids = await seedParcels(page, 2);
-    const idA = ids['E2E Parcel 1'];
-    const idB = ids['E2E Parcel 2'];
-
-    // Save a real triangle against parcel 1.
-    await safeNavigate(page, MAPPING_ROUTE, 'GPS Boundary Mapping');
+    await mappingReady(page, idB);
+    await expect(page.getByTestId('parcel-details-panel')).toContainText('Synthetic Parcel B');
+    await expect(page.getByTestId('unsaved-badge')).toHaveCount(0);
+    await expect(vertexMarkers(page)).toHaveCount(0);
     await page.getByTestId(`parcel-chip-${idA}`).click();
-    await addTriangle(page);
-    await page.getByTestId('save-boundary').click();
-    expect(await dialogTitle(page)).toBe('Boundary Saved');
-    await acknowledgeDialog(page);
-    await expect(page.getByTestId('unsaved-badge')).toHaveCount(0);
+    await mappingReady(page, idA);
+    await expect(page.getByTestId('recover-mapping-draft')).toHaveCount(0);
+    await chooseMode(page, 'manual');
+    await expect(vertexRows(page)).toHaveCount(0);
+  });
 
-    // Open parcel 2 through its card action, not a hand-typed URL.
+  test('GPS-DRAFT Clear Draft Points cancels safely and cannot erase the saved boundary or recorded hectares', async ({ page }) => {
+    await registerUnmeasuredParcel(page);
+    await drawOuterManually(page);
+    await reviewAndSave(page, OUTER_HA, 0);
+    await chooseMode(page, 'manual');
+    await page.getByTestId('clear-boundary').click();
+    await expectDialog(page, 'Clear Draft Points');
+    await expect(page.getByTestId('confirm-dialog-message')).toContainText('Saved geometry and registered hectares remain unchanged');
+    await page.getByTestId('confirm-dialog-cancel').click();
+    await expect(vertexRows(page)).toHaveCount(4);
+    await page.getByTestId('clear-boundary').click();
+    await expectDialog(page, 'Clear Draft Points');
+    await expect(page.getByTestId('confirm-dialog-confirm')).toHaveText('Clear draft');
+    await page.getByTestId('confirm-dialog-confirm').click();
+    await expect(vertexRows(page)).toHaveCount(0);
+    await expect(boundaryPaths(page)).toHaveCount(0);
+    await expect(page.getByTestId('unsaved-badge')).toBeVisible();
+    await expect(page.getByTestId('parcel-details-panel')).toContainText(`Registered area: ${OUTER_HA.toFixed(4)} ha`);
+    await page.getByTestId('save-boundary').click();
+    await acknowledge(page, 'Boundary Incomplete');
+    page.once('dialog', dialog => dialog.accept()); // Browser beforeunload protects this dirty draft.
+    await page.reload();
+    await mappingReady(page);
+    await expect(filledPaths(page)).toHaveCount(1); // Saved geometry, not the empty draft, rehydrates.
+    await expect(page.getByTestId('measured-hectares')).toHaveText(`${OUTER_HA.toFixed(4)} ha`);
+    await expect(page.getByTestId('parcel-details-panel')).toContainText(`Registered area: ${OUTER_HA.toFixed(4)} ha`);
+    await chooseMode(page, 'manual');
+    await expect(vertexRows(page)).toHaveCount(4);
+  });
+
+  test('GPS-CLEAR Clear Saved Boundary is a separate confirmation and preserves recorded hectares after reload', async ({ page }) => {
+    const id = await registerUnmeasuredParcel(page);
+    await drawOuterManually(page);
+    await reviewAndSave(page, OUTER_HA, 0);
+    await page.getByTestId('clear-saved-boundary').click();
+    await expectDialog(page, 'Clear Saved Boundary');
+    await expect(page.getByTestId('confirm-dialog-message')).toContainText('audited and revision-checked');
+    await expect(page.getByTestId('confirm-dialog-message')).toContainText('Recorded hectares and crop history remain unchanged');
+    await page.getByTestId('confirm-dialog-cancel').click();
+    await expect(filledPaths(page)).toHaveCount(1);
+    await page.getByTestId('clear-saved-boundary').click();
+    await expectDialog(page, 'Clear Saved Boundary');
+    await expect(page.getByTestId('confirm-dialog-confirm')).toHaveText('Clear saved geometry');
+    await page.getByTestId('confirm-dialog-confirm').click();
+    await acknowledge(page, 'Saved Boundary Cleared');
+    await expect(boundaryPaths(page)).toHaveCount(0);
+    await expect(page.getByTestId('empty-boundary-state')).toBeVisible();
+    await expect(page.getByTestId('parcel-details-panel')).toContainText(`Registered area: ${OUTER_HA.toFixed(4)} ha`);
+    await page.reload();
+    await mappingReady(page, id);
+    await expect(boundaryPaths(page)).toHaveCount(0);
+    await expect(page.getByTestId('measured-hectares')).toHaveCount(0);
+    await expect(page.getByTestId('parcel-details-panel')).toContainText(`Registered area: ${OUTER_HA.toFixed(4)} ha`);
+  });
+
+  test('GPS-RECOVERY reload offers a draft explicitly without silently restoring unsaved hectares', async ({ page }) => {
+    const id = await registerUnmeasuredParcel(page);
+    await drawOuterManually(page);
+    page.once('dialog', dialog => dialog.accept());
+    await page.reload();
+    await mappingReady(page, id);
+    await expect(page.getByTestId('recover-mapping-draft')).toBeVisible();
+    await expect(boundaryPaths(page)).toHaveCount(0);
+    await expect(page.getByTestId('parcel-details-panel')).toContainText('Registered area: 0.0000 ha');
+    await page.getByTestId('recover-mapping-draft').click();
+    await expect(page.getByTestId('recover-mapping-draft')).toHaveCount(0);
+    await expect(vertexRows(page)).toHaveCount(4);
+    await expect(vertexMarkers(page)).toHaveCount(4);
+    await expect(filledPaths(page)).toHaveCount(1);
+    await expect(page.getByTestId('unsaved-badge')).toBeVisible();
+    await reviewAndSave(page, OUTER_HA, 0);
+  });
+
+  test('GPS-PERSIST parcel-card deep links select the right parcel and saved vertices survive a full reload', async ({ page }) => {
+    const idA = await registerUnmeasuredParcel(page, 'Synthetic Saved Parcel');
+    const idB = await registerSecondParcel(page, 'Synthetic Unmapped Parcel');
+    await page.getByTestId(`parcel-mapping-link-${idA}`).click();
+    await mappingReady(page, idA);
+    await drawOuterManually(page);
+    const savedRows = await vertexRows(page).allTextContents();
+    await reviewAndSave(page, OUTER_HA, 0);
     await safeNavigate(page, PARCELS_ROUTE, 'Land Parcels Registry');
-    const cardB = page.locator(`[data-testid="parcel-card-${idB}"]`);
-    await expect(cardB).toBeVisible();
-    await cardB.locator('[data-testid^="parcel-mapping-link-"]').click();
-
-    await expect(page.getByText('GPS Boundary Mapping').first()).toBeVisible();
+    await page.getByTestId(`parcel-mapping-link-${idB}`).click();
     await expect(page).toHaveURL(new RegExp(`parcelId=${idB}`));
-    // The deep link must select parcel 2 — which has no boundary — not fall back
-    // to the first row (parcel 1, whose triangle would show 3 vertices).
-    await expect(page.getByTestId('empty-boundary-state')).toContainText('E2E Parcel 2');
-    expect(await vertexCount(page)).toBe(0);
-
-    // And parcel 1's boundary survived the round trip.
+    await mappingReady(page, idB);
+    await expect(page.getByTestId('parcel-details-panel')).toContainText('Synthetic Unmapped Parcel');
+    await expect(page.getByTestId('empty-boundary-state')).toBeVisible();
+    await expect(boundaryPaths(page)).toHaveCount(0);
     await page.getByTestId(`parcel-chip-${idA}`).click();
-    await expect.poll(() => vertexCount(page)).toBe(3);
-    await expect(page.getByTestId('empty-boundary-state')).toHaveCount(0);
-    await expect(page.locator('.leaflet-overlay-pane path.leaflet-interactive')).toBeVisible();
+    await mappingReady(page, idA);
+    await expect(filledPaths(page)).toHaveCount(1);
+    await chooseMode(page, 'manual');
+    await expect(vertexRows(page)).toHaveText(savedRows);
+    await chooseMode(page, 'browse');
+    // Navigate via the parcel card again so URL and selection both name A on reload.
+    await safeNavigate(page, PARCELS_ROUTE, 'Land Parcels Registry');
+    await page.getByTestId(`parcel-mapping-link-${idA}`).click();
+    await mappingReady(page, idA);
+    await page.reload();
+    await mappingReady(page, idA);
+    await expect(filledPaths(page)).toHaveCount(1);
+    await expect(page.getByTestId('measured-hectares')).toHaveText(`${OUTER_HA.toFixed(4)} ha`);
+    await chooseMode(page, 'manual');
+    await expect(vertexRows(page)).toHaveText(savedRows);
   });
 });

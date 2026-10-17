@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
+import { usePageContentStyle } from '../../../src/hooks/useResponsiveLayout';
 import { View, Text, ScrollView, Pressable, ActivityIndicator, TextInput, RefreshControl } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -11,6 +12,7 @@ import { Q } from '@nozbe/watermelondb';
 
 export default function AgriAnalyticsScreen() {
     const router = useRouter();
+    const pageContentStyle = usePageContentStyle();
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
 
@@ -105,6 +107,7 @@ export default function AgriAnalyticsScreen() {
     return (
         <ScrollView
             className="flex-1 bg-gray-50"
+            contentContainerStyle={pageContentStyle}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#047857']} />}
         >
             {/* Header */}

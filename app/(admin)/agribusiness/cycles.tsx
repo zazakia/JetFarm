@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import { usePageContentStyle } from '../../../src/hooks/useResponsiveLayout';
 import { View, Text, ScrollView, Pressable, ActivityIndicator, TextInput, Modal, Alert, RefreshControl } from 'react-native';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -11,12 +12,14 @@ import { AgriCropCycleService } from '../../../src/services/AgriCropCycleService
 import { formatPHP } from '../../../src/utils/currency';
 import { Q } from '@nozbe/watermelondb';
 import { CropHealthGrowthChart } from '../../../src/components/CropHealthGrowthChart';
+import ConfirmDialog from '../../../src/components/ConfirmDialog';
 import Toast from '../../../src/components/AppToast';
 
 export default function CropCyclesScreen() {
     const params = useLocalSearchParams();
     const router = useRouter();
 
+    const pageContentStyle = usePageContentStyle();
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [confirmationMessage, setConfirmationMessage] = useState<string | null>(null);
@@ -33,6 +36,16 @@ export default function CropCyclesScreen() {
     const [areaPlantedHa, setAreaPlantedHa] = useState('');
     const [offtakePrice, setOfftakePrice] = useState('4.00');
 
+    // Edit Cycle Modal
+    const [editModalVisible, setEditModalVisible] = useState(false);
+    const [editingCycle, setEditingCycle] = useState<AgriCropCycle | null>(null);
+    const [savingEdit, setSavingEdit] = useState(false);
+    const [editVariety, setEditVariety] = useState('');
+    const [editAreaHa, setEditAreaHa] = useState('');
+    const [editOfftakePrice, setEditOfftakePrice] = useState('');
+    const [editStatus, setEditStatus] = useState('planted');
+    const [editNotes, setEditNotes] = useState('');
+
     // Growth Check-in Modal
     const [checkinModalVisible, setCheckinModalVisible] = useState(false);
     const [activeCycleId, setActiveCycleId] = useState('');
@@ -41,6 +54,17 @@ export default function CropCyclesScreen() {
     const [healthStatus, setHealthStatus] = useState('good');
     const [plantHeightCm, setPlantHeightCm] = useState('85');
     const [checkinNotes, setCheckinNotes] = useState('');
+
+    // Delete confirmation (Alert.alert is a no-op on react-native-web).
+    // One dialog instance is reused for confirm + error so two RN modals
+    // never overlap while one is mid-close.
+    const [cycleToDelete, setCycleToDelete] = useState<AgriCropCycle | null>(null);
+    const [dialog, setDialog] = useState<{
+        mode: 'confirm' | 'alert';
+        title: string;
+        message: string;
+        confirmLabel?: string;
+    } | null>(null);
 
     const loadData = async () => {
         try {
@@ -144,6 +168,89 @@ export default function CropCyclesScreen() {
         }
     };
 
+    const handleOpenEdit = (cycle: AgriCropCycle) => {
+        setEditingCycle(cycle);
+        setEditVariety(cycle.variety || 'Golden Yellow');
+        setEditAreaHa(String(cycle.areaPlantedHa ?? ''));
+        setEditOfftakePrice(String(cycle.offtakePricePerKg ?? ''));
+        setEditStatus(cycle.status || 'planted');
+        setEditNotes(cycle.notes || '');
+        setEditModalVisible(true);
+    };
+
+    const handleSaveEdit = async () => {
+        if (!editingCycle) return;
+
+        const ha = parseFloat(editAreaHa);
+        if (isNaN(ha) || ha <= 0) {
+            Alert.alert('Validation Error', 'Please enter a valid positive number for planted hectares.');
+            return;
+        }
+        const price = parseFloat(editOfftakePrice);
+        if (isNaN(price) || price <= 0) {
+            Alert.alert('Validation Error', 'Please enter a valid off-take price in ₱/kg.');
+            return;
+        }
+
+        setSavingEdit(true);
+        try {
+            await AgriCropCycleService.updateCropCycle(editingCycle.id, {
+                variety: editVariety.trim() || undefined,
+                areaPlantedHa: ha,
+                offtakePricePerKg: price,
+                status: editStatus,
+                notes: editNotes.trim() || undefined,
+            });
+
+            setEditModalVisible(false);
+            loadData();
+            const msg = `Cycle ${editingCycle.cycleCode} updated successfully!`;
+            setConfirmationMessage(msg);
+            Toast.show({ type: 'success', text1: 'Cycle Updated', text2: msg });
+            Alert.alert('Success', msg);
+        } catch (err: any) {
+            Alert.alert('Error', err?.message || 'Failed to update crop cycle.');
+        } finally {
+            setSavingEdit(false);
+        }
+    };
+
+    const handleDeleteCycle = (cycle: AgriCropCycle) => {
+        setCycleToDelete(cycle);
+        setDialog({
+            mode: 'confirm',
+            title: 'Delete Crop Cycle',
+            message: `Are you sure you want to remove cycle ${cycle.cycleCode}? This records a deletion in the audit log and hides it from the registry.`,
+            confirmLabel: 'Delete',
+        });
+    };
+
+    const closeDialog = () => {
+        setDialog(null);
+        setCycleToDelete(null);
+    };
+
+    const handleDialogConfirm = async () => {
+        if (dialog?.mode !== 'confirm' || !cycleToDelete) return;
+
+        const target = cycleToDelete;
+        try {
+            await AgriCropCycleService.deleteCropCycle(target.id);
+            closeDialog();
+            const msg = `Cycle ${target.cycleCode} deleted and logged in the audit trail.`;
+            setConfirmationMessage(msg);
+            Toast.show({ type: 'success', text1: 'Cycle Deleted', text2: msg });
+            loadData();
+        } catch (err: any) {
+            setCycleToDelete(null);
+            setDialog({
+                mode: 'alert',
+                title: 'Cannot Delete Cycle',
+                message: err?.message || 'Failed to delete cycle.',
+            });
+        }
+    };
+
     const handleAddCheckin = async () => {
         if (!activeCycleId) return;
 
@@ -189,12 +296,12 @@ export default function CropCyclesScreen() {
     return (
         <ScrollView
             className="flex-1 bg-gray-50"
-            contentContainerStyle={{ padding: 20 }}
+            contentContainerStyle={pageContentStyle}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         >
             {/* Header */}
-            <View className="flex-row justify-between items-center mb-6">
-                <View>
+            <View className="flex-row flex-wrap justify-between items-center mb-6">
+                <View className="flex-1 min-w-0 mr-3">
                     <Text className="text-2xl font-black text-gray-900">Cassava Planting Cycles</Text>
                     <Text className="text-sm text-gray-500 mt-0.5">
                         Manage 9-month crop cycles, varieties, growth stages & yield targets
@@ -247,11 +354,11 @@ export default function CropCyclesScreen() {
                     </Pressable>
                 </View>
             ) : (
-                <View className="gap-4">
+                <View className="flex-row flex-wrap justify-between gap-4">
                     {cycles.map(({ cycle, parcel, investor, checkins }) => (
                         <View
                             key={cycle.id}
-                            className="bg-white p-5 rounded-3xl border border-gray-200 shadow-sm"
+                            className="w-full md:w-[48%] bg-white p-5 rounded-3xl border border-gray-200 shadow-sm"
                         >
                             <View className="flex-row justify-between items-start mb-3">
                                 <View>
@@ -336,6 +443,26 @@ export default function CropCyclesScreen() {
                                     className="bg-blue-50 border border-blue-200 px-3 py-2.5 rounded-xl flex-row items-center justify-center active:bg-blue-100"
                                 >
                                     <MaterialIcons name="handshake" size={16} color="#1D4ED8" />
+                                </Pressable>
+                            </View>
+
+                            {/* Registry Maintenance Actions */}
+                            <View className="flex-row gap-2 mt-2">
+                                <Pressable
+                                    onPress={() => handleOpenEdit(cycle)}
+                                    testID={`cycle-edit-${cycle.id}`}
+                                    className="flex-row items-center gap-1 bg-gray-100 px-3 py-2 rounded-xl active:bg-gray-200"
+                                >
+                                    <MaterialIcons name="edit" size={14} color="#374151" />
+                                    <Text className="text-gray-700 font-bold text-xs">Edit Cycle</Text>
+                                </Pressable>
+                                <Pressable
+                                    onPress={() => handleDeleteCycle(cycle)}
+                                    testID={`cycle-delete-${cycle.id}`}
+                                    className="flex-row items-center gap-1 bg-red-50 border border-red-200 px-3 py-2 rounded-xl active:bg-red-100"
+                                >
+                                    <MaterialIcons name="delete-outline" size={14} color="#DC2626" />
+                                    <Text className="text-red-700 font-bold text-xs">Delete Cycle</Text>
                                 </Pressable>
                             </View>
                         </View>
@@ -585,6 +712,125 @@ export default function CropCyclesScreen() {
                     </View>
                 </View>
             </Modal>
+
+            {/* Edit Cycle Modal */}
+            <Modal visible={editModalVisible} transparent animationType="fade">
+                <View className="flex-1 bg-black/50 justify-center items-center p-4">
+                    <View className="bg-white rounded-3xl p-6 w-full max-w-lg shadow-xl">
+                        <View className="flex-row justify-between items-center mb-4">
+                            <Text className="text-xl font-black text-gray-900">
+                                Edit Cycle {editingCycle?.cycleCode || ''}
+                            </Text>
+                            <Pressable onPress={() => setEditModalVisible(false)} className="p-1">
+                                <MaterialIcons name="close" size={24} color="#6B7280" />
+                            </Pressable>
+                        </View>
+
+                        <ScrollView className="max-h-[70vh]">
+                            <Text className="text-xs font-bold text-gray-700 mb-1">Cassava Variety</Text>
+                            <TextInput
+                                value={editVariety}
+                                onChangeText={setEditVariety}
+                                placeholder="Golden Yellow, KU-50, Lakan"
+                                placeholderTextColor="#9CA3AF"
+                                testID="edit-cycle-variety-input"
+                                className="bg-gray-50 border border-gray-300 rounded-xl p-3 text-sm text-gray-900 mb-3"
+                            />
+
+                            <Text className="text-xs font-bold text-gray-700 mb-1">Planted Hectares</Text>
+                            <TextInput
+                                value={editAreaHa}
+                                onChangeText={setEditAreaHa}
+                                placeholder="e.g. 3.0"
+                                keyboardType="numeric"
+                                placeholderTextColor="#9CA3AF"
+                                testID="edit-cycle-area-input"
+                                className="bg-gray-50 border border-gray-300 rounded-xl p-3 text-sm text-gray-900 mb-3"
+                            />
+
+                            <Text className="text-xs font-bold text-gray-700 mb-1">Investor Off-Take Price (₱/kg)</Text>
+                            <TextInput
+                                value={editOfftakePrice}
+                                onChangeText={setEditOfftakePrice}
+                                placeholder="4.00"
+                                keyboardType="numeric"
+                                placeholderTextColor="#9CA3AF"
+                                testID="edit-cycle-offtake-input"
+                                className="bg-gray-50 border border-gray-300 rounded-xl p-3 text-sm text-gray-900 mb-3"
+                            />
+
+                            <Text className="text-xs font-bold text-gray-700 mb-1">Cycle Status</Text>
+                            <View className="flex-row flex-wrap gap-2 mb-3">
+                                {['planning', 'land_prep', 'planted', 'growing', 'harvesting', 'completed', 'closed'].map(st => (
+                                    <Pressable
+                                        key={st}
+                                        onPress={() => setEditStatus(st)}
+                                        testID={`edit-cycle-status-${st}`}
+                                        className={`px-3 py-2 rounded-xl border ${
+                                            editStatus === st
+                                                ? 'bg-emerald-800 border-emerald-800'
+                                                : 'bg-gray-50 border-gray-200 active:bg-gray-100'
+                                        }`}
+                                    >
+                                        <Text
+                                            className={`text-xs font-bold capitalize ${
+                                                editStatus === st ? 'text-white' : 'text-gray-800'
+                                            }`}
+                                        >
+                                            {st.replace('_', ' ')}
+                                        </Text>
+                                    </Pressable>
+                                ))}
+                            </View>
+
+                            <Text className="text-xs font-bold text-gray-700 mb-1">Cycle Notes</Text>
+                            <TextInput
+                                value={editNotes}
+                                onChangeText={setEditNotes}
+                                placeholder="Corrections, replanting, typhoon damage..."
+                                placeholderTextColor="#9CA3AF"
+                                multiline
+                                numberOfLines={3}
+                                testID="edit-cycle-notes-input"
+                                className="bg-gray-50 border border-gray-300 rounded-xl p-3 text-sm text-gray-900 mb-4"
+                            />
+                        </ScrollView>
+
+                        <View className="flex-row gap-3 mt-4">
+                            <Pressable
+                                onPress={() => setEditModalVisible(false)}
+                                className="flex-1 py-3 bg-gray-100 rounded-xl items-center"
+                            >
+                                <Text className="font-bold text-gray-700 text-sm">Cancel</Text>
+                            </Pressable>
+                            <Pressable
+                                onPress={handleSaveEdit}
+                                disabled={savingEdit}
+                                testID="save-cycle-edit-button"
+                                className="flex-1 py-3 bg-emerald-700 rounded-xl items-center active:bg-emerald-800"
+                            >
+                                {savingEdit ? (
+                                    <ActivityIndicator size="small" color="#FFFFFF" />
+                                ) : (
+                                    <Text className="font-bold text-white text-sm">Update Cycle</Text>
+                                )}
+                            </Pressable>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
+
+            {/* Delete Confirmation (web-safe: Alert.alert is a no-op on react-native-web) */}
+            <ConfirmDialog
+                visible={!!dialog}
+                mode={dialog?.mode || 'confirm'}
+                title={dialog?.title || ''}
+                message={dialog?.message || ''}
+                confirmLabel={dialog?.confirmLabel}
+                onConfirm={handleDialogConfirm}
+                onCancel={closeDialog}
+                isDestructive={dialog?.mode !== 'alert'}
+            />
         </ScrollView>
     );
 }

@@ -1,4 +1,5 @@
 import React from 'react';
+import { TABLET_BREAKPOINT } from '../../src/utils/responsiveLayout';
 import { View, Text, Pressable, useWindowDimensions, Modal, SafeAreaView, ScrollView } from 'react-native';
 import { Slot, usePathname, useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -35,7 +36,7 @@ const BORROWER_BOTTOM_NAV: { icon: keyof typeof MaterialIcons.glyphMap; label: s
 
 export default function BorrowerLayout() {
     const { width } = useWindowDimensions();
-    const isDesktop = width >= 720;
+    const isDesktop = width >= TABLET_BREAKPOINT;
     const [drawerOpen, setDrawerOpen] = React.useState(false);
     const pathname = usePathname();
     const router = useRouter();

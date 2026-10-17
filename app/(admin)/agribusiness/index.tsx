@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import { usePageContentStyle } from '../../../src/hooks/useResponsiveLayout';
 import { View, Text, ScrollView, Pressable, ActivityIndicator, RefreshControl, Alert } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -14,6 +15,7 @@ import { SampleDataService } from '../../../src/services/SampleDataService';
 
 export default function AgribusinessDashboard() {
     const router = useRouter();
+    const pageContentStyle = usePageContentStyle();
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
 
@@ -115,13 +117,13 @@ export default function AgribusinessDashboard() {
     return (
         <ScrollView
             className="flex-1 bg-gray-50"
-            contentContainerStyle={{ padding: 20 }}
+            contentContainerStyle={pageContentStyle}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         >
             {/* Operator Header */}
             <View className="bg-emerald-800 rounded-3xl p-6 text-white mb-6 shadow-md">
-                <View className="flex-row justify-between items-start">
-                    <View>
+                <View className="flex-row flex-wrap justify-between items-start gap-y-2">
+                    <View className="flex-1 min-w-0 mr-2">
                         <View className="flex-row items-center gap-2 mb-1">
                             <MaterialIcons name="agriculture" size={28} color="#FFFFFF" />
                             <Text testID="admin-portal-title" className="text-white text-2xl font-black">JetFarm Agribusiness</Text>

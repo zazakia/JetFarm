@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb'
 
 export const mySchema = appSchema({
-    version: 48,
+    version: 49,
     tables: [
         tableSchema({
             name: 'loan_penalties',
@@ -1392,6 +1392,10 @@ export const mySchema = appSchema({
                 { name: 'area_hectares', type: 'number' },
                 { name: 'location_address', type: 'string', isOptional: true },
                 { name: 'gps_coordinates', type: 'string', isOptional: true },
+                { name: 'gps_exclusions', type: 'string', isOptional: true },
+                { name: 'boundary_revision', type: 'number' },
+                { name: 'layout_revision', type: 'number' },
+                { name: 'boundary_saved_at', type: 'number', isOptional: true },
                 { name: 'soil_type', type: 'string', isOptional: true },
                 { name: 'status', type: 'string', isIndexed: true },
                 { name: 'created_at', type: 'number' },
@@ -1576,6 +1580,72 @@ export const mySchema = appSchema({
                 { name: 'created_at', type: 'number' },
                 { name: 'updated_at', type: 'number' },
                 { name: 'deleted_at', type: 'number', isOptional: true },
+            ]
+        }),
+        tableSchema({
+            name: 'agri_parcel_blocks',
+            columns: [
+                { name: 'parcel_id', type: 'string', isIndexed: true },
+                { name: 'name', type: 'string' },
+                { name: 'code', type: 'string', isOptional: true },
+                { name: 'geometry_json', type: 'string' },
+                { name: 'area_hectares', type: 'number' },
+                { name: 'status', type: 'string', isIndexed: true },
+                { name: 'boundary_revision', type: 'number' },
+                { name: 'layout_revision', type: 'number' },
+                { name: 'created_at', type: 'number' },
+                { name: 'updated_at', type: 'number' },
+                { name: 'deleted_at', type: 'number', isOptional: true },
+            ]
+        }),
+        tableSchema({
+            name: 'agri_block_assignments',
+            columns: [
+                { name: 'block_id', type: 'string', isIndexed: true },
+                { name: 'worker_id', type: 'string', isIndexed: true },
+                { name: 'crop_cycle_id', type: 'string', isOptional: true, isIndexed: true },
+                { name: 'task', type: 'string' },
+                { name: 'start_date', type: 'number' },
+                { name: 'due_date', type: 'number', isOptional: true },
+                { name: 'status', type: 'string', isIndexed: true },
+                { name: 'progress_percent', type: 'number' },
+                { name: 'created_by', type: 'string' },
+                { name: 'assigned_geometry_snapshot', type: 'string' },
+                { name: 'assigned_boundary_revision', type: 'number' },
+                { name: 'submission_id', type: 'string', isIndexed: true },
+                { name: 'request_json', type: 'string' },
+                { name: 'created_at', type: 'number' },
+                { name: 'updated_at', type: 'number' },
+                { name: 'deleted_at', type: 'number', isOptional: true },
+            ]
+        }),
+        tableSchema({
+            name: 'agri_block_progress',
+            columns: [
+                { name: 'assignment_id', type: 'string', isIndexed: true },
+                { name: 'update_date', type: 'number' },
+                { name: 'progress_percent', type: 'number' },
+                { name: 'status', type: 'string' },
+                { name: 'notes', type: 'string', isOptional: true },
+                { name: 'recorded_by', type: 'string' },
+                { name: 'submission_id', type: 'string', isIndexed: true },
+                { name: 'correction_of_id', type: 'string', isOptional: true, isIndexed: true },
+                { name: 'request_json', type: 'string' },
+                { name: 'created_at', type: 'number' },
+                { name: 'updated_at', type: 'number' },
+            ]
+        }),
+        tableSchema({
+            name: 'agri_pending_layout_operations',
+            columns: [
+                { name: 'operation_id', type: 'string', isIndexed: true },
+                { name: 'parcel_id', type: 'string', isIndexed: true },
+                { name: 'expected_revision', type: 'number' },
+                { name: 'payload_json', type: 'string' },
+                { name: 'created_by', type: 'string' },
+                { name: 'state', type: 'string', isIndexed: true },
+                { name: 'created_at', type: 'number' },
+                { name: 'updated_at', type: 'number' },
             ]
         }),
     ]

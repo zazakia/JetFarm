@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import { usePageContentStyle } from '../../../src/hooks/useResponsiveLayout';
 import { View, Text, ScrollView, Pressable, ActivityIndicator, TextInput, Modal, Alert, RefreshControl } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -10,9 +11,11 @@ import { formatPHP } from '../../../src/utils/currency';
 import { Q } from '@nozbe/watermelondb';
 import { AutoPostingService } from '../../../src/services/AutoPostingService';
 import Toast from '../../../src/components/AppToast';
+import { BlockTaskDirectory } from '../../../src/components/ParcelMap/BlockTaskDirectory';
 
 export default function FarmLaborScreen() {
     const router = useRouter();
+    const pageContentStyle = usePageContentStyle();
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [confirmationMessage, setConfirmationMessage] = useState<string | null>(null);
@@ -249,18 +252,18 @@ export default function FarmLaborScreen() {
     return (
         <ScrollView
             className="flex-1 bg-gray-50"
-            contentContainerStyle={{ padding: 20 }}
+            contentContainerStyle={pageContentStyle}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         >
             {/* Header */}
-            <View className="flex-row justify-between items-center mb-6">
-                <View>
+            <View className="flex-row flex-wrap justify-between items-center mb-6">
+                <View className="flex-1 min-w-0 mr-3">
                     <Text className="text-2xl font-black text-gray-900">Farm Labor & Field Workers</Text>
                     <Text className="text-sm text-gray-500 mt-0.5">
                         Track agricultural laborers, daily tasks, piece-rates & wage payouts
                     </Text>
                 </View>
-                <View className="flex-row gap-2">
+                <View className="flex-row flex-wrap gap-2 w-full sm:w-auto justify-end">
                     <Pressable
                         testID="btn-workers-directory"
                         onPress={() => router.push('/(admin)/agribusiness/workers' as any)}
@@ -285,6 +288,8 @@ export default function FarmLaborScreen() {
                     </Pressable>
                 </View>
             </View>
+
+            <BlockTaskDirectory />
 
             {/* Inline Confirmation Banner */}
             {confirmationMessage && (

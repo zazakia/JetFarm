@@ -1,0 +1,57 @@
+import React from 'react';
+import { render, fireEvent, waitFor } from '@testing-library/react-native';
+import { v4 as uuid } from 'uuid';
+import { createTestDatabase } from '../../../__tests__/test-utils';
+import { AgriParcelService } from '../../../services/AgriParcelService';
+import { AgriBlockService } from '../../../services/AgriBlockService';
+import { AgriBlockAssignmentService } from '../../../services/AgriBlockAssignmentService';
+import { BlockMonitoringPanel } from '../BlockMonitoringPanel';
+
+jest.mock('../../../database', () => ({ database: {} }));
+jest.mock('../../../services/AuthService', () => ({ AuthService: { getCurrentUserId: jest.fn(async () => 'DUMMY: supervisor') } }));
+
+it('persists two independent workers and one supervisor update across revisit without creating wage or journal rows', async () => {
+    const db = createTestDatabase();
+    const parcel = await AgriParcelService.createParcel({ name: 'DUMMY: field', landOwnerId: 'DUMMY: owner', areaHectares: 1 }, db);
+    const geometry = { outer: [{ latitude: 0, longitude: 0 }, { latitude: 0.001, longitude: 0 }, { latitude: 0.001, longitude: 0.001 }, { latitude: 0, longitude: 0.001 }], holes: [] };
+    const blockId = uuid();
+    await AgriBlockService.saveLayout({ parcelId: parcel.id, expectedRevision: 0, operationId: uuid(), geometry, blocks: [{ id: blockId, name: 'North', geometry }] }, db);
+    await db.write(async () => {
+        await db.get<any>('agri_farm_workers').create(w => { w.name = 'Worker One'; w.status = 'active'; w.dailyRate = 450; });
+        await db.get<any>('agri_farm_workers').create(w => { w.name = 'Worker Two'; w.status = 'active'; w.dailyRate = 500; });
+    });
+    const ui = render(<BlockMonitoringPanel db={db} blockId={blockId} parcelId={parcel.id} operatorId="DUMMY: supervisor" />);
+    await waitFor(() => expect(ui.getByLabelText('Assign Worker One')).toBeTruthy());
+    expect(ui.getByRole('radio', { name: 'Task filter all', checked: true })).toBeTruthy();
+    expect(ui.getByRole('radio', { name: 'Task filter completed', checked: false })).toBeTruthy();
+    fireEvent.press(ui.getByLabelText('Task filter completed'));
+    expect(ui.getByRole('radio', { name: 'Task filter completed', checked: true })).toBeTruthy();
+    expect(ui.getByRole('radio', { name: 'Task filter all', checked: false })).toBeTruthy();
+    fireEvent.press(ui.getByLabelText('Task filter all'));
+    expect(ui.getByRole('radio', { name: 'Task filter all', checked: true })).toBeTruthy();
+    fireEvent.press(ui.getByLabelText('Assign Worker One'));
+    fireEvent.press(ui.getByLabelText('Assign Worker Two'));
+    fireEvent.changeText(ui.getByLabelText('Assignment task'), 'Weeding');
+    fireEvent.changeText(ui.getByLabelText('Start date'), '2026-01-01');
+    fireEvent.changeText(ui.getByLabelText('Due date'), '2026-01-02');
+    fireEvent.press(ui.getByLabelText('Save worker assignments'));
+    await waitFor(() => expect(ui.getByText('Worker One · Weeding · 0% · overdue')).toBeTruthy());
+    const workerOne = (await db.get<any>('agri_farm_workers').query().fetch()).find(w => w.name === 'Worker One');
+    const first = (await AgriBlockAssignmentService.listAssignments(blockId, db)).find(a => a.workerId === workerOne.id)!;
+    expect(first).toBeDefined();
+    fireEvent.press(ui.getByLabelText(`Update assignment ${first.id}`));
+    fireEvent.changeText(ui.getByLabelText('Progress percentage'), '40');
+    fireEvent.press(ui.getByLabelText('Status in_progress'));
+    fireEvent.press(ui.getByLabelText('Save progress update'));
+    await waitFor(() => expect(ui.getByText('Worker One · Weeding · 40% · overdue')).toBeTruthy());
+    expect(ui.getByText('Worker Two · Weeding · 0% · overdue')).toBeTruthy();
+    ui.unmount();
+    const revisit = render(<BlockMonitoringPanel db={db} blockId={blockId} parcelId={parcel.id} operatorId="DUMMY: supervisor" />);
+    await waitFor(() => expect(revisit.getByText('Worker One · Weeding · 40% · overdue')).toBeTruthy());
+    expect(revisit.getByText('Worker Two · Weeding · 0% · overdue')).toBeTruthy();
+    fireEvent.press(revisit.getByLabelText(`Update assignment ${first.id}`));
+    await waitFor(() => expect(revisit.getByText(/40% · in progress/)).toBeTruthy());
+    expect(await db.get('agri_labor_logs').query().fetchCount()).toBe(0);
+    expect(await db.get('journal_entries').query().fetchCount()).toBe(0);
+    expect((await AgriBlockAssignmentService.listProgress(first.id, db))).toHaveLength(1);
+});
