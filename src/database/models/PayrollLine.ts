@@ -4,7 +4,7 @@ import { field, date, relation } from '@nozbe/watermelondb/decorators'
 export default class PayrollLine extends Model {
     static table = 'payroll_lines'
 
-    @relation('payroll_runs', 'payroll_id') payroll: any
+    @relation('payroll_runs', 'payroll_id') payroll!: any
     @field('payroll_id') payrollId!: string
     @field('employee_id') employeeId!: string
 

@@ -24,5 +24,5 @@ export default class PayrollRun extends Model {
     @date('updated_at') updatedAt!: Date
     @date('deleted_at') deletedAt!: Date | null
 
-    @children('payroll_lines') lines: any
+    @children('payroll_lines') lines!: any
 }
