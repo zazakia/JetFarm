@@ -7,7 +7,9 @@ import { GlobalSyncButton } from '../src/components/GlobalSyncButton';
 import { useNetworkStatus } from '../src/hooks/useNetworkStatus';
 import { MaterialIcons, Ionicons, FontAwesome, FontAwesome5 } from '@expo/vector-icons';
 import { useFonts } from 'expo-font';
+import { Platform } from 'react-native';
 import { cssInterop } from 'nativewind';
+import { shouldDeferRootRenderForFonts } from '../src/utils/rootLayoutGate';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useEffect } from 'react';
 import '../global.css';
@@ -130,7 +132,10 @@ export default function RootLayout() {
         }
     }, [fontError]);
 
-    if (!fontsLoaded && !fontError) {
+    // Web must never defer the root tree: a null render during font load
+    // resets expo-router's cold deep-link state and bounces reloads to the
+    // dashboard (see src/utils/rootLayoutGate.ts).
+    if (shouldDeferRootRenderForFonts(fontsLoaded, fontError, Platform.OS)) {
         return null;
     }
 

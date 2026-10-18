@@ -404,6 +404,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
             (event, session) => {
                 if (!session?.user) {
+                    // Local E2E mode treats the persisted mock identity as the source of
+                    // truth. The Supabase client points at an unreachable loopback backend
+                    // there, so a null session event after a page reload must not log the
+                    // operator out. A genuine E2E sign-out removes the storage key before
+                    // dispatching, so it still falls through to the guest clear below.
+                    if (isLocalWebE2E() && readE2ESession()) {
+                        console.log('[AuthContext] Ignoring null remote session event while a local E2E identity is persisted');
+                        return;
+                    }
                     roleResolutionRequestIdRef.current++;
                     setInitializationError(null);
                     setSession(null);

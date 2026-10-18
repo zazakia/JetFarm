@@ -266,6 +266,66 @@ describe('AuthContext', () => {
         await waitFor(() => expect(mockRouter.replace).toHaveBeenCalledWith('/loading'));
     });
 
+    it('keeps the restored mock-auth identity when Supabase reports no remote session in local E2E mode', async () => {
+        // Full reload: checkSession restores the persisted E2E identity, but the Supabase
+        // client is pointed at an unreachable loopback backend and its onAuthStateChange
+        // INITIAL_SESSION callback fires with null. That must not log the operator out.
+        const originalWindow = (globalThis as any).window;
+        const e2eUser = { id: 'admin', email: 'admin@jetfarm.com', role: 'admin', full_name: 'Admin User' };
+        Object.defineProperty(globalThis, 'window', {
+            configurable: true,
+            value: {
+                ...originalWindow,
+                location: { hostname: '127.0.0.1', port: '19129' },
+                localStorage: { getItem: jest.fn().mockReturnValue(JSON.stringify(e2eUser)), setItem: jest.fn(), removeItem: jest.fn() },
+                addEventListener: jest.fn(),
+                removeEventListener: jest.fn(),
+            },
+        });
+        const previousE2eMode = process.env.EXPO_PUBLIC_E2E_MODE;
+        process.env.EXPO_PUBLIC_E2E_MODE = '1';
+        try {
+            let callback: any;
+            (supabase.auth.onAuthStateChange as jest.Mock).mockImplementation((cb) => {
+                callback = cb;
+                return mockUnsubscribe;
+            });
+
+            const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
+            await waitFor(() => expect(result.current.user?.id).toBe('admin'));
+            await waitFor(() => expect(result.current.roleResolved).toBe(true));
+
+            await act(async () => {
+                callback('INITIAL_SESSION', null);
+                await Promise.resolve();
+            });
+
+            expect(result.current.user?.id).toBe('admin');
+            expect(result.current.role).toBe('admin');
+            expect(mockRouter.replace).not.toHaveBeenCalledWith('/login');
+        } finally {
+            if (previousE2eMode === undefined) delete process.env.EXPO_PUBLIC_E2E_MODE;
+            else process.env.EXPO_PUBLIC_E2E_MODE = previousE2eMode;
+            Object.defineProperty(globalThis, 'window', { configurable: true, value: originalWindow });
+        }
+    });
+
+    it('still clears guest state on auth changes outside local E2E mode', async () => {
+        let callback: any;
+        (supabase.auth.onAuthStateChange as jest.Mock).mockImplementation((cb) => {
+            callback = cb;
+            return mockUnsubscribe;
+        });
+        const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
+        await waitFor(() => expect(result.current.initialized).toBe(true));
+
+        await act(async () => {
+            callback('SIGNED_OUT', null);
+            await Promise.resolve();
+        });
+        expect(result.current.user).toBeNull();
+    });
+
     it('ignores quick-login storage and events on the production Cloudflare host', async () => {
         const originalWindow = (globalThis as any).window;
         const listeners = new Map<string, EventListener>();

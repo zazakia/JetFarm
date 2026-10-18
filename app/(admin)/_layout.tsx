@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { TABLET_BREAKPOINT } from '../../src/utils/responsiveLayout';
-import { View, Text, Pressable, useWindowDimensions, Modal, SafeAreaView } from 'react-native';
+import { View, Text, Pressable, useWindowDimensions, Modal, SafeAreaView, Platform } from 'react-native';
 import { Slot, usePathname, useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useAuth } from '../../src/store/AuthContext';
+import { adminAuthGateVariant, adminGateMessage } from '../../src/utils/adminAuthGate';
 import { SidebarContent, AGRIBUSINESS_MENU, CRISPY_KING_OPERATIONS, FRANCHISE_MENU, LENDING_MENU, MAIN_MENU, ADMIN_MENU, DAILY_REPORTS, WEEKLY_REPORTS, MONTHLY_REPORTS, COOPERATIVE_REPORTS, FINANCIALS_MENU, ACCOUNTING_MENU, BOOKS_OF_ACCOUNTS_MENU, SUPPORT_MENU } from '../../src/components/SidebarContent';
 import { SyncStatusBadge } from '../../src/components/SyncStatusBadge';
 import { AuthGateLoading } from '../../src/components/AuthGateLoading';
@@ -81,18 +82,35 @@ export default function AdminShellLayout() {
     // Route guard for Admin dashboard
     const isReady = initialized && (!user || roleResolved);
 
-    if (initialized && user && !roleResolved) {
-        return <AuthGateLoading message="Restoring your access..." />;
+    // On web the gate may NOT replace <Slot /> — unmounting the outlet resets
+    // the group navigator to its index and bounces cold deep links to the
+    // dashboard. See src/utils/adminAuthGate.ts.
+    const gateVariant = adminAuthGateVariant(
+        { initialized, user: Boolean(user), roleResolved, role, routeAllowed },
+        Platform.OS,
+    );
+    const gateMessage = adminGateMessage({ initialized, user: Boolean(user), roleResolved, role, routeAllowed });
+
+    if (gateVariant === 'replace') {
+        if (initialized && user && !roleResolved) {
+            return <AuthGateLoading message="Restoring your access..." />;
+        }
+
+        if (isReady && !user) {
+            return <AuthGateLoading message="Redirecting..." />;
+        }
+
+        if (initialized && user && roleResolved && ((role !== 'admin' && role !== 'main_office') || !routeAllowed)) {
+            console.warn(`[AdminLayout] Access denied for role: ${role}. Redirecting...`);
+            return <AuthGateLoading message="Redirecting..." />;
+        }
     }
 
-    if (isReady && !user) {
-        return <AuthGateLoading message="Redirecting..." />;
-    }
-
-    if (initialized && user && roleResolved && ((role !== 'admin' && role !== 'main_office') || !routeAllowed)) {
-        console.warn(`[AdminLayout] Access denied for role: ${role}. Redirecting...`);
-        return <AuthGateLoading message="Redirecting..." />;
-    }
+    const gateOverlay = gateVariant === 'overlay' ? (
+        <View className="absolute inset-0 z-50 bg-gray-50" testID="admin-auth-gate">
+            <AuthGateLoading message={gateMessage} />
+        </View>
+    ) : null;
 
     const currentTitle = [
         ...AGRIBUSINESS_MENU,
@@ -145,6 +163,7 @@ export default function AdminShellLayout() {
                         )}
                     </View>
                 </View>
+                {gateOverlay}
                 <GlobalSearchModal visible={searchModalOpen} onClose={() => setSearchModalOpen(false)} />
                 <OnboardingTourModal />
             </OnboardingTourProvider>
@@ -270,6 +289,7 @@ export default function AdminShellLayout() {
                     </View>
                 </Modal>
             </View>
+            {gateOverlay}
             <GlobalSearchModal visible={searchModalOpen} onClose={() => setSearchModalOpen(false)} />
             <OnboardingTourModal />
         </OnboardingTourProvider>
