@@ -156,12 +156,14 @@ mapping.test.tsx` matches **nothing** (`(admin)` becomes a capture group). Use
 
 `scripts/start-playwright-web.mjs` re-exports the bundle on every start. While iterating on
 spec code only, export once (`node scripts/start-playwright-web.mjs` in the background) and
-then run with `SKIP_EXPORT=1`. Note that a server left listening on port 19119 is **reused**
-by design, so a stale orphan server silently serves a stale bundle — if a `data-testid` you
-just added is "not found", check the port owner before debugging selectors:
+then run with `SKIP_EXPORT=1`. Note that a server left listening on the default port 19129 is
+**reused** by design, so a stale orphan server silently serves a stale bundle — if a
+`data-testid` you just added is "not found", check the port owner before debugging selectors.
+`localAdmin` refuses the legacy shared port 19119 outright for this reason, but accepts any
+other dedicated or dynamically allocated port (see `src/utils/e2ePortPolicy.ts`):
 
 ```powershell
-Get-NetTCPConnection -LocalPort 19119 -State Listen | Select-Object OwningProcess
+Get-NetTCPConnection -LocalPort 19129 -State Listen | Select-Object OwningProcess
 ```
 
 ### 8.3 Local E2E database

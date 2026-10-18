@@ -5,7 +5,7 @@ import path from 'node:path';
 import process from 'node:process';
 
 const distDir = path.resolve(process.cwd(), 'dist');
-const port = Number(process.env.PLAYWRIGHT_WEB_PORT || '19119');
+const port = Number(process.env.PLAYWRIGHT_WEB_PORT || '19129');
 
 const MIME_TYPES = {
   '.css': 'text/css; charset=utf-8',
