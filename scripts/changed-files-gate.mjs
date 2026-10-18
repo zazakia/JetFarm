@@ -24,6 +24,9 @@
 import { execSync } from 'child_process';
 import { existsSync, mkdirSync, writeFileSync } from 'fs';
 import path from 'path';
+import envStagingPolicy from './lib/envStagingPolicy.js';
+
+const { blockedEnvFiles } = envStagingPolicy;
 
 const ROOT = process.cwd();
 
@@ -246,10 +249,13 @@ function main() {
 
   // Hard policy checks (both hook modes) ---------------------------------
   let exitCode = 0;
-  const envStaged = files.filter((f) => f.startsWith('.env'));
+  // `.env.example` is a tracked, secret-free template; every other `.env*` path is a
+  // real environment file. See scripts/lib/envStagingPolicy.js.
+  const envStaged = blockedEnvFiles(files);
   if (envStaged.length && mode === 'pre-commit') {
     console.error(`\n✗ POLICY VIOLATION: env file(s) staged for commit: ${envStaged.join(', ')}`);
     console.error('  .env* files must never be tracked. git rm --cached them.');
+    console.error('  (.env.example is the only allowed exception — it is a template, not a secret store.)');
     return 2;
   }
 
