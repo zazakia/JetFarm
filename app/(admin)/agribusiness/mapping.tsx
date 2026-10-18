@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Clipboard, KeyboardAvoidingView, Linking, Platform, Pressable, ScrollView, Text, TextInput, View, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, Clipboard, KeyboardAvoidingView, Linking, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Q } from '@nozbe/watermelondb';
@@ -95,11 +95,14 @@ function ParcelMappingWorkspace({ parcel, parcels, onSelect }: { parcel: AgriPar
         editGeneration.current += 1;
         return action(...args);
     };
-    const tokens = useResponsiveLayout(), insets = useSafeAreaInsets(), dimensions = useWindowDimensions();
+    const tokens = useResponsiveLayout(), insets = useSafeAreaInsets();
     const [dialog, setDialog] = useState<DialogSpec | null>(null);
     const [search, setSearch] = useState(''), [expanded, setExpanded] = useState(true);
     const [fitRequest, setFitRequest] = useState(0), [layer, setLayer] = useState<'satellite' | 'street'>('satellite');
-    const [mapSpace, setMapSpace] = useState(Math.max(240, dimensions.height * 0.55));
+    // The row the screen column actually grants the map, measured from the parent-driven flex
+    // item (flex-basis 0 + min-h-0, so its own content cannot inflate it). Used only to cap the
+    // viewport token on short screens; a taller row never grows the map past the token.
+    const [mapArea, setMapArea] = useState(0);
     const [sourceError, setSourceError] = useState<string | null>(null), [blocksLoading, setBlocksLoading] = useState(true);
     const [blockIntegrity, setBlockIntegrity] = useState(false), [clearing, setClearing] = useState(false);
     const clearOperation = useRef<{ revision: number; id: string } | null>(null);
@@ -314,6 +317,7 @@ function ParcelMappingWorkspace({ parcel, parcels, onSelect }: { parcel: AgriPar
             {visibleBlocks.map(block => <Pressable key={block.id} testID={`select-block-${block.id}`} accessibilityRole="button" accessibilityLabel={`Select block ${block.name}`} accessibilityState={{ selected: mapping.selectedBlockId === block.id }} {...(Platform.OS === 'web' ? { 'aria-pressed': mapping.selectedBlockId === block.id } : {})} disabled={taskWriting} onPress={() => { if (!taskWritingRef.current) mapping.setSelectedBlockId(block.id); }} className={`min-h-12 p-3 rounded-xl border ${mapping.selectedBlockId === block.id ? 'bg-blue-50 border-blue-600' : 'border-gray-300'}`}><Text className="text-gray-900 font-semibold">{mapping.selectedBlockId === block.id ? 'Selected · ' : ''}{block.name} · {measureParcelGeometry(block.geometry).areaHectares.toFixed(4)} ha</Text></Pressable>)}</View>}
         {showTasks && mapping.selectedBlockId && <BlockMonitoringPanel key={mapping.selectedBlockId} blockId={mapping.selectedBlockId} parcelId={parcel.id} operatorId={user?.id || ''} disabled={mapping.dirty || mapping.saving || clearing || !!sourceError} onBusy={busy => { if (mounted.current) { taskBusyOwners.current = Math.max(0, taskBusyOwners.current + (busy ? 1 : -1)); const writing = taskBusyOwners.current > 0; taskWritingRef.current = writing; setTaskWriting(writing); if (!writing) setTaskRefresh(n => n + 1); } }} />}
     </>;
+    const phoneMapHeight = mapArea > 0 ? Math.min(tokens.mapHeight, mapArea) : tokens.mapHeight;
     return <KeyboardAvoidingView className="flex-1 bg-gray-50" behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View className="flex-row items-center gap-3 p-3 bg-white border-b border-gray-200"><Pressable testID="mapping-back" accessibilityRole="button" accessibilityLabel="Back from mapping" onPress={() => guard(() => router.back())} className="min-h-12 min-w-12 justify-center"><Text className="text-gray-900 font-bold">Back</Text></Pressable><Text className="flex-1 text-xl text-gray-900 font-bold">GPS Parcel Mapping</Text>{mapping.dirty && <Text testID="unsaved-badge" className="text-amber-800 font-bold">UNSAVED</Text>}</View>
         <View className="bg-white p-3 gap-2"><TextInput value={search} onChangeText={setSearch} accessibilityLabel="Search registered parcels" placeholder="Search parcels by name or code" placeholderTextColor="#9CA3AF" className="text-gray-900 min-h-12 border border-gray-300 rounded-xl p-3" /><ScrollView horizontal showsHorizontalScrollIndicator={false}>{parcels.filter(p => `${p.name} ${p.code || ''}`.toLowerCase().includes(search.toLowerCase())).map(p => <Pressable key={p.id} testID={`parcel-chip-${p.id}`} accessibilityRole="button" accessibilityState={{ selected: p.id === parcel.id }} {...(Platform.OS === 'web' ? { 'aria-pressed': p.id === parcel.id } : {})} onPress={() => selectParcel(p.id)} className={`min-h-12 px-4 mr-2 rounded-xl justify-center ${p.id === parcel.id ? 'bg-green-800' : 'bg-gray-100'}`}><Text className={p.id === parcel.id ? 'text-white font-bold' : 'text-gray-900 font-bold'}>{p.name} ({p.code || 'No code'})</Text></Pressable>)}</ScrollView></View>
@@ -322,12 +326,20 @@ function ParcelMappingWorkspace({ parcel, parcels, onSelect }: { parcel: AgriPar
             setShowTasks(true); setExpanded(true); gps.finish();
         }} />
         <View className={tokens.isDesktopOrLarger ? 'flex-1 flex-row' : 'flex-1'}>
-            <View className="flex-1 min-h-0" onLayout={event => { if (event.nativeEvent.layout.height > 0) setMapSpace(event.nativeEvent.layout.height); }}>
-                <ParcelMap coordinates={mapping.points} holes={['exclude', 'cut', 'block'].includes(mapping.mode) ? [] : mapping.geometry.holes} onChange={mutate(mapping.changePoints)} editable={!locked && mapping.mode !== 'browse' && mapping.mode !== 'gps'} height={mapSpace} closed={mapping.closed && !['cut', 'block', 'exclude'].includes(mapping.mode)} liveCoordinate={gps.liveFix?.coordinate || null} features={features} selectedFeatureId={mapping.selectedBlockId || parcel.id} selectedVertexIndex={mapping.selectedVertexIndex} onVertexSelect={mutate(mapping.setSelectedVertexIndex)} onFeatureSelect={id => { if (clearOwnership.current || taskWritingRef.current || mapping.saving || clearing) return; if (mapping.blocks.some(b => b.id === id)) { mapping.setSelectedBlockId(id); setExpanded(true); } else if (parcels.some(p => p.id === id)) selectParcel(id); }} fitRequest={fitRequest} showEdgeLengths mapLayer={layer} />
-                {mapping.geometry.outer.length === 0 && <Text testID="empty-boundary-state" className="bg-white p-3 text-gray-700">No boundary captured. Choose Draw boundary, Record GPS, or Enter coordinates.</Text>}
+            {/* Height comes from the viewport token, capped by the row this column actually
+                grants (measured on the parent-driven wrapper). No onLayout->height feedback
+                from the map itself: that froze the map at its first-layout pixels on resize,
+                while an uncapped token overflowed a short phone column and let the save bar
+                cover the map — which is what swallowed real taps. */}
+            <View testID="mapping-map-area" className="flex-1 min-h-0 overflow-hidden" onLayout={event => { const next = Math.round(event.nativeEvent.layout.height); setMapArea(old => old === next ? old : next); }}>
+                <ParcelMap coordinates={mapping.points} holes={['exclude', 'cut', 'block'].includes(mapping.mode) ? [] : mapping.geometry.holes} onChange={mutate(mapping.changePoints)} editable={!locked && mapping.mode !== 'browse' && mapping.mode !== 'gps'} intent={mapping.intent} height={tokens.isDesktopOrLarger ? undefined : phoneMapHeight} closed={mapping.closed && !['cut', 'block', 'exclude'].includes(mapping.mode)} liveCoordinate={gps.liveFix?.coordinate || null} features={features} selectedFeatureId={mapping.selectedBlockId || parcel.id} selectedVertexIndex={mapping.selectedVertexIndex} onVertexSelect={mutate(mapping.setSelectedVertexIndex)} onFeatureSelect={id => { if (clearOwnership.current || taskWritingRef.current || mapping.saving || clearing) return; if (mapping.blocks.some(b => b.id === id)) { mapping.setSelectedBlockId(id); setExpanded(true); } else if (parcels.some(p => p.id === id)) selectParcel(id); }} fitRequest={fitRequest} showEdgeLengths mapLayer={layer} />
+                {mapping.geometry.outer.length === 0 && <Text testID="empty-boundary-state" className="absolute top-3 left-3 right-24 bg-white p-3 text-gray-700">No boundary captured. Choose Draw boundary, Record GPS, or Enter coordinates.</Text>}
                 <View className="absolute top-3 right-3 gap-2"><Pressable accessibilityRole="button" accessibilityLabel="Fit selected geometry" onPress={() => setFitRequest(n => n + 1)} className="min-h-12 bg-white p-3 rounded-xl border border-gray-300"><Text className="text-gray-900 font-bold">Fit</Text></Pressable><Pressable accessibilityRole="button" accessibilityLabel="Change map imagery" onPress={() => setLayer(old => old === 'satellite' ? 'street' : 'satellite')} className="min-h-12 bg-white p-3 rounded-xl border border-gray-300"><Text className="text-gray-900 font-bold">{layer === 'satellite' ? 'Street' : 'Satellite'}</Text></Pressable></View>
             </View>
-            <View className={tokens.isDesktopOrLarger ? 'w-96 bg-white border-l border-gray-200' : 'bg-white border-t border-gray-300'} style={tokens.isDesktopOrLarger ? undefined : { maxHeight: expanded ? dimensions.height * 0.45 : 52 }}>
+            {/* Phone: the details sheet floats over the bottom of the map. Header, search, mode
+                strip and save bar already take most of a portrait column, so an in-flow sheet
+                could only be paid for out of the map's own height. */}
+            <View testID="parcel-details-sheet" className={tokens.isDesktopOrLarger ? 'w-96 bg-white border-l border-gray-200' : 'rounded-t-2xl bg-white border-t border-gray-300'} style={tokens.isDesktopOrLarger ? undefined : { position: 'absolute', bottom: 0, left: 0, right: 0, maxHeight: Math.max(73, Math.round((mapArea > 0 ? mapArea : phoneMapHeight) * 0.45)) }}>
                 {!tokens.isDesktopOrLarger && <Pressable accessibilityRole="button" accessibilityLabel={expanded ? 'Collapse parcel details' : 'Expand parcel details'} accessibilityState={{ expanded }} onPress={() => setExpanded(old => !old)} className="min-h-12 p-3"><Text className="text-gray-900 text-center font-bold">{expanded ? 'Hide details' : `${parcel.name} · Details`}</Text></Pressable>}
                 {(tokens.isDesktopOrLarger || expanded) && <ScrollView keyboardShouldPersistTaps="handled" className="flex-shrink" contentContainerStyle={{ paddingBottom: 12 }}>{inspector}</ScrollView>}
             </View>

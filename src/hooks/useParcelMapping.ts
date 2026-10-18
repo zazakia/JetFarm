@@ -53,6 +53,11 @@ export function useParcelMapping({ operatorId, snapshot, onSave }: Options) {
     const savingRef = useRef(false);
     const acceptedClean = useRef(false);
     const session = useRef(0);
+    // Edit-intent epoch: bumped synchronously on every tool/session transition so the
+    // native bridge can reject stale edits even when the serialized map state is identical.
+    const intentSeq = useRef(0);
+    const [intent, setIntent] = useState(0);
+    const bumpIntent = useCallback(() => { intentSeq.current += 1; setIntent(intentSeq.current); }, []);
     const enqueue = useCallback((work: () => Promise<unknown>) => {
         const queued = (draftQueues.get(key) ?? Promise.resolve()).catch(() => {}).then(work);
         draftQueues.set(key, queued);
@@ -64,6 +69,7 @@ export function useParcelMapping({ operatorId, snapshot, onSave }: Options) {
     useEffect(() => {
         let active = true;
         session.current += 1;
+        intentSeq.current += 1; setIntent(intentSeq.current);
         savingRef.current = false; acceptedClean.current = false; setSaving(false);
         baseline.current = snapshot;
         undoStack.current = []; redoStack.current = [];
@@ -83,7 +89,6 @@ export function useParcelMapping({ operatorId, snapshot, onSave }: Options) {
             .finally(() => { if (active) setDraftLoading(false); });
         return () => { active = false; session.current += 1; };
         // Parcel/operator changes are explicit screen decisions; revision changes are handled below.
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [key, enqueue]);
 
     useEffect(() => {
@@ -120,7 +125,8 @@ export function useParcelMapping({ operatorId, snapshot, onSave }: Options) {
         }
         setMode(next); currentMode.current = next; setError(null); setPreview(null); setSelectedVertexIndex(null);
         setEdit(old => ({ ...old, points: [], closed: next === 'boundary' || next === 'gps' || next === 'manual' ? false : old.closed }));
-    }, []);
+        bumpIntent();
+    }, [bumpIntent]);
     const points = mode === 'exclude' || mode === 'cut' || mode === 'block' ? edit.points : edit.geometry.outer;
     const changePoints = useCallback((next: GPSCoordinate[]) => {
         if (savingRef.current || currentMode.current === 'browse' || !ringValid(next)) return false;
@@ -159,8 +165,9 @@ export function useParcelMapping({ operatorId, snapshot, onSave }: Options) {
         baseline.current = snapshot;
         setEdit(stateOf(snapshot)); setRevision(snapshot.revision); setMode('browse'); setDirty(false); setPreview(null); setError(null); setRecoverableDraft(null);
         undoStack.current = []; redoStack.current = []; operation.current = uuid();
+        bumpIntent();
         enqueue(() => AsyncStorage.removeItem(key)).catch(() => setError('Could not discard the stored draft.'));
-    }, [snapshot, key, enqueue]);
+    }, [snapshot, key, enqueue, bumpIntent]);
     const discardDraft = useCallback(() => {
         if (savingRef.current) return;
         setRecoverableDraft(null); setError(null);
@@ -171,7 +178,8 @@ export function useParcelMapping({ operatorId, snapshot, onSave }: Options) {
         if (recoverableDraft.revision !== snapshot.revision) { setError('Draft revision differs from the saved parcel. Review coordinates and start a fresh layout; stale drafts cannot be applied.'); return; }
         setEdit({ geometry: copy(recoverableDraft.geometry), blocks: copy(recoverableDraft.blocks), points: copy(recoverableDraft.points), closed: recoverableDraft.closed });
         setMode(recoverableDraft.mode); setDirty(true); operation.current = recoverableDraft.operationId; setRecoverableDraft(null); setError(null);
-    }, [recoverableDraft, snapshot.revision]);
+        bumpIntent();
+    }, [recoverableDraft, snapshot.revision, bumpIntent]);
     const cancelIntent = useCallback(() => {
         if (savingRef.current) return;
         const old = currentEdit.current;
@@ -179,11 +187,12 @@ export function useParcelMapping({ operatorId, snapshot, onSave }: Options) {
         currentEdit.current = { ...old, points: [] };
         currentMode.current = 'browse';
         setPreview(null); setMode('browse'); setEdit(currentEdit.current); setDirty(stillDirty); setError(null);
+        bumpIntent();
         if (!stillDirty) {
             undoStack.current = []; redoStack.current = [];
             enqueue(() => AsyncStorage.removeItem(key)).catch(() => setError('Could not discard the stored draft.'));
         }
-    }, [key, enqueue]);
+    }, [key, enqueue, bumpIntent]);
     const closeBoundary = useCallback(() => {
         if (savingRef.current) return false;
         const errors = validateParcelGeometry(currentEdit.current.geometry);
@@ -198,8 +207,8 @@ export function useParcelMapping({ operatorId, snapshot, onSave }: Options) {
         const errors = validateBlockLayout(geometry, old.blocks.map(block => block.geometry));
         if (errors.length) { setError(errors.join('; ')); return; }
         if (old.closed !== true) { setError('Use Close boundary before accepting an exclusion.'); return; }
-        commit({ ...old, geometry, points: [] }); setMode('browse');
-    }, [commit]);
+        commit({ ...old, geometry, points: [] }); setMode('browse'); bumpIntent();
+    }, [commit, bumpIntent]);
     const previewDivision = useCallback(() => {
         if (savingRef.current || !['cut', 'block'].includes(currentMode.current)) return;
         try {
@@ -224,8 +233,8 @@ export function useParcelMapping({ operatorId, snapshot, onSave }: Options) {
         const errors = validateBlockLayout(old.geometry, blocks.map(block => block.geometry));
         if (errors.length) { setError(errors.join('; ')); return; }
         if (old.closed !== true) { setError('Use Close boundary before accepting a division.'); return; }
-        commit({ ...old, blocks, points: [] }); setMode('browse'); setSelectedBlockId(null);
-    }, [preview, commit]);
+        commit({ ...old, blocks, points: [] }); setMode('browse'); setSelectedBlockId(null); bumpIntent();
+    }, [preview, commit, bumpIntent]);
     const measurements = useMemo(() => {
         try { return measureParcelGeometry(edit.geometry); } catch { return null; }
     }, [edit.geometry]);
@@ -262,6 +271,7 @@ export function useParcelMapping({ operatorId, snapshot, onSave }: Options) {
             if (!current()) return false;
             baseline.current = { parcelId: input.parcelId, geometry: input.geometry, blocks: input.blocks, revision: accepted };
             operation.current = uuid(); acceptedClean.current = true;
+            bumpIntent();
             currentDirty.current = false; currentMode.current = 'browse';
             setRevision(accepted); setDirty(false); setMode('browse'); setEdit({ ...old, closed: true });
             undoStack.current = []; redoStack.current = [];
@@ -269,8 +279,8 @@ export function useParcelMapping({ operatorId, snapshot, onSave }: Options) {
             return true;
         } catch (e) { if (current()) setError(e instanceof Error ? e.message : 'Save failed. Your draft is retained.'); return false; }
         finally { if (current()) { savingRef.current = false; setSaving(false); } }
-    }, [revision, snapshot.revision, snapshot.parcelId, onSave, key, enqueue, remainderError]);
-    return { geometry: edit.geometry, blocks: edit.blocks, points, mode, dirty, revision, error, preview, saving, measurements, remainder, remainderError,
+    }, [revision, snapshot.revision, snapshot.parcelId, onSave, key, enqueue, remainderError, bumpIntent]);
+    return { geometry: edit.geometry, blocks: edit.blocks, points, mode, dirty, revision, error, preview, saving, measurements, remainder, remainderError, intent,
         closed: edit.closed, selectedBlockId, setSelectedBlockId, selectedVertexIndex, setSelectedVertexIndex,
         draftLoading, recoverableDraft, recoverDraft, discardDraft, begin, changePoints, addManual, deleteVertex,
         undo, redo, discard, cancelIntent, closeBoundary, acceptExclusion, previewDivision, acceptDivision, save };

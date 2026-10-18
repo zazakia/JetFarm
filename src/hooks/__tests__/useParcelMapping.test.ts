@@ -433,4 +433,49 @@ describe('parcel mapping controller', () => {
         expect(second.result.current.geometry.outer).toEqual(outer);
         expect(second.result.current.error).toContain('revision');
     });
+
+    it('bumps the edit intent on every tool transition even when the map state is identical', async () => {
+        const { result } = setup(source);
+        await waitFor(() => expect(result.current.draftLoading).toBe(false));
+        expect(typeof result.current.intent).toBe('number');
+        const start = result.current.intent;
+        act(() => result.current.begin('exclude'));
+        const afterExclude = result.current.intent;
+        expect(afterExclude).toBeGreaterThan(start);
+        // Cancel returns to browse with an empty outline in both modes: the serialized
+        // map state is identical, yet the intent must move so stale edits are rejected.
+        act(() => result.current.cancelIntent());
+        const afterCancel = result.current.intent;
+        expect(afterCancel).toBeGreaterThan(afterExclude);
+        act(() => result.current.begin('cut'));
+        expect(result.current.intent).toBeGreaterThan(afterCancel);
+        const afterCut = result.current.intent;
+        act(() => result.current.begin('block'));
+        expect(result.current.intent).toBeGreaterThan(afterCut);
+        // Refused switches (unfinished outline) must NOT burn a new intent.
+        act(() => result.current.changePoints([{ latitude: 8, longitude: 125 }, { latitude: 8.001, longitude: 125 }, { latitude: 8.002, longitude: 125 }]));
+        const beforeRefused = result.current.intent;
+        act(() => result.current.begin('exclude'));
+        expect(result.current.error).toMatch(/accept or cancel/i);
+        expect(result.current.intent).toBe(beforeRefused);
+    });
+
+    it('bumps the edit intent when a successful save settles the session', async () => {
+        const save = jest.fn(async () => 1);
+        const { result } = setup(source, save);
+        await waitFor(() => expect(result.current.draftLoading).toBe(false));
+        act(() => result.current.begin('boundary'));
+        act(() => result.current.changePoints(outer.slice(0, 3)));
+        const beforeSave = result.current.intent;
+        await act(async () => {
+            expect(result.current.closeBoundary()).toBe(true);
+            expect(await result.current.save()).toBe(true);
+        });
+        expect(result.current.mode).toBe('browse');
+        expect(result.current.revision).toBe(1);
+        expect(result.current.intent).toBeGreaterThan(beforeSave);
+        const before = result.current.intent;
+        act(() => result.current.discard());
+        expect(result.current.intent).toBeGreaterThan(before);
+    });
 });

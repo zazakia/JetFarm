@@ -5,6 +5,7 @@ import {
   localAdmin, mappingReady, registerUnmeasuredParcel, registerWorker, workerCard,
   chooseMode, addVertex, addPoints, drawOuterManually, reviewAndSave,
   vertexRows, vertexMarkers, filledPaths, mapLabels, expectHoleRendered, expectNoWages, tapMap,
+  waitForMapSettled, settleAutosave,
 } from './mapping-helpers';
 
 const WORKER_A = 'Synthetic GPS Worker A';
@@ -58,6 +59,7 @@ test.describe('GPS labor blocks approved browser acceptance', () => {
       await expect(filledPaths(page)).toHaveCount(1);
       await chooseMode(page, mode);
       await page.getByRole('button', { name: 'Fit selected geometry', exact: true }).click();
+      await waitForMapSettled(page);
       await expect(vertexRows(page)).toHaveCount(0);
       await expect(filledPaths(page)).toHaveCount(1);
 
@@ -213,6 +215,7 @@ test.describe('GPS labor blocks approved browser acceptance', () => {
     await expect(assignmentFor(page, WORKER_A)).toContainText('40% · in_progress');
 
     // A full browser reload proves durable records, not React state or a sidebar counter.
+    await settleAutosave(page); // Let the 500ms Loki autosave flush the progress writes first.
     await page.reload();
     await mappingReady(page, parcelId);
     await expect(page.getByTestId(`select-block-${blockId}`)).toBeVisible();
@@ -251,7 +254,8 @@ test.describe('GPS labor blocks approved browser acceptance', () => {
       await expect(roster).toHaveCount(1);
       await expect(roster).toContainText('0 log(s)');
       for (const label of ['Total Earnings', 'Pending Payout']) {
-        await expect(roster.getByText(label, { exact: true }).locator('..')).toContainText(/₱\s*0\.00/);
+        // formatPHP renders with currencyDisplay 'code' ("PHP 0.00"), never a bare ₱ symbol.
+        await expect(roster.getByText(label, { exact: true }).locator('..')).toContainText(/PHP\s*0\.00/);
       }
     }
   });
@@ -290,6 +294,7 @@ test.describe('GPS labor blocks approved browser acceptance', () => {
     await expect.poll(() => filledPaths(page).evaluateAll(paths => paths.map(path =>
       (path.getAttribute('d') || '').match(/M/gi)?.length || 0
     ).sort())).toEqual([1, 2, 2]); // One piece retains the pocket, plus the parent hole.
+    await settleAutosave(page); // reviewAndSave above must clear the autosave window before reload.
     await page.reload();
     await mappingReady(page, parcelId);
     await expect(page.locator('[data-testid^="select-block-"]')).toHaveCount(2);
@@ -329,6 +334,7 @@ test.describe('GPS labor blocks approved browser acceptance', () => {
       await page.getByTestId('cancel-boundary-edit').click();
       await expect(page.getByTestId('unsaved-badge')).toHaveCount(0);
       await expectHoleRendered(page, 1);
+      await settleAutosave(page); // The saved exclusion must clear the autosave window before reload.
       await page.reload();
       await mappingReady(page);
       await expectHoleRendered(page, 1);

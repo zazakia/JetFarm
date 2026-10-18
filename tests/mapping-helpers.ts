@@ -1,5 +1,6 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 import { loginAsAdmin, safeNavigate } from './playwright-auth';
+import { isDedicatedE2EPort } from '../src/utils/e2ePortPolicy';
 
 export const MAPPING_ROUTE = '/agribusiness/mapping';
 export const PARCELS_ROUTE = '/agribusiness/parcels';
@@ -34,8 +35,13 @@ export const USABLE_HA = OUTER_HA - POCKET_HA;
 export const BLOCK_HA = rectangleHectares(0.0002, 0.0018, 0.0002, 0.0008);
 
 export async function localAdmin(page: Page, baseURL?: string) {
-  expect(baseURL, 'Mapping specs require the dedicated local port; do not reuse 19119')
-    .toBe('http://127.0.0.1:19129');
+  // Deliberately not an exact-port pin: the systematic-test-matrix runner allocates a
+  // dynamic free port, so a literal here failed under every automated entry point. The
+  // hazard worth refusing is reuseExistingServer attaching to a stale shared-port bundle.
+  expect(
+    isDedicatedE2EPort(baseURL),
+    `Mapping specs need a dedicated port, not the legacy shared 19119 (got ${baseURL ?? 'no baseURL'})`,
+  ).toBe(true);
   expect(process.env.EXPO_PUBLIC_E2E_MODE, 'Build/run with the real local mock-auth harness').toBe('1');
   expect(process.env.PLAYWRIGHT_ALLOW_PRODUCTION_DB).not.toBe('1');
   const backend = new URL(process.env.EXPO_PUBLIC_SUPABASE_URL || 'http://127.0.0.1:46421');
@@ -105,6 +111,10 @@ export const vertexRows = (page: Page) => page.locator('[data-testid^="select-ve
 export const vertexMarkers = (page: Page) => page.locator('.leaflet-marker-pane .parcel-vertex-icon');
 export const boundaryPaths = (page: Page) => page.locator('.leaflet-overlay-pane path');
 export const filledPaths = (page: Page) => page.locator('.leaflet-overlay-pane path:not([fill="none"])');
+// ParcelMap tags each saved feature's outline with `feature-boundary-<id>` (web SVG path and
+// native webview share the class), so a test can assert one parcel's own boundary instead of
+// counting every neighbor overlay in the shared pane.
+export const featureBoundaryPath = (page: Page, featureId: string) => page.locator(`.leaflet-overlay-pane path.feature-boundary-${featureId}`);
 export const mapLabels = (page: Page) => page.locator('.leaflet-tooltip-pane .leaflet-tooltip');
 
 export async function chooseMode(page: Page, mode: 'browse' | 'boundary' | 'manual' | 'exclude' | 'cut' | 'block') {
@@ -174,6 +184,13 @@ export async function reviewAndSave(page: Page, measured: number, registered: nu
   await expect(page.getByTestId('measured-hectares')).toHaveText(`${measured.toFixed(4)} ha`);
 }
 
+/** The WatermelonDB Loki adapter autosaves to IndexedDB at most every 500ms
+ *  (adapters/lokijs/worker/lokiExtensions.js) and the app itself warns that abrupt closure can
+ *  lose recent saves. Reloads that force durability must wait out one flush window first. */
+export async function settleAutosave(page: Page) {
+  await page.waitForTimeout(800);
+}
+
 /** Normal pointer event against the mounted map; no force, Leaflet API injection, or mock map. */
 export async function tapMap(page: Page, xFraction: number, yFraction: number) {
   const map = page.locator('.leaflet-container');
@@ -181,6 +198,26 @@ export async function tapMap(page: Page, xFraction: number, yFraction: number) {
   const box = await map.boundingBox();
   if (!box) throw new Error('Leaflet has no visible map bounds');
   await map.click({ position: { x: box.width * xFraction, y: box.height * yFraction } });
+}
+
+/** fitBounds animates the overlay per frame; screen fractions sampled mid-animation go stale
+ *  before the pointer arrives (a stale point can land on an interactive label and swallow the
+ *  map click). Wait until rendered path geometry holds still across three spaced samples. */
+export async function waitForMapSettled(page: Page) {
+  const read = () => filledPaths(page).evaluateAll(paths => paths.map(path => {
+    const box = path.getBoundingClientRect();
+    return `${box.x.toFixed(2)}|${box.y.toFixed(2)}|${box.width.toFixed(2)}|${box.height.toFixed(2)}`;
+  }).join(';'));
+  await expect.poll(async () => {
+    let last = await read();
+    for (let sample = 0; sample < 2; sample++) {
+      await page.waitForTimeout(100);
+      const next = await read();
+      if (next !== last) return 'moving';
+      last = next;
+    }
+    return 'settled';
+  }, { timeout: 20000, message: 'expected the map viewport to stop animating before pointer sampling' }).toBe('settled');
 }
 
 /** Observe projected Leaflet vertices; pointer drag/click uses these, not a private map instance. */
@@ -245,6 +282,7 @@ export async function expectNoWages(page: Page) {
   await expect(page.getByText('Pay Wage', { exact: true })).toHaveCount(0);
   for (const label of ['Pending Wages', 'Total Paid']) {
     const card = page.getByText(label, { exact: true }).locator('..');
-    await expect(card).toContainText(/₱\s*0\.00/);
+    // formatPHP renders with currencyDisplay 'code' ("PHP 0.00"), never a bare ₱ symbol.
+    await expect(card).toContainText(/PHP\s*0\.00/);
   }
 }

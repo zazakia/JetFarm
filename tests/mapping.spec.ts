@@ -3,9 +3,9 @@ import { safeNavigate } from './playwright-auth';
 import {
   MAPPING_ROUTE, PARCELS_ROUTE, OUTER, OUTER_HA,
   localAdmin, mappingReady, registerUnmeasuredParcel, registerSecondParcel,
-  vertexRows, vertexMarkers, boundaryPaths, filledPaths, chooseMode,
+  vertexRows, vertexMarkers, boundaryPaths, filledPaths, featureBoundaryPath, chooseMode,
   addVertex, addPoints, drawOuterManually, expectDialog, acknowledge,
-  openReview, reviewAndSave, tapMap, markerCenters,
+  openReview, reviewAndSave, tapMap, markerCenters, settleAutosave,
 } from './mapping-helpers';
 
 /**
@@ -282,6 +282,7 @@ test.describe('GPS Parcel Mapping approved browser UX', () => {
     await expect(boundaryPaths(page)).toHaveCount(0);
     await expect(page.getByTestId('empty-boundary-state')).toBeVisible();
     await expect(page.getByTestId('parcel-details-panel')).toContainText(`Registered area: ${OUTER_HA.toFixed(4)} ha`);
+    await settleAutosave(page); // The clear write must clear the autosave window before reload.
     await page.reload();
     await mappingReady(page, id);
     await expect(boundaryPaths(page)).toHaveCount(0);
@@ -321,7 +322,10 @@ test.describe('GPS Parcel Mapping approved browser UX', () => {
     await mappingReady(page, idB);
     await expect(page.getByTestId('parcel-details-panel')).toContainText('Synthetic Unmapped Parcel');
     await expect(page.getByTestId('empty-boundary-state')).toBeVisible();
-    await expect(boundaryPaths(page)).toHaveCount(0);
+    // Parcel A's saved overlay legitimately renders in the shared pane while B is selected,
+    // so the persistence check names B's own outline instead of counting all neighbors.
+    await expect(featureBoundaryPath(page, idB)).toHaveCount(0);
+    await expect(featureBoundaryPath(page, idA)).toHaveCount(1);
     await page.getByTestId(`parcel-chip-${idA}`).click();
     await mappingReady(page, idA);
     await expect(filledPaths(page)).toHaveCount(1);

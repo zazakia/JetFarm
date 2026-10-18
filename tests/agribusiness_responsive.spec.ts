@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { loginAsAdmin, safeNavigate } from './playwright-auth';
+import { registerUnmeasuredParcel, chooseMode } from './mapping-helpers';
 
 /**
  * Responsive layout E2E for the client report of 2026-10-16:
@@ -14,7 +15,6 @@ import { loginAsAdmin, safeNavigate } from './playwright-auth';
  */
 
 const PARCELS_ROUTE = '/agribusiness/parcels';
-const MAPPING_ROUTE = '/agribusiness/mapping';
 
 /**
  * Detects both shapes of "does not fit the screen":
@@ -146,33 +146,88 @@ test.describe('mobile portrait', () => {
     expect(broken, `content clipped or off-screen at 390px:\n${broken.join('\n')}`).toEqual([]);
   });
 
-  test('the boundary map sizes itself to the viewport, not a fixed slab', async ({ page }) => {
-    await openParcels(page);
-    await safeNavigate(page, MAPPING_ROUTE, /GPS Boundary Mapping/i);
+  test('the boundary map fills the row its column grants instead of a fixed slab', async ({ page }) => {
+    await loginAsAdmin(page);
+    // The map only renders once a parcel is selected; register one through the real flow.
+    await registerUnmeasuredParcel(page, `RESPONSIVE phone ${Date.now().toString().slice(-5)}`);
 
     const map = page.getByTestId('parcel-map');
     await expect(map).toBeVisible();
 
-    const heightAt = async (width: number, height: number) => {
+    const geometryAt = async (width: number, height: number) => {
       await page.setViewportSize({ width, height });
-      await page.waitForTimeout(300);
+      await page.waitForTimeout(400);
       const box = await map.boundingBox();
-      expect(box).not.toBeNull();
-      return box!;
+      expect(box, `no map box at ${width}x${height}`).not.toBeNull();
+      // Fitting the screen is the same client report: a proportional map that still pushes
+      // the document past the viewport is not usable on a phone.
+      const context = await page.evaluate(() => ({
+        doc: document.documentElement.scrollHeight,
+        area: Math.round((document.querySelector('[data-testid="mapping-map-area"]') as HTMLElement).getBoundingClientRect().height),
+      }));
+      expect(context.doc, `the page scrolls vertically at ${width}x${height}`).toBeLessThanOrEqual(height + 1);
+      return { box: box!, ...context };
     };
 
-    const short = await heightAt(390, 640);
-    const tall = await heightAt(390, 900);
+    const short = await geometryAt(390, 640);
+    const tall = await geometryAt(390, 900);
 
     // A fixed height (the old 320px slab) would report the same number twice.
-    expect(tall.height).toBeGreaterThan(short.height);
-    // Proportional to the visible height: 45% of 640 = 288, of 900 = 405.
-    expect(short.height).toBeGreaterThan(640 * 0.35);
-    expect(short.height).toBeLessThan(640 * 0.55);
-    expect(tall.height).toBeGreaterThan(900 * 0.35);
-    expect(tall.height).toBeLessThan(900 * 0.55);
+    expect(tall.box.height).toBeGreaterThan(short.box.height);
+    // Measured 2026-10-17: at 390px width the admin shell keeps 72px of top bar and 89px of
+    // bottom nav, and this screen's header, search strip, mode strip and save bar keep 335px.
+    // That leaves viewport minus 496px, so the previous "at least 35% of the window" floor is
+    // arithmetically incompatible with fitting the page at 640. The stronger contract is that
+    // the map exactly fills the row the column grants it: viewport-proportional, never crushed
+    // under the save bar, and never taller than its 45% token.
+    expect(short.box.height, `the map is not the granted row at 640`).toBeCloseTo(short.area, 0);
+    expect(tall.box.height, `the map is not the granted row at 900`).toBeCloseTo(tall.area, 0);
+    // Keep a usable floor wherever the screen can afford one: at 900px the granted row is
+    // 404px, so a 35% minimum is satisfiable together with fitting the page.
+    expect(tall.box.height).toBeGreaterThan(900 * 0.35);
+    expect(short.box.height).toBeLessThan(640 * 0.55);
+    expect(tall.box.height).toBeLessThan(900 * 0.55);
     // Must stay inside the phone width.
-    expect(short.x + short.width).toBeLessThanOrEqual(390 + 1);
+    expect(short.box.x + short.box.width).toBeLessThanOrEqual(390 + 1);
+  });
+
+  test('the mapping column fits the portrait phone instead of scrolling the page', async ({ page }) => {
+    await loginAsAdmin(page);
+    await registerUnmeasuredParcel(page, `FIT phone ${Date.now().toString().slice(-5)}`);
+    await chooseMode(page, 'boundary');
+
+    // The client report is "dili pa fit to screen ang mobile portrait": the screen column
+    // must resolve inside the viewport, not push the map under the save bar so that a map
+    // tap lands on a button. Measure the whole column, not one element.
+    const column = await page.evaluate(() => {
+      const box = (selector: string) => {
+        const el = document.querySelector(selector) as HTMLElement | null;
+        if (!el) return null;
+        const rect = el.getBoundingClientRect();
+        return { top: Math.round(rect.top), bottom: Math.round(rect.bottom), height: Math.round(rect.height) };
+      };
+      const roots = document.querySelectorAll('.flex-1.bg-gray-50');
+      const screen = roots[roots.length - 1] as HTMLElement;
+      const screenBox = screen.getBoundingClientRect();
+      return {
+        map: box('.leaflet-container'),
+        save: box('[data-testid="save-boundary"]'),
+        toolbar: box('[data-testid="mapping-toolbar"]'),
+        details: box('[data-testid="parcel-details-panel"]'),
+        screenBottom: Math.round(screenBox.bottom),
+        doc: document.documentElement.scrollHeight,
+        vh: window.innerHeight,
+      };
+    });
+    const describe = JSON.stringify(column);
+    expect(column.doc, `the document scrolls vertically at 390x844: ${describe}`).toBeLessThanOrEqual(column.vh + 1);
+    expect(column.map!.bottom, `the map escapes the phone viewport: ${describe}`).toBeLessThanOrEqual(column.vh + 1);
+    expect(column.save!.bottom, `the save action is below the fold: ${describe}`).toBeLessThanOrEqual(column.vh + 1);
+    // A crushed toolbar is the signature of the flex race that hid the map.
+    expect(column.toolbar!.height, `the mode strip grew into the map's space: ${describe}`).toBeLessThan(120);
+    // The map tap target must be clear of the save bar, which is what swallowed real taps.
+    expect(column.map!.bottom, `the map overlaps the save action: ${describe}`).toBeLessThanOrEqual(column.save!.top);
+    await expect(page.getByTestId('save-boundary')).toBeVisible();
   });
 });
 
@@ -214,8 +269,8 @@ test.describe('tablet landscape', () => {
   });
 
   test('the mapping screen shows the map and its tools on tablet', async ({ page }) => {
-    await openParcels(page);
-    await safeNavigate(page, MAPPING_ROUTE, /GPS Boundary Mapping/i);
+    await loginAsAdmin(page);
+    await registerUnmeasuredParcel(page, `RESPONSIVE tablet ${Date.now().toString().slice(-5)}`);
 
     const map = page.getByTestId('parcel-map');
     await expect(map).toBeVisible();

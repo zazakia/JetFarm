@@ -1,8 +1,16 @@
 import React from 'react';
 import { render, fireEvent, waitFor, screen, act } from '@testing-library/react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Platform } from 'react-native';
+import { Platform, StyleSheet } from 'react-native';
 import GPSMappingScreen from '../mapping';
+import { getResponsiveTokens } from '../../../../src/utils/responsiveLayout';
+
+// jest-expo's Dimensions.get and useWindowDimensions disagree; the screen reads the hook,
+// so the test pins it and derives expectations from the same phone viewport.
+const PHONY_VIEWPORT: [number, number] = [390, 844];
+jest.mock('react-native/Libraries/Utilities/useWindowDimensions', () => ({
+    default: () => ({ fontScale: 1, height: 844, scale: 2, width: 390 }),
+}));
 import { BlockMonitoringPanel } from '../../../../src/components/ParcelMap/BlockMonitoringPanel';
 import { BoundaryEditorPanel } from '../../../../src/components/ParcelMap/BoundaryEditorPanel';
 
@@ -91,6 +99,50 @@ beforeEach(async () => {
 });
 
 describe('map-first parcel mapping', () => {
+    it('anchors the map to the viewport token and caps it to the space the column grants', async () => {
+        // The browser resize check caught the map frozen at its first-layout pixel height, and
+        // the phone fit check then caught the opposite: a 380px map inside a 230px row pushes
+        // the save bar over the map and swallows real taps. Height comes from the viewport
+        // token, capped by the row the parent grants — never inflated by it.
+        await loaded();
+        const expected = getResponsiveTokens(...PHONY_VIEWPORT).mapHeight;
+        expect(mockMapProps.height).toBe(expected);
+        expect(typeof screen.getByTestId('mapping-map-area').props.onLayout).toBe('function');
+        act(() => screen.getByTestId('mapping-map-area').props.onLayout({ nativeEvent: { layout: { height: 230, width: 390, x: 0, y: 0 } } }));
+        expect(mockMapProps.height).toBe(230);
+        act(() => screen.getByTestId('mapping-map-area').props.onLayout({ nativeEvent: { layout: { height: 900, width: 390, x: 0, y: 0 } } }));
+        expect(mockMapProps.height).toBe(expected);
+    });
+
+    it('floats the phone details sheet over the map so it cannot consume the map row', async () => {
+        // Header + search + toolbar + save bar already eat most of a 390x844 column, so an
+        // in-flow sheet leaves the map either crushed or off-screen. The sheet must overlay.
+        await loaded();
+        const sheet = screen.getByTestId('parcel-details-sheet');
+        expect(StyleSheet.flatten(sheet.props.style)).toMatchObject({ position: 'absolute' });
+    });
+
+    it('keeps the desktop details column in flow beside the map', async () => {
+        const layout = jest.spyOn(require('../../../../src/hooks/useResponsiveLayout'), 'useResponsiveLayout')
+            .mockImplementation(() => ({ ...getResponsiveTokens(...PHONY_VIEWPORT), isDesktopOrLarger: true }));
+        try {
+            await loaded();
+            const sheet = screen.getByTestId('parcel-details-sheet');
+            expect(StyleSheet.flatten(sheet.props.style)?.position).not.toBe('absolute');
+        } finally { layout.mockRestore(); }
+    });
+
+    it('lets the desktop workspace fill the row container instead of a forced pixel height', async () => {
+        const layout = jest.spyOn(require('../../../../src/hooks/useResponsiveLayout'), 'useResponsiveLayout')
+            .mockImplementation(() => ({ ...getResponsiveTokens(...PHONY_VIEWPORT), isDesktopOrLarger: true }));
+        try {
+            await loaded();
+            expect(mockMapProps.height).toBeUndefined();
+            act(() => screen.getByTestId('mapping-map-area').props.onLayout({ nativeEvent: { layout: { height: 123, width: 1440, x: 0, y: 0 } } }));
+            expect(mockMapProps.height).toBeUndefined();
+        } finally { layout.mockRestore(); }
+    });
+
     it('exposes web pressed parcel/block selections and checked block filters', async () => {
         const platform = jest.replaceProperty(Platform, 'OS', 'web');
         try {

@@ -12,7 +12,14 @@ const mockMap = { setView: jest.fn(), fitBounds: jest.fn(), invalidateSize: jest
 jest.mock('leaflet/dist/leaflet.css', () => ({}));
 jest.mock('leaflet', () => ({
     __esModule: true,
-    default: { divIcon: (options: any) => options, latLngBounds: () => ({ pad: () => ({}) }), DomEvent: { stopPropagation: jest.fn(event => { event._stopped = true; }) } },
+    default: { divIcon: (options: any) => options, latLngBounds: () => ({ pad: () => ({}) }), DomEvent: { stopPropagation: jest.fn((event: any) => {
+        // Mirrors leaflet-src.js DomEvent.stopPropagation: a real DOM event only gets
+        // native stopPropagation (no _stopped flag); only the Leaflet wrapper event sets
+        // originalEvent._stopped, which is what map._fireDOMEvent checks to stop bubbling.
+        if (event.stopPropagation) { event.stopPropagation(); }
+        else if (event.originalEvent) { event.originalEvent._stopped = true; }
+        else { event.cancelBubble = true; }
+    }) } },
 }));
 jest.mock('react-leaflet', () => {
     const ReactLib = require('react');
@@ -40,7 +47,7 @@ const clickPoint = { lat: 8.0005, lng: 125.0005 };
 // Route captured handlers with Leaflet's interactive-target / _stopped / bubbling rules.
 // The browser spec separately proves real SVG hit-testing with ordinary pointer clicks.
 function clickLayer(layer: any) {
-    const originalEvent: any = {};
+    const originalEvent: any = { stopPropagation: jest.fn() };
     const event = { originalEvent, latlng: clickPoint };
     const interactive = layer.interactiveAtMount ?? layer.interactive !== false;
     if (interactive) {
@@ -93,12 +100,41 @@ describe('web ParcelMap interactions', () => {
         if (editable) expect(onChange).toHaveBeenCalledWith([...coords, { latitude: clickPoint.lat, longitude: clickPoint.lng }]);
     });
 
-    it('consumes vertex and edge-label clicks during drawing without adding points', () => {
+    it('keeps edge-length pills pointer-transparent while vertices stay tappable during drawing', () => {
+        // Playwright caught a 38.2 m pill intercepting the first vertex tap at close zoom:
+        // an informational pill must never sit between the pointer and a vertex or the map.
         const onChange = jest.fn(), onVertexSelect = jest.fn();
         render(<ParcelMap coordinates={coords} editable showEdgeLengths onChange={onChange} onVertexSelect={onVertexSelect} />);
+        const edgeMarkers = mockMarkers.filter(marker => marker.icon?.className === 'parcel-edge-length');
+        expect(edgeMarkers).toHaveLength(1); // open 2-point line: one edge label
+        expect(edgeMarkers[0].interactive).toBe(false);
+        const element: any = { style: {} };
+        edgeMarkers[0].eventHandlers.add({ target: { getElement: () => element } });
+        expect(element.style.pointerEvents).toBe('none');
         act(() => mockMarkers.forEach(clickLayer));
         expect(onVertexSelect.mock.calls).toEqual([[0], [1]]);
-        expect(onChange).not.toHaveBeenCalled();
+        // The pill no longer consumes its click, so a map tap under it adds a point.
+        expect(onChange).toHaveBeenCalledTimes(1);
+        expect(onChange).toHaveBeenCalledWith([...coords, { latitude: clickPoint.lat, longitude: clickPoint.lng }]);
+    });
+
+    it('tags each saved feature outline with a per-parcel path class so E2E can tell neighbors apart', () => {
+        // A deep-linked unmapped parcel shares the overlay pane with saved neighbors;
+        // only a per-feature class lets a test assert "this parcel has no own boundary".
+        const featureA = { id: 'parcel-a', name: 'Saved A', kind: 'parcel' as const, coordinates: [...coords, { latitude: 8.001, longitude: 125.001 }] };
+        const featureB = { id: 'parcel-b', name: 'Block B', kind: 'block' as const, coordinates: [...coords, { latitude: 8.001, longitude: 125.001 }] };
+        render(<ParcelMap coordinates={[]} features={[featureA, featureB]} onChange={jest.fn()} />);
+        expect(mockPolygons.map(p => p.pathOptions.className)).toEqual(['feature-boundary-parcel-a', 'feature-boundary-parcel-b']);
+        // pathOptions.className alone never reaches the DOM: react-leaflet creates the
+        // Leaflet polygon before pathOptions are merged, and setStyle() does not re-apply
+        // class. The 'add' handler must put the class on the real SVG path element.
+        const fakePaths = mockPolygons.map(() => {
+            const classes: string[] = [];
+            // add() is called detached (el.classList.add(c)) — closure, not this.
+            return { classes, classList: { add: (c: string) => { classes.push(c); } } };
+        });
+        mockPolygons.forEach((polygon, index) => polygon.eventHandlers.add({ target: { getElement: () => fakePaths[index] } }));
+        expect(fakePaths.map(path => path.classes)).toEqual([['feature-boundary-parcel-a'], ['feature-boundary-parcel-b']]);
     });
 
     it('renders a two-point boundary as an open polyline', () => {

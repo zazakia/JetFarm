@@ -30,7 +30,13 @@ function bootstrap() {
         tooltip: (options: any) => layer('tooltip', null, options),
         circleMarker: (position: any, options: any) => layer('circle', position, options),
         tileLayer: () => layer('tile'), divIcon: (options: any) => options,
-        latLngBounds: () => ({ pad: () => ({}) }), DomEvent: { stopPropagation: jest.fn(event => { event._stopped = true; }) },
+        latLngBounds: () => ({ pad: () => ({}) }), DomEvent: { stopPropagation: jest.fn((event: any) => {
+            // Mirrors leaflet-src.js DomEvent.stopPropagation: only the Leaflet wrapper
+            // event sets originalEvent._stopped; a real DOM event gets native stop only.
+            if (event.stopPropagation) { event.stopPropagation(); }
+            else if (event.originalEvent) { event.originalEvent._stopped = true; }
+            else { event.cancelBubble = true; }
+        }) },
     };
     const window: any = { ReactNativeWebView: { postMessage: (json: string) => messages.push(JSON.parse(json)) } };
     const document: any = { createElement: () => ({ textContent: '', className: '' }) };
@@ -40,7 +46,7 @@ function bootstrap() {
     // Leaflet routes noninteractive areas to the map, and stops interactive clicks
     // on either _stopped or bubblingMouseEvents=false. Run the generated handlers.
     const clickLayer = (target: any) => {
-        const originalEvent: any = {};
+        const originalEvent: any = { stopPropagation: jest.fn() };
         const event = { originalEvent, latlng: { lat: 8.0005, lng: 125.0005 } };
         if (target.options.interactive !== false) {
             target.handlers.click?.(event);
@@ -96,12 +102,22 @@ describe('generated native Leaflet bootstrap', () => {
         expect(run.map.removeLayer).toHaveBeenCalledWith(liveDot);
     });
 
-    it('consumes vertex and edge-label clicks during drawing without adding points', () => {
+    it('keeps edge-length pills pointer-transparent while vertices stay tappable during drawing', () => {
+        // A 38.2 m pill sat on top of a vertex in the browser run and swallowed the tap:
+        // informational labels must never intercept the pointer from a vertex or the map.
         const run = bootstrap();
         run.window.updateParcel({ coordinates, editable: true, showEdgeLengths: true, revision: 6 });
         run.messages.length = 0;
+        const edge = run.layers.find(layer => layer.kind === 'marker' && layer.options.icon?.className === 'parcel-edge');
+        expect(edge).toBeDefined();
+        expect(edge.options.interactive).toBe(false);
+        expect(buildParcelMapHtml()).toMatch(/\.parcel-edge\{[^}]*pointer-events:none/);
         run.layers.filter(layer => layer.kind === 'marker').forEach(run.clickLayer);
-        expect(run.messages).toEqual([{ type: 'selectVertex', index: 0, revision: 6 }, { type: 'selectVertex', index: 1, revision: 6 }]);
+        expect(run.messages).toEqual([
+            { type: 'selectVertex', index: 0, revision: 6 },
+            { type: 'selectVertex', index: 1, revision: 6 },
+            { type: 'add', latitude: 8.0005, longitude: 125.0005, revision: 6 },
+        ]);
     });
 
     it('boots and fits geometry arriving after the initial empty state only once', () => {

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Platform } from 'react-native';
+import { Platform, StyleSheet } from 'react-native';
 import { render, fireEvent } from '@testing-library/react-native';
 import { MappingToolbar } from '../MappingToolbar';
 import { ParcelDetailsPanel } from '../ParcelDetailsPanel';
@@ -16,6 +16,15 @@ describe('mapping panels', () => {
         expect(onMode).toHaveBeenCalledWith('boundary');
         fireEvent.press(getByLabelText('Browse parcels'));
         expect(onMode).toHaveBeenCalledWith('browse');
+    });
+
+    it('keeps the strip out of the screen column’s height race so the map gets its own space', () => {
+        // Browser evidence 2026-10-17: react-native-web gives a horizontal ScrollView
+        // flex-grow:1, so the toolbar absorbed 237px of the phone column and crushed the
+        // map row to 172px while Leaflet kept its 380px height — taps then landed on the
+        // save bar. The strip must hug its own content.
+        const ui = render(<MappingToolbar mode="browse" onMode={jest.fn()} onCurrentPosition={jest.fn()} onAssign={jest.fn()} />);
+        expect(StyleSheet.flatten(ui.getByTestId('mapping-toolbar').props.style)).toMatchObject({ flexGrow: 0 });
     });
 
     it('flips web aria-pressed on rerender while preserving button names and native selection', () => {

@@ -25,6 +25,9 @@ export function ParcelMap(props: ParcelMapProps) {
         selectedFeatureId: props.selectedFeatureId ?? '', fitRequest: props.fitRequest ?? 0,
         showEdgeLengths: props.showEdgeLengths ?? false, mapLayer: props.mapLayer ?? 'satellite',
         closed: props.closed ?? coordinates.length >= 3,
+        // Tool switches with an empty outline serialize identically without this epoch,
+        // which would leave the bridge revision unchanged and accept a stale in-flight add.
+        intent: props.intent ?? 0,
     });
     const serialized = useRef(state);
     serialized.current = state;

@@ -30,4 +30,6 @@ export interface ParcelMapProps {
     mapLayer?: 'satellite' | 'street';
     /** Open drafts/cuts remain polylines until explicitly closed. */
     closed?: boolean;
+    /** Edit-intent epoch from the mapping controller; every tool transition bumps it so stale bridge edits can never be accepted, even across identical empty-outline states. */
+    intent?: number;
 }

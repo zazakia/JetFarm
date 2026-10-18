@@ -105,4 +105,19 @@ describe('native ParcelMap bridge', () => {
         send({ type: 'move', index: 1, latitude: 8.002, longitude: 125, revision: latestPayload()?.revision });
         expect(onChange).toHaveBeenCalledWith([coords[0], { latitude: 8.002, longitude: 125 }]);
     });
+
+    it('rejects an in-flight add from a previous tool when only the edit intent changed', () => {
+        // Empty-outline tool switches serialize to an identical map state; without the
+        // intent epoch the revision stays the same and the stale add would be accepted
+        // by the newly-selected tool.
+        const onChange = jest.fn();
+        const { rerender } = render(<ParcelMap coordinates={[]} editable intent={1} onChange={onChange} />);
+        send({ type: 'ready' });
+        const staleRevision = latestPayload().revision;
+        rerender(<ParcelMap coordinates={[]} editable intent={2} onChange={onChange} />);
+        send({ type: 'add', latitude: 8, longitude: 125, revision: staleRevision });
+        expect(onChange).not.toHaveBeenCalled();
+        send({ type: 'add', latitude: 8, longitude: 125, revision: latestPayload().revision });
+        expect(onChange).toHaveBeenCalledTimes(1);
+    });
 });

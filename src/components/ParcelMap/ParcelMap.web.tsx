@@ -62,8 +62,25 @@ function EdgeLabels({ coordinates, closed }: { coordinates: GPSCoordinate[]; clo
         const meters = distanceMeters(a, b);
         const icon = L.divIcon({ className: 'parcel-edge-length', html: `<span style="font:12px sans-serif;padding:3px 5px;border-radius:5px;background:${Colors.surface};color:${Colors.text};white-space:nowrap">${meters.toFixed(1)} m</span>`, iconSize: [70, 20], iconAnchor: [35, 10] });
         return <Marker key={`edge-${index}`} position={[(a.latitude + b.latitude) / 2, (a.longitude + b.longitude) / 2]} icon={icon}
-            bubblingMouseEvents={false} eventHandlers={{ click: event => { if (event.originalEvent) L.DomEvent.stopPropagation(event.originalEvent); } }} />;
+            // Informational only. interactive:false removes Leaflet's handler wiring but NOT the
+            // DOM hit area (leaflet-src.js sets pointer-events solely on the SVG renderer), so a
+            // pill could still intercept a vertex or map tap; clear the element explicitly on add.
+            interactive={false} eventHandlers={{ add: event => {
+                const element = (event.target as L.Marker).getElement?.();
+                if (element) element.style.pointerEvents = 'none';
+            } }} />;
     })}</>;
+}
+
+// Leaflet's map._fireDOMEvent only halts bubbling to the map when the original DOM
+// event carries `_stopped` (or the target declares bubblingMouseEvents=false). Passing
+// the DOM event itself to L.DomEvent.stopPropagation just calls the native method,
+// which is a no-op inside the already-delegated container handler; passing the Leaflet
+// wrapper event is what sets the flag (see leaflet-src.js DomEvent.stopPropagation).
+function stopLeafletEventBubbling(event: unknown): void {
+    if (event && typeof event === 'object' && (event as { originalEvent?: unknown }).originalEvent) {
+        (L.DomEvent.stopPropagation as unknown as (e: unknown) => void)(event);
+    }
 }
 
 export function ParcelMap(props: ParcelMapProps) {
@@ -84,16 +101,25 @@ export function ParcelMap(props: ParcelMapProps) {
                 {features.filter(feature => feature.coordinates.length >= 3).map(feature => {
                     const label = feature.labelCoordinate ?? feature.coordinates[0];
                     const select: L.LeafletEventHandlerFn = event => {
-                        const originalEvent = (event as L.LeafletMouseEvent).originalEvent;
-                        if (originalEvent) L.DomEvent.stopPropagation(originalEvent);
+                        stopLeafletEventBubbling(event);
                         if (!editable) props.onFeatureSelect?.(feature.id);
                     };
                     return <React.Fragment key={feature.id}>
                         {/* Leaflet creates interactive SVG targets on mount; remount only the area when drawing toggles. */}
                         <Polygon key={editable ? 'drawing' : 'browse'} positions={[positions(feature.coordinates), ...(feature.holes ?? []).map(positions)]}
                             interactive={!editable} bubblingMouseEvents={false}
-                            pathOptions={{ color: featureColor(feature), fillColor: featureColor(feature), fillOpacity: feature.selected ? 0.22 : 0.18, weight: feature.selected ? 4 : 2, dashArray: feature.kind === 'block' ? '5 3' : undefined }}
-                            eventHandlers={{ click: select }} />
+                            pathOptions={{ color: featureColor(feature), fillColor: featureColor(feature), fillOpacity: feature.selected ? 0.22 : 0.18, weight: feature.selected ? 4 : 2, dashArray: feature.kind === 'block' ? '5 3' : undefined, className: `feature-boundary-${feature.id}` }}
+                            eventHandlers={{
+                                click: select,
+                                // react-leaflet creates the Leaflet layer before pathOptions are
+                                // merged and setStyle() never re-applies class, so
+                                // pathOptions.className alone does not reach the SVG element.
+                                // 'add' fires once the renderer has created the real path.
+                                add: event => {
+                                    const path = (event.target as L.Polygon).getElement?.();
+                                    path?.classList?.add(`feature-boundary-${feature.id}`);
+                                },
+                            }} />
                         <Marker position={[label.latitude, label.longitude]} bubblingMouseEvents={false}
                             icon={L.divIcon({ className: 'parcel-label-anchor', html: '', iconSize: [0, 0] })} eventHandlers={{ click: select }}>
                             <Tooltip position={[label.latitude, label.longitude]} permanent interactive
@@ -116,14 +142,14 @@ export function ParcelMap(props: ParcelMapProps) {
                                 if (accepted) onChange?.(coordinates.map((old, i) => i === index ? accepted : old));
                             },
                             click: event => {
-                                if (event.originalEvent) L.DomEvent.stopPropagation(event.originalEvent);
+                                stopLeafletEventBubbling(event);
                                 props.onVertexSelect?.(index);
                             },
                         }} />
                 ))}
                 {props.showEdgeLengths && <EdgeLabels coordinates={coordinates} closed={closed} />}
                 {liveCoordinate && <CircleMarker center={[liveCoordinate.latitude, liveCoordinate.longitude]} radius={7}
-                    bubblingMouseEvents={false} eventHandlers={{ click: event => { if (event.originalEvent) L.DomEvent.stopPropagation(event.originalEvent); } }}
+                    bubblingMouseEvents={false} eventHandlers={{ click: event => { stopLeafletEventBubbling(event); } }}
                     pathOptions={{ color: Colors.info, fillColor: Colors.info, fillOpacity: 0.7, weight: 2 }} />}
             </MapContainer>
         </View>
