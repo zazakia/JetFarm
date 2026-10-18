@@ -230,10 +230,10 @@ try {
                 useIncrementalIndexedDB: process.env.NODE_ENV !== 'test',
                 _testLokiAdapter: testLokiAdapter,
                 extraLokiOptions: process.env.NODE_ENV === 'test' ? { autosave: false } : undefined,
-                onQuotaExceeded: (error) => {
+                onQuotaExceeded: (error: Error) => {
                     console.error('[Database] Storage quota exceeded!', error);
                 },
-                onSetUpError: (error) => {
+                onSetUpError: (error: Error) => {
                     console.error('[Database] LokiJS setup error:', error);
                 },
             } as any);

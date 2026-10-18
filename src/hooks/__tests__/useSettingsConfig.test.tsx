@@ -323,7 +323,7 @@ describe('useRolePermissions', () => {
         mockPermMap().mockResolvedValue({ manage_users: true });
 
         const { result, rerender } = renderHook(
-            ({ role }) => useRolePermissions(role),
+            ({ role }: { role: string | null | undefined }) => useRolePermissions(role),
             { initialProps: { role: 'admin' as string | null | undefined } }
         );
 

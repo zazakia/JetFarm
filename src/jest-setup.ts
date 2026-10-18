@@ -41,7 +41,7 @@ process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANO
 jest.mock('react-native-safe-area-context', () => {
     const React = require('react');
     const View = require('react-native').View;
-    const mockComponent = (props) => React.createElement(View, props, props.children);
+    const mockComponent = (props: Record<string, unknown>) => React.createElement(View, props, props.children);
     mockComponent.displayName = 'SafeAreaProvider';
     return {
         __esModule: true,
@@ -49,7 +49,7 @@ jest.mock('react-native-safe-area-context', () => {
         SafeAreaView: mockComponent,
         useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 }),
         useSafeAreaFrame: () => ({ x: 0, y: 0, width: 390, height: 844 }),
-        SafeAreaConsumer: (props) => props.children({ top: 0, right: 0, bottom: 0, left: 0 }),
+        SafeAreaConsumer: (props: { children: (insets: { top: number; right: number; bottom: number; left: number }) => unknown }) => props.children({ top: 0, right: 0, bottom: 0, left: 0 }),
         SafeAreaContext: React.createContext({ top: 0, right: 0, bottom: 0, left: 0 }),
     };
 });
@@ -66,7 +66,7 @@ jest.mock('nativewind', () => ({
 jest.mock('@expo/vector-icons', () => {
     const React = require('react');
     const View = require('react-native').View;
-    const mockIcon = (props) => React.createElement(View, props);
+    const mockIcon = (props: Record<string, unknown>) => React.createElement(View, props);
     return {
         __esModule: true,
         Ionicons: mockIcon,

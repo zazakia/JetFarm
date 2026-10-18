@@ -1,6 +1,6 @@
 import { act, renderHook, waitFor } from '@testing-library/react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useParcelMapping } from '../useParcelMapping';
+import { useParcelMapping, type MappingSnapshot } from '../useParcelMapping';
 
 const outer = [
     { latitude: 8, longitude: 125 }, { latitude: 8, longitude: 125.002 },
@@ -86,7 +86,7 @@ describe('parcel mapping controller', () => {
 
     it('persists a later edit closed in the same event instead of reusing the accepted-clean shortcut', async () => {
         const save = jest.fn(async () => 1);
-        const { result, rerender } = renderHook(({ snapshot }) => useParcelMapping({ operatorId: 'supervisor', snapshot, onSave: save }), { initialProps: { snapshot: source } });
+        const { result, rerender } = renderHook(({ snapshot }: { snapshot: MappingSnapshot }) => useParcelMapping({ operatorId: 'supervisor', snapshot, onSave: save }), { initialProps: { snapshot: source } });
         await waitFor(() => expect(result.current.draftLoading).toBe(false));
         await act(async () => { expect(await result.current.save()).toBe(true); });
         rerender({ snapshot: { ...source, revision: 1 } });
@@ -264,7 +264,7 @@ describe('parcel mapping controller', () => {
     });
 
     it('loads asynchronously fetched blocks at the same revision while the draft is clean', async () => {
-        const { result, rerender } = renderHook(({ snapshot }) => useParcelMapping({ operatorId: 'supervisor', snapshot, onSave: async () => 1 }), { initialProps: { snapshot: source as any } });
+        const { result, rerender } = renderHook(({ snapshot }: { snapshot: MappingSnapshot }) => useParcelMapping({ operatorId: 'supervisor', snapshot, onSave: async () => 1 }), { initialProps: { snapshot: source as MappingSnapshot } });
         await waitFor(() => expect(result.current.draftLoading).toBe(false));
         rerender({ snapshot: { ...source, blocks: [{ id: 'existing-block', name: 'Existing', geometry: source.geometry }] } });
         expect(result.current.blocks).toHaveLength(1);
@@ -381,7 +381,7 @@ describe('parcel mapping controller', () => {
         const destinationKey = `parcel-mapping:${nextOperator}:${target.parcelId}`;
         const destination = JSON.stringify({ ...target, geometry: { outer: outer.slice(0, 3), holes: [] }, operationId: 'destination-op', mode: 'boundary', points: [], closed: true });
         await AsyncStorage.setItem(destinationKey, destination);
-        const { result, rerender } = renderHook(({ operatorId, snapshot }) => useParcelMapping({ operatorId, snapshot, onSave: async () => 1 }), { initialProps: { operatorId: 'supervisor', snapshot: source } });
+        const { result, rerender } = renderHook(({ operatorId, snapshot }: { operatorId: string; snapshot: MappingSnapshot }) => useParcelMapping({ operatorId, snapshot, onSave: async () => 1 }), { initialProps: { operatorId: 'supervisor', snapshot: source } });
         await waitFor(() => expect(result.current.draftLoading).toBe(false));
         act(() => result.current.begin('boundary'));
         act(() => result.current.changePoints(outer.map(p => ({ ...p, latitude: p.latitude + 0.0001 }))));

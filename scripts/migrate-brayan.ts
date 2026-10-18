@@ -190,7 +190,7 @@ async function runMigration() {
     });
 
     console.log("== Upserting Borrowers and Loans ==");
-    const auditLogs = [];
+    const auditLogs: string[] = [];
     
     await database.write(async () => {
         for (const bName in borrowerMap) {
@@ -220,7 +220,7 @@ async function runMigration() {
                 return d1 - d2;
             });
 
-            let previousLoanId = null;
+            let previousLoanId: string | null = null;
 
             for (const loanData of sortedLoans) {
                 const currentLoanId = uuid.v4().toString();
@@ -252,7 +252,9 @@ async function runMigration() {
                     loan.collectorId = collectorIdMap[bData.collector] || null;
                     
                     loan.isReloan = isReloanFlag;
-                    if (isReloanFlag) {
+                    // isReloanFlag is exactly `previousLoanId !== null` (see above); restating it
+                    // here narrows the value for the compiler without changing behaviour.
+                    if (isReloanFlag && previousLoanId !== null) {
                         loan.previousLoanId = previousLoanId;
                     }
 

@@ -2,9 +2,9 @@ import { database } from '../database';
 import { Q } from '@nozbe/watermelondb';
 
 export async function benchmarkQueries() {
-    const results = {};
+    const results: Record<string, { duration: number; count: number }> = {};
 
-    const measure = async (name, fn) => {
+    const measure = async (name: string, fn: () => Promise<{ length: number }>) => {
         const start = performance.now();
         const data = await fn();
         const end = performance.now();
