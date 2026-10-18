@@ -159,7 +159,10 @@ function buildWebExport() {
     const appConfig = JSON.parse(fs.readFileSync(path.join(rootDir, 'app.json'), 'utf8'));
     const appVersion = appConfig?.expo?.version || '0.0.0';
     const versionCode = Number(appConfig?.expo?.android?.versionCode || 1);
-    const publicAppUrl = (process.env.EXPO_PUBLIC_APP_URL || `https://${DOMAIN}`).replace(/\/+$/, '');
+    // Release URLs must point at the origin that actually serves /download. The Hetzner
+    // vhost has no such route (it 404s), so the Cloudflare Pages deployment is the default;
+    // EXPO_PUBLIC_APP_URL still wins for a deliberately self-hosted release.
+    const publicAppUrl = (process.env.EXPO_PUBLIC_APP_URL || 'https://jetfarm.pages.dev').replace(/\/+$/, '');
     let releaseNotesChanges = null;
     try {
       const updatesJsonPath = path.join(rootDir, 'src', 'constants', 'generatedAppUpdates.json');

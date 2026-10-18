@@ -8,11 +8,12 @@ export const WATERMELONDB_SCHEMA_VERSION = 49;
 export const APP_RELEASE_DATE = '2026-10-17';
 
 /**
- * Origin that serves `/download` and `/version.json`. Production is the self-hosted
- * Hetzner box (nginx/Caddy vhost), not the abandoned Cloudflare Pages project, whose
- * domain has never resolved.
+ * Origin that serves `/download` and `/version.json`. Production is the Cloudflare Pages
+ * deployment, which publishes the redirect, the download page and a current manifest. The
+ * self-hosted Hetzner vhost still serves the app but has no `/download` route (404) and a
+ * stale manifest, so it is not the default release origin.
  */
-export const PRODUCTION_APP_URL = 'https://jetfarm.818.quest';
+export const PRODUCTION_APP_URL = 'https://jetfarm.pages.dev';
 
 /**
  * Resolves the origin used for release and update URLs: an explicit build-time

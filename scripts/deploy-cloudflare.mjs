@@ -268,9 +268,9 @@ try {
 } catch (_) {}
 
 // The manifest must advertise the APK that was actually published. These literals
-// pointed at the old, never-resolving Cloudflare Pages domain, so every in-app
-// "update now" link 404ed even when a valid APK had been uploaded.
-const publicAppUrl = (getProductionEnv('EXPO_PUBLIC_APP_URL') || 'https://jetfarm.818.quest').replace(/\/+$/, '');
+// pointed at the Hetzner vhost, which publishes no `/download` route (404) and a stale
+// manifest, so every in-app "update now" link 404ed even when a valid APK had been uploaded.
+const publicAppUrl = (getProductionEnv('EXPO_PUBLIC_APP_URL') || 'https://jetfarm.pages.dev').replace(/\/+$/, '');
 
 const versionManifest = buildVersionManifest({
   appVersion,

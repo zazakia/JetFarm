@@ -15,7 +15,7 @@ function writeDistVersion(customDistDir = null) {
     const appConfig = JSON.parse(fs.readFileSync(path.join(rootDir, 'app.json'), 'utf8'));
     const appVersion = appConfig?.expo?.version || '0.0.0';
     const versionCode = Number(appConfig?.expo?.android?.versionCode || 1);
-    const publicAppUrl = (process.env.EXPO_PUBLIC_APP_URL || 'https://jetfarm.818.quest').replace(/\/+$/, '');
+    const publicAppUrl = (process.env.EXPO_PUBLIC_APP_URL || 'https://jetfarm.pages.dev').replace(/\/+$/, '');
 
     let releaseNotesChanges = null;
     const jsonPath = path.join(rootDir, 'src', 'constants', 'generatedAppUpdates.json');

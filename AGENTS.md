@@ -107,13 +107,16 @@ npm run export:web     # Production web export
 - `NODE_ENV=test` disables NativeWind JSX transform in babel config
 
 ## DEPLOYMENT & PRODUCTION
-- **Live Web App**: `https://jetfarm.818.quest` (self-hosted Hetzner VPS `46.225.190.206`, Caddy → Docker container `jetfarm-app` on `127.0.0.1:8088`, site root `/home/deploy/apps/jetfarm/site`).
+- **Canonical release origin**: `https://jetfarm.pages.dev` (Cloudflare Pages project `jetfarm`, account `cybergada@gmail.com`). Verified 2026-10-18: `/version.json` → 200 with `latestVersion 0.1.5`, `/download` → 302 → `https://supabase.818.quest/storage/v1/object/public/downloads/JetFarm-v0.1.5.apk` → 200 (42 MB APK). `PRODUCTION_APP_URL` and every CI workflow bake this host.
+- **⚠ Pages asset limit**: a single Pages file caps at 25 MiB, and the release APK is 40.1 MiB (`android/app/build/outputs/apk/release/app-release.apk`, 42,018,169 bytes). The APK therefore cannot be committed as a Pages static asset — `/download` must stay a 302 to Supabase Storage, or move to R2 behind a Worker.
+- **Mirrored web app**: `https://jetfarm.818.quest` (self-hosted Hetzner VPS `46.225.190.206`, Caddy → Docker container `jetfarm-app` on `127.0.0.1:8088`, site root `/home/deploy/apps/jetfarm/site`).
 - **Live Supabase**: `https://supabase.818.quest` — self-hosted Kong/PostgREST on the same VPS. The `jetfarm-placeholder-db.supabase.co` ref in older docs is a dead placeholder.
 - **Deploy Command (real path)**: `npm run deploy:hetzner` → `scripts/deploy-hetzner.mjs`: SSH pre-flight → apply pending migrations via `docker exec supabase-db psql` + `NOTIFY pgrst` → `expo export --platform web --clear` (temporarily swapping `.env.hetzner` over `.env.local`) → tar + scp → `rm -rf site/*` and extract → `docker compose up -d` → append/validate Caddy snippet → probe both domains. Needs a working `hetzner` SSH alias (`HETZNER_SSH_ALIAS` to override; `HETZNER_HOST` is informational only).
 - **Schema-only migrations**: `npm run db:migrate` (dry run) / `db:migrate:apply` / `db:migrate:verify` → `scripts/apply-hetzner-migrations.mjs`. Same SSH + `docker exec -i supabase-db psql` path and the same `deploy_schema_migrations` ledger as Stage 2 above, so a full deploy never re-applies what it ran — but it touches no site directory, no bundle and no env file, and it aborts on the first failed migration instead of warning and deploying anyway. Prefer it for pure schema repairs.
 - **⚠ Hazard**: `deploy-hetzner.mjs` writes production secrets into `.env.local` for the duration of the export (restored only in `finally`), and empties the remote site directory before extracting. Do not run it unattended, and never kill it mid-export. Its Stage 2 also swallows migration errors (`console.warn` and continue), which is the failure mode `apply-hetzner-migrations.mjs` exists to avoid.
-- **Not the live path**: `npm run deploy:cloudflare` / `deploy-pipeline.mjs` target `jetfarm.pages.dev`, a Cloudflare project that does not exist (NXDOMAIN) and has no credentials here. `.env.production` is absent, so those scripts fail fast by design.
-- **Known production gap**: the Hetzner pipeline publishes neither `version.json` nor the APK, and the Supabase `downloads` bucket does not exist — so in-app update checks and `/download` are broken in production. Tracked in `docs/BUG-AUDIT-AND-REMEDIATION-PLAN.md` §11.5.
+- **Not the release origin**: `https://jetfarm.818.quest` serves the app on Hetzner but publishes no `/download` route (`/download`, `/download/`, `/download/v0.1.5` all 404) and a `version.json` frozen at `0.1.1`, so in-app update links from that host are dead. `deploy-hetzner.mjs` still deploys the site here.
+- **Deploy Command (Cloudflare Pages, canonical releases)**: `npm run deploy:cloudflare` → `scripts/sync-version.mjs --bump` + `scripts/deploy-cloudflare.mjs`. Requires `.env.production` (present) and a `wrangler` login; the `jetfarm` Pages project exists in account `cybergada@gmail.com` and deploys with `--project-name jetfarm --branch main`.
+- **Known production gap**: the Hetzner pipeline publishes neither `version.json` nor the APK, so `/download` and update checks only work on the Pages origin. Tracked in `docs/BUG-AUDIT-AND-REMEDIATION-PLAN.md` §11.5.
 - **Release URLs**: `src/constants/AppVersion.ts` derives every download/update URL from `EXPO_PUBLIC_APP_URL` → `window.location.origin` (web) → `PRODUCTION_APP_URL`. Never reintroduce a hardcoded host.
 - **Admin Access**: `cybergada@gmail.com`
 
@@ -124,15 +127,16 @@ npm run export:web     # Production web export
 
 ## ENVIRONMENT & CREDENTIALS CONVENTION
 - **Local Development**: Configured in `.env.local`. Note: `.env.local` does **not** define `EXPO_PUBLIC_ENCRYPTION_KEY`, so `EncryptionService` is inactive locally by design (it returns `null` rather than guessing a key).
-- **Production Secrets**: `.env.hetzner` is the **operative** production environment (gitignored via `.env*`) and is consumed by `scripts/deploy-hetzner.mjs`; it defines `EXPO_PUBLIC_SUPABASE_URL`, `_ANON_KEY`, a genuine 32-char `_ENCRYPTION_KEY`, `_BUSINESS_TYPE`, `_ENABLE_QUICK_LOGIN` and `_APP_ENV`. `.env.production` is what the Cloudflare scripts require, and is **absent** from this working copy.
+- **Production Secrets**: `.env.hetzner` is the **operative** Hetzner environment (gitignored via `.env*`) and is consumed by `scripts/deploy-hetzner.mjs`; it defines `EXPO_PUBLIC_SUPABASE_URL`, `_ANON_KEY`, a genuine 32-char `_ENCRYPTION_KEY`, `_BUSINESS_TYPE`, `_ENABLE_QUICK_LOGIN`, `_APP_ENV` and `_APP_URL` (pinned to `https://jetfarm.pages.dev` so native builds never bake the download-less host). `.env.production` is what the Cloudflare scripts require and **is present** in this working copy, with `_APP_URL=https://jetfarm.pages.dev` and `CLOUDFLARE_PROJECT_NAME`.
 - **Never print secret values**: report env var *names*, lengths, or denylist classification only.
 - **Autonomous Agent Access**: Read `.env.production` from disk when it exists; do not re-ask the user for credentials already stored there. If it is **absent**, stop and request provisioning — never synthesize it from placeholders. `scripts/export-web-production.mjs` and `scripts/deploy-cloudflare.mjs` both fail fast for this reason (a test-fixture AES key in a production build looks like working encryption; a mid-deploy env failure leaves a new APK against a stale `version.json`).
 - **Never commit test fixture keys**: `mock-primary-key` and `POSCursor_Sec_2024_Ph` are denylisted and rejected outside Jest.
 - **Git Security Guard**: Never track or commit `.env` or `.env.production` files. Run `git check-ignore -v .env.production` to confirm exclusion before committing.
 - **Production Endpoints**:
-  - Web App: `https://jetfarm.818.quest` (fallback `https://jetfarm.46.225.190.206.sslip.io`)
+  - Canonical release origin: `https://jetfarm.pages.dev` (`/download`, `/version.json`)
+  - Mirrored web app: `https://jetfarm.818.quest` (fallback `https://jetfarm.46.225.190.206.sslip.io`) — no `/download` route
   - Supabase: self-hosted `https://supabase.818.quest` on the same VPS
-  - Storage Bucket: `downloads` — **does not exist** on the self-hosted stack today (`Bucket not found`); the Cloudflare path assumes it does
+  - Storage Bucket: `downloads` — **exists** on the self-hosted stack and serves the release APK and the fallback `version.json` (verified 2026-10-18)
 
 ## AI AUTOMATION POLICY (2026-10-04)
 Full workflow design: `docs/AI-ASSISTED-DEV-WORKFLOW-PLAN.md` (risk tiers L0–L5, rollout phases).

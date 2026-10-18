@@ -13,7 +13,7 @@ describe('AppUpdateModal & AutoUpdateController Components', () => {
         releaseTag: 'v1.2.0',
         releaseDate: '2026-09-11',
         minSupportedVersion: '0.1.0',
-        apkUrl: 'https://jetfarm.pages.dev/download/v1.2.0.apk',
+        apkUrl: 'https://cdn.example.test/download/v1.2.0.apk',
         apkSizeMb: 52.4,
         releaseNotes: '• Major update\n• Automatic in-app update installer',
     };
@@ -96,7 +96,7 @@ describe('AppUpdateModal & AutoUpdateController Components', () => {
         await Promise.resolve();
 
         expect(openURL).toHaveBeenCalledWith(APP_DOWNLOAD_URL);
-        expect(openURL.mock.calls[0][0]).not.toContain('jetfarm.pages.dev');
+        expect(openURL.mock.calls[0][0]).toContain('https://jetfarm.pages.dev/download');
 
         openURL.mockRestore();
     });
