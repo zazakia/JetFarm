@@ -19,12 +19,19 @@
  * DRY RUN IS READ-ONLY: without --apply this script issues SELECTs only — it
  * never creates the ledger table.
  *
- * USAGE (run from WSL — Windows network MITMs port 5432 TLS; see docs)
- *   JF_CLOUD_PG_CONNECTION='postgres://user:pw@host:5432/postgres?sslmode=require' \
+ * USAGE
+ *   JF_CLOUD_PG_CONNECTION='postgres://user:pw@host:5432/postgres' \
+ *   JF_CLOUD_PG_CA_FILE=/absolute/path/supabase-root-2021-ca.pem \
  *     node scripts/apply-cloud-supabase-migrations.mjs                 # read-only dry run
  *   ... node scripts/apply-cloud-supabase-migrations.mjs --apply       # apply everything pending
  *   ... node scripts/apply-cloud-supabase-migrations.mjs --apply --include-bootstrap   # fresh target ONLY
  *   ... node scripts/apply-cloud-supabase-migrations.mjs --apply --only 20261019000000
+ *
+ * JF_CLOUD_PG_CA_FILE is required for Supabase Cloud: its Postgres TLS chain
+ * terminates at the private "Supabase Root 2021 CA" (no OS trust store carries
+ * it, no AIA extension fetches it), so without it verification fails with
+ * SELF_SIGNED_CERT_IN_CHAIN. Download it from Dashboard -> Settings -> Database.
+ * JF_CLOUD_PG_SSL=off is for a local throwaway container only, never a cloud target.
  *
  * APPLYING IS A HUMAN ACTION (AI AUTOMATION POLICY, human-only list).
  * The connection string is read from the environment and NEVER printed.
@@ -40,6 +47,7 @@ import {
   LEDGER_EXISTS_SQL,
   planPending,
   guardBootstrap,
+  buildTlsOptions,
   parseOnlyFlag,
   readAppliedVersions,
   runPlan,
@@ -89,10 +97,36 @@ function targetLabel() {
   }
 }
 
+// TLS setup. Supabase Cloud's Postgres chain terminates at its own private
+// "Supabase Root 2021 CA", which no OS trust store carries, so verification
+// only succeeds once the operator downloads that CA from
+// Dashboard -> Settings -> Database and points JF_CLOUD_PG_CA_FILE at it.
+// Verification is never disabled: the DSN password would cross the public
+// internet unauthenticated otherwise.
+function tlsForTarget() {
+  const sslMode = process.env.JF_CLOUD_PG_SSL || 'verify-full';
+  let caPem = null;
+  const caFile = process.env.JF_CLOUD_PG_CA_FILE;
+  if (caFile) {
+    if (!fs.existsSync(caFile)) {
+      console.error(`  ❌ JF_CLOUD_PG_CA_FILE points at a missing file: ${caFile}`);
+      process.exit(2);
+    }
+    caPem = fs.readFileSync(caFile, 'utf8');
+  }
+  let host;
+  try {
+    host = new URL(connStr.replace(/^postgres(ql)?/, 'http')).hostname;
+  } catch {
+    host = undefined;
+  }
+  return buildTlsOptions({ sslMode, host, caPem });
+}
+
 async function main() {
   const client = new Client({
     connectionString: connStr,
-    ssl: process.env.JF_CLOUD_PG_SSL === 'off' ? undefined : true,
+    ssl: tlsForTarget(),
     connectionTimeoutMillis: 20000,
   });
   console.log(`\n☁️  Supabase Cloud migration runner — target ${targetLabel()}`);
@@ -100,7 +134,10 @@ async function main() {
     await client.connect();
   } catch (err) {
     console.error(`  ❌ connect failed: ${redact(err.message)}`);
-    console.error('     Check trusted-IP/Connection Protection and run from WSL (Windows MITMs 5432 TLS).');
+    console.error('     For SELF_SIGNED_CERT_IN_CHAIN: download the CA certificate from');
+    console.error('     Dashboard -> Settings -> Database and set JF_CLOUD_PG_CA_FILE to it.');
+    console.error('     Supabase signs pooler/direct certs with its own "Supabase Root 2021 CA".');
+    console.error('     Never disable verification; the DSN password would cross unverified TLS.');
     process.exit(1);
   }
 

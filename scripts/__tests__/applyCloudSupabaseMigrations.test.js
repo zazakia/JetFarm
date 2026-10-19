@@ -225,6 +225,46 @@ describe("runPlan transaction semantics", () => {
   });
 });
 
+describe("buildTlsOptions", () => {
+  const CA = "-----BEGIN CERTIFICATE-----\nMIID\n-----END CERTIFICATE-----\n";
+
+  it("sslMode=off means no TLS at all (local throwaway container only)", () => {
+    expect(core.buildTlsOptions({ sslMode: "off", host: "localhost" })).toBeUndefined();
+  });
+
+  it("a CA PEM is pinned AND verification stays on, with SNI for the target host", () => {
+    const o = core.buildTlsOptions({
+      sslMode: "verify-ca",
+      host: "aws-0-ap-southeast-1.pooler.supabase.com",
+      caPem: CA,
+    });
+    expect(o).toMatchObject({
+      ca: CA,
+      servername: "aws-0-ap-southeast-1.pooler.supabase.com",
+      rejectUnauthorized: true,
+    });
+  });
+
+  it("without a CA PEM it falls back to the system trust store, still verified", () => {
+    const o = core.buildTlsOptions({ sslMode: "require", host: "db.example.supabase.co" });
+    expect(o).toEqual({ rejectUnauthorized: true });
+  });
+
+  it("NEVER produces rejectUnauthorized:false — there is no bypass switch", () => {
+    for (const sslMode of ["off", "require", "verify-ca", "verify-full", "bogus", undefined]) {
+      for (const caPem of [undefined, null, CA]) {
+        const o = core.buildTlsOptions({ sslMode, caPem, host: "h.example" });
+        if (o) expect(o.rejectUnauthorized).toBe(true);
+      }
+    }
+  });
+
+  it("pins servername even when sslMode is omitted (default is TLS on)", () => {
+    const o = core.buildTlsOptions({ caPem: CA, host: "pooler.example.com" });
+    expect(o.servername).toBe("pooler.example.com");
+  });
+});
+
 describe("runPlan", () => {
   const queue = [
     { file: "20260401000000_initial_schema.sql", version: "20260401000000_initial_schema" },

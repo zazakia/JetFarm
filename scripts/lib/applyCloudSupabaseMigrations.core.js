@@ -65,6 +65,25 @@ function chooseExecution(sql) {
 }
 
 /**
+ * TLS options for the pg client. There is deliberately NO verification
+ * bypass: a cloud target is reached over the public internet carrying the
+ * database password, so `rejectUnauthorized` is always true here.
+ *
+ * Supabase Cloud's Postgres/TLS chain terminates at its own private
+ * "Supabase Root 2021 CA" (leaf CN is `*.pooler.supabase.com`), which is in no
+ * system trust store and has no AIA extension to fetch it from — so a plain
+ * verified connection fails with SELF_SIGNED_CERT_IN_CHAIN until the operator
+ * downloads the CA certificate from Dashboard -> Settings -> Database and
+ * passes it via JF_CLOUD_PG_CA_FILE. `servername` is set explicitly because pg
+ * does not derive SNI on its own.
+ */
+function buildTlsOptions({ sslMode, host, caPem } = {}) {
+  if (sslMode === "off") return undefined;
+  if (caPem) return { ca: caPem, servername: host, rejectUnauthorized: true };
+  return { rejectUnauthorized: true };
+}
+
+/**
  * Parse the --only flag. FAILS CLOSED: a present-but-empty value is an error,
  * not "no filter" (review finding M2 — a narrowing flag must never widen).
  */
@@ -182,6 +201,7 @@ module.exports = {
   planPending,
   guardBootstrap,
   chooseExecution,
+  buildTlsOptions,
   parseOnlyFlag,
   readAppliedVersions,
   runPlan,
