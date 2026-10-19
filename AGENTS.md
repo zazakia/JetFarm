@@ -142,7 +142,7 @@ npm run export:web     # Production web export
 Full workflow design: `docs/AI-ASSISTED-DEV-WORKFLOW-PLAN.md` (risk tiers L0–L5, rollout phases).
 
 - **Risk tiers**: every change is classified by `scripts/changed-files-gate.mjs` (also `npm run gate`). The reported tier dictates the required verification commands; an agent may not declare a task done without running the tier's gates and leaving evidence under `tmp/systematic-test-matrix/`.
-- **Local gates**: husky `pre-commit` runs eslint + Clean Root Policy + `.env` staging block on staged files; `pre-push` runs eslint + `tsc --noEmit` + `jest --findRelatedTests` on the pushed range. Escape hatches `GATE_SKIP_TSC` / `GATE_SKIP_JEST` exist for emergencies only — CI re-runs everything anyway.
+- **Local gates**: husky `pre-commit` runs eslint + Clean Root Policy + `.env` staging block on staged files; `pre-push` runs eslint + `tsc --noEmit` + `jest --findRelatedTests` on the pushed range, **enforces fresh `check:sync` + `audit:crud:gate` evidence for L3/L4 pushes** (evidence under `tmp/systematic-test-matrix/`), and **hard-blocks L5 pushes** unless the human sets `GATE_ALLOW_L5=1`. Escape hatches `GATE_SKIP_TSC` / `GATE_SKIP_JEST` / `GATE_SKIP_INTEGRITY` exist for emergencies only — CI re-runs everything anyway.
 - **Human-only commands — agents must NEVER run these autonomously**:
   - `npm run deploy:hetzner`, `deploy:pipeline`, `deploy:cloudflare`, `deploy:staging` (any deploy path)
   - `npm run db:migrate:apply` and `scripts/apply-hetzner-migrations.mjs --apply` against production (dry-run `db:migrate` is allowed)
@@ -154,7 +154,7 @@ Full workflow design: `docs/AI-ASSISTED-DEV-WORKFLOW-PLAN.md` (risk tiers L0–L
 - **Self-review**: before handing off any diff, re-check it against the ANTI-PATTERNS section and the Conventions (no arbitrary hex, no inline styles, `placeholderTextColor` on TextInputs, no root files).
 
 ## AUTONOMOUS LONG-RUNNING WORK (2026-10-19)
-Goal: one prompt → many stages executed without check-ins. Autonomy comes from the prompt contract and the tier gates above, not from agent discretion. Source of truth for required commands: `scripts/changed-files-gate.mjs` (`GATE_COMMANDS`), not this prose.
+Goal: one prompt → many stages executed without check-ins. Autonomy comes from the prompt contract and the tier gates above, not from agent discretion. Source of truth for required commands: `scripts/lib/tierPolicy.js` (`TIER_GATES`), not this prose.
 
 **Prompt contract — put these in the request and skip the clarifying round:**
 - Objective: the outcome, not the task list.

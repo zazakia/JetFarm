@@ -9,6 +9,10 @@
  *   node scripts/changed-files-gate.mjs --run=report   [--base=origin/main]   classify only
  *   node scripts/changed-files-gate.mjs --run=pre-commit   classify staged files + fast gates
  *   node scripts/changed-files-gate.mjs --run=pre-push     classify pushed range + targeted tests
+ *                                                           + tier enforcement:
+ *                                                           · L3/L4 require fresh check:sync +
+ *                                                             audit:crud:gate evidence
+ *                                                           · L5 blocks unless GATE_ALLOW_L5=1
  *
  * Exit codes:
  *   0 = all required gates passed (or report-only run)
@@ -18,13 +22,16 @@
  * Env knobs:
  *   GATE_SKIP_JEST=1   skip jest in pre-push (CI still re-runs everything)
  *   GATE_SKIP_TSC=1    skip tsc --noEmit in pre-push
+ *   GATE_SKIP_INTEGRITY=1  skip the L3/L4 evidence check (CI still re-runs everything)
+ *   GATE_ALLOW_L5=1    human override to allow an L5 push (CI still validates)
  *   GATE_EVIDENCE_DIR  override evidence output dir (default tmp/systematic-test-matrix)
  */
 
 import { execSync } from 'child_process';
-import { existsSync, mkdirSync, writeFileSync } from 'fs';
+import { existsSync, mkdirSync, statSync, writeFileSync } from 'fs';
 import path from 'path';
 import envStagingPolicy from './lib/envStagingPolicy.js';
+import tierPolicy from './lib/tierPolicy.js';
 
 const { blockedEnvFiles } = envStagingPolicy;
 
@@ -91,27 +98,8 @@ const TIER_LABELS = {
   L5: 'Infra / schema / deploy',
 };
 
-// Commands each tier requires before the change may be considered done.
-const TIER_GATES = {
-  L0: [],
-  L1: ['tsc --noEmit', 'eslint (changed files)'],
-  L2: ['tsc --noEmit', 'eslint (changed files)', 'jest (targeted)', 'full npm test', 'Playwright spec for touched routes'],
-  L3: ['tsc --noEmit', 'eslint (changed files)', 'jest (targeted)', 'full npm test', 'Playwright', 'npm run check:sync', 'npm run audit:crud:gate'],
-  L4: ['tsc --noEmit', 'eslint (changed files)', 'jest (targeted)', 'full npm test', 'Playwright', 'npm run check:sync', 'npm run audit:crud:gate', 'journal balance assertions (L4)'],
-  L5: ['ALL lower-tier gates', 'migration dry-run (npm run db:migrate)', 'HUMAN approval required — never merge unattended'],
-};
-
-// Commands no agent may ever invoke autonomously (mirrored in AGENTS.md).
-const HUMAN_ONLY_COMMANDS = [
-  'npm run deploy:hetzner',
-  'npm run deploy:pipeline',
-  'npm run deploy:cloudflare',
-  'npm run db:migrate:apply',
-  'scripts/apply-hetzner-migrations.mjs --apply',
-  'scripts/clear-prod-db.mjs',
-  'scripts/backup-prod-db.mjs (writes to prod)',
-  'any command touching .env.hetzner / .env.production values',
-];
+// Tier tables + enforcement decisions live in scripts/lib/tierPolicy.js —
+// single source of truth shared with the Jest suite (scripts/__tests__/tierPolicy.test.js).
 
 // Whitelist of files allowed to live directly in the project root.
 const ROOT_ALLOWLIST = new Set([
@@ -229,11 +217,11 @@ function main() {
     }
   }
   console.log(`\n  Required gates for ${maxTier}:`);
-  TIER_GATES[maxTier].forEach((g) => console.log(`    - ${g}`));
+  tierPolicy.TIER_GATES[maxTier].forEach((g) => console.log(`    - ${g}`));
 
-  if (maxTier === 'L5' && mode !== 'pre-commit') {
+  if (maxTier === 'L5' && mode === 'report') {
     console.log('\n  ⚠ L5 paths changed. Human review required. These stay human-only:');
-    HUMAN_ONLY_COMMANDS.forEach((c) => console.log(`    × ${c}`));
+    tierPolicy.HUMAN_ONLY_COMMANDS.forEach((c) => console.log(`    × ${c}`));
   }
 
   // ------------------------------------------------------------------ report
@@ -309,16 +297,46 @@ function main() {
     }
   }
 
-  if (maxTier === 'L3' || maxTier === 'L4') {
-    console.log('\n⚠ Tier ' + maxTier + ' change: before merging also run (needs local stack up):');
-    console.log('    npm run check:sync && npm run audit:crud:gate');
-    console.log('  CI requires their evidence under tmp/systematic-test-matrix/.');
+  if (tierPolicy.l5Blocked(maxTier, process.env)) {
+    console.error('\n✗ L5 paths changed. PUSH BLOCKED — human approval required.');
+    console.error('  These stay human-only:');
+    tierPolicy.HUMAN_ONLY_COMMANDS.forEach((c) => console.error(`    × ${c}`));
+    console.error('  Before pushing: run the L5 gates, get human review, then set GATE_ALLOW_L5=1.');
+    console.error('  (Emergency hatch only — CI re-validates everything.)');
+    return 2;
+  }
+
+  const integrityMarkers = tierPolicy.requiredIntegrityMarkers(maxTier);
+  if (integrityMarkers.length && process.env.GATE_SKIP_INTEGRITY !== '1') {
+    const evidenceDir = process.env.GATE_EVIDENCE_DIR || path.join(ROOT, 'tmp', 'systematic-test-matrix');
+    // Freshness: evidence must be newer than the newest changed file in this push.
+    const cutoffMs = Math.max(
+      ...files.map((f) => {
+        try {
+          return statSync(path.join(ROOT, f)).mtimeMs;
+        } catch {
+          return 0;
+        }
+      }),
+      0,
+    );
+    const entries = tierPolicy.collectEvidenceEntries(evidenceDir);
+    const missing = tierPolicy.missingIntegrityMarkers(entries, integrityMarkers, cutoffMs);
+    if (missing.length) {
+      console.error(`\n✗ Tier ${maxTier} change without data-integrity evidence. Push blocked.`);
+      console.error('  Missing evidence for: ' + missing.join(', '));
+      console.error('  Run (needs local stack up): npm run check:sync && npm run audit:crud:gate');
+      console.error(`  Leave their logs under ${evidenceDir}/ — file name or content must mention the command`);
+      console.error('  and be newer than your last edit. Emergency hatch: GATE_SKIP_INTEGRITY=1 (CI re-runs).');
+      return 1;
+    }
+    console.log(`\n✓ data-integrity evidence present: ${integrityMarkers.join(', ')}`);
   }
 
   const evidence = writeEvidence([
     `# changed-files-gate ${mode} ${new Date().toISOString()}`,
     `top tier: ${maxTier}`,
-    `gates run: eslint${hasTs && process.env.GATE_SKIP_TSC !== '1' ? ', tsc' : ''}${srcFiles.length && process.env.GATE_SKIP_JEST !== '1' ? ', jest --findRelatedTests' : ''}`,
+    `gates run: eslint${hasTs && process.env.GATE_SKIP_TSC !== '1' ? ', tsc' : ''}${srcFiles.length && process.env.GATE_SKIP_JEST !== '1' ? ', jest --findRelatedTests' : ''}${integrityMarkers.length ? `, integrity evidence (${integrityMarkers.join(', ')})` : ''}`,
     ...files.map((f) => `${classify(f)}  ${f}`),
   ]);
   console.log(`\n✓ pre-push gates passed. Evidence: ${evidence}`);
