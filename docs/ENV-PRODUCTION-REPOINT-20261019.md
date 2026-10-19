@@ -131,9 +131,27 @@ readiness gaps that block provisioning (all verified this session):
 ⚠ The secret key and DB password were pasted into chat. Rotate both in the
 dashboard once provisioning works.
 
-Next automation step (agent-doable once 1-2 are resolved): a
-`scripts/apply-cloud-supabase-migrations.mjs` mirroring the
-`deploy_schema_migrations` ledger semantics of the Hetzner path, with a
-dry-run mode, TDD-first. Applying it stays a human action.
+Provisioning tool now exists: `scripts/apply-cloud-supabase-migrations.mjs`
+(core + Jest coverage in `scripts/lib/applyCloudSupabaseMigrations.core.js` /
+`scripts/__tests__/applyCloudSupabaseMigrations.test.js`). Dry run is the
+default; `--apply` is a human action. It shares the `deploy_schema_migrations`
+ledger with the Hetzner runner, and its destructive-bootstrap guard only
+admits `20260401000000_initial_schema` against a zero-table target with
+`--include-bootstrap`. Run it from WSL and pass
+`JF_CLOUD_PG_CONNECTION` from the dashboard connection string (item 2) —
+the script prints the redacted host only.
+
+**Local review status (2026-10-19).** The runner was reviewed and exercised
+only against a throwaway Postgres 16 in WSL docker — never against the cloud
+project and never against production. Evidence in
+`tmp/systematic-test-matrix/2026-10-19T100344Z-db-prod/`
+(`e2e-local-runner.log`, `jest-runner-green.log`,
+`jest-runner-mutation-check.log`, `summary.json`): 26 unit tests green, dry run
+provably read-only, fresh-target bootstrap apply, self-`BEGIN;/COMMIT;` strip,
+plpgsql `BEGIN` preservation, abort + `ROLLBACK` with the failed version left
+unrecorded, idempotent re-apply, conservative bootstrap refusal, `--only`
+fail-closed, password never printed. **Not yet verified against anything real:**
+Supabase Cloud DDL path (needs item 2), the 67 actual migration files, and Auth/RLS/Storage
+provisioning (items 1 and 3). Read the dry-run plan before any `--apply`.
 
 
