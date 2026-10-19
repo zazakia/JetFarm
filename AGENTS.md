@@ -153,4 +153,40 @@ Full workflow design: `docs/AI-ASSISTED-DEV-WORKFLOW-PLAN.md` (risk tiers L0–L
 - **Tier L3+/L4 caution**: changes under `src/database/`, `SyncService.ts`, or journal/ledger/Cash services additionally require `npm run check:sync` and `npm run audit:crud:gate` evidence, plus human review — these are data-loss-class surfaces.
 - **Self-review**: before handing off any diff, re-check it against the ANTI-PATTERNS section and the Conventions (no arbitrary hex, no inline styles, `placeholderTextColor` on TextInputs, no root files).
 
+## AUTONOMOUS LONG-RUNNING WORK (2026-10-19)
+Goal: one prompt → many stages executed without check-ins. Autonomy comes from the prompt contract and the tier gates above, not from agent discretion. Source of truth for required commands: `scripts/changed-files-gate.mjs` (`GATE_COMMANDS`), not this prose.
+
+**Prompt contract — put these in the request and skip the clarifying round:**
+- Objective: the outcome, not the task list.
+- Scope: directories / files / routes in-bounds, and what is explicitly out-of-bounds.
+- Definition of done: the observable that must be true (test name, route renders, value equals, record syncs).
+- Verification: which tier gates to run, or "classify with `npm run gate` and run the tier's list".
+- Standing order: "plan, execute every stage, show the RED run, then report; ask only if a decision changes the outcome."
+
+**Do autonomously (no confirmation needed):**
+- Read any project file; run `npx tsc --noEmit`, `npm run lint`, `npm test`, targeted `npx jest <path>`, `npm run test:e2e`, `npm run gate`, `npm run check:sync`, `npm run audit:crud:gate`, `npm run db:migrate` (dry run).
+- Create/edit files inside the declared scope, in their categorized folders (Clean Root Policy), including tests, migrations as authored SQL, and scripts under `scripts/`.
+- Install/upgrade nothing and touch no `.env*` — those are not autonomy gaps, they are policy.
+- Write a failing test, then the implementation, then refactor (RED-GREEN-REFACTOR), and iterate on my own failures until the gate passes rather than reporting a red suite as done.
+- Commit locally once the tier gates pass — but first show the commit grouping and wait for "proceed"; that single word approves that grouping only, and pushing is a separate authorization.
+
+**Stop and ask (only these):**
+- A choice that materially changes the result: data model / API shape, role or permission semantics, ledger or currency effect, UX direction with no precedent in the repo, or anything that would change production data.
+- The request crosses the human-only list above, needs L5 infra/schema/deploy work, or requires a credential that is absent from `.env.production` (hard stop — never fabricate).
+- Scope must expand beyond the declared boundaries, or an existing behavior must be deliberately broken to proceed.
+- Two consecutive gate failures on the same cause with no new hypothesis.
+
+**Continuity and scale:**
+- Multi-stage work gets a tracked task list keyed to outcomes, not tool calls; keep it current so a context summary cannot make me restart finished work.
+- Independent, disjoint-file work goes to parallel subagents (implementation, tests, docs); dependent work stays sequential and unshared-edit. Review every delegated result before calling it verified.
+- Long or resumable objectives: use a persistent goal so the objective survives turns, and leave evidence under `tmp/systematic-test-matrix/` so the next run can resume without redoing gates.
+- Do not run the full matrix and a heavy build simultaneously; the matrix owns the tree while it runs.
+
+**Handoff format (required at the end of every autonomous run):**
+1. Result against the definition of done, in one or two sentences.
+2. The RED test run, then the gate commands executed with their pass/fail counts.
+3. Risk tier reported by `npm run gate`, files changed grouped by intent, and the suggested commit message(s).
+4. What was NOT verified and why (missing access, human-only gate, L3+/L4 review pending) — never implied as passing.
+5. The single next human action, if any.
+
 
