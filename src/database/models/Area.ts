@@ -16,6 +16,4 @@ export default class Area extends Model {
     @date('deleted_at') deletedAt!: number | null;
 
     @children('areas') childAreas!: any;
-    @children('borrowers') borrowers!: any;
-    @children('collection_groups') collectionGroups!: any;
 }

@@ -41,17 +41,14 @@ jest.mock('../../../../src/services/MasterDataService', () => ({
     MasterDataService: {
         getBranches: jest.fn(),
         getWarehouses: jest.fn(),
-        getCategories: jest.fn(),
         getSuppliers: jest.fn(),
         getStatutoryRates: jest.fn(),
         createBranch: jest.fn(),
         createWarehouse: jest.fn(),
-        createCategory: jest.fn(),
         createSupplier: jest.fn(),
         createStatutoryRate: jest.fn(),
         toggleBranchActive: jest.fn(),
         toggleWarehouseActive: jest.fn(),
-        toggleCategoryActive: jest.fn(),
         toggleSupplierActive: jest.fn(),
         deleteStatutoryRate: jest.fn(),
     },
@@ -82,9 +79,6 @@ describe('DataMaintenanceScreen', () => {
         (MasterDataService.getWarehouses as jest.Mock).mockResolvedValue([
             { id: 'w1', branchId: 'b1', name: 'Store Floor', type: 'store', isActive: true },
         ]);
-        (MasterDataService.getCategories as jest.Mock).mockResolvedValue([
-            { id: 'c1', name: 'Fried Chicken', slug: 'fried-chicken', icon: 'restaurant', isActive: true },
-        ]);
         (MasterDataService.getSuppliers as jest.Mock).mockResolvedValue([
             { id: 's1', name: 'San Miguel Depot', contactPerson: 'Juan', phone: '09171234567', paymentTermsDays: 30, isActive: true },
         ]);
@@ -99,7 +93,6 @@ describe('DataMaintenanceScreen', () => {
         expect(getByText('Data Maintenance')).toBeTruthy();
         expect(getByText('Dropdown Lookups')).toBeTruthy();
         expect(getByText('Branches & Locations')).toBeTruthy();
-        expect(getByText('Product Categories')).toBeTruthy();
         expect(getByText('Suppliers')).toBeTruthy();
         expect(getByText('Statutory Rates')).toBeTruthy();
         expect(getByText('Directories')).toBeTruthy();

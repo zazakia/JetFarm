@@ -25,11 +25,10 @@ import {
 import { MasterDataService } from '../../../src/services/MasterDataService';
 import Branch from '../../../src/database/models/Branch';
 import Warehouse from '../../../src/database/models/Warehouse';
-import MarketplaceCategory from '../../../src/database/models/MarketplaceCategory';
 import StatutoryRate from '../../../src/database/models/StatutoryRate';
 import Supplier from '../../../src/database/models/Supplier';
 
-type MainTab = 'lookups' | 'locations' | 'categories' | 'suppliers' | 'statutory' | 'directories';
+type MainTab = 'lookups' | 'locations' | 'suppliers' | 'statutory' | 'directories';
 
 export default function DataMaintenanceScreen() {
     const router = useRouter();
@@ -61,14 +60,6 @@ export default function DataMaintenanceScreen() {
     const [warehouseBranchId, setWarehouseBranchId] = useState('');
     const [warehouseName, setWarehouseName] = useState('');
     const [warehouseType, setWarehouseType] = useState('store');
-
-    // --- PRODUCT CATEGORIES STATE ---
-    const [prodCategories, setProdCategories] = useState<MarketplaceCategory[]>([]);
-    const [categoryModalVisible, setCategoryModalVisible] = useState(false);
-    const [editingCategory, setEditingCategory] = useState<MarketplaceCategory | null>(null);
-    const [categoryName, setCategoryName] = useState('');
-    const [categorySlug, setCategorySlug] = useState('');
-    const [categoryIcon, setCategoryIcon] = useState('category');
 
     // --- SUPPLIERS STATE ---
     const [suppliers, setSuppliers] = useState<Supplier[]>([]);
@@ -127,18 +118,6 @@ export default function DataMaintenanceScreen() {
         }
     }, [warehouseBranchId]);
 
-    const loadProdCategories = useCallback(async () => {
-        setLoading(true);
-        try {
-            const list = await MasterDataService.getCategories(true);
-            setProdCategories(list);
-        } catch (e) {
-            console.error('Failed to load product categories', e);
-        } finally {
-            setLoading(false);
-        }
-    }, []);
-
     const loadSuppliers = useCallback(async () => {
         setLoading(true);
         try {
@@ -168,10 +147,9 @@ export default function DataMaintenanceScreen() {
     useEffect(() => {
         if (currentTab === 'lookups') loadLookups();
         else if (currentTab === 'locations') loadLocations();
-        else if (currentTab === 'categories') loadProdCategories();
         else if (currentTab === 'suppliers') loadSuppliers();
         else if (currentTab === 'statutory') loadStatutoryRates();
-    }, [currentTab, loadLookups, loadLocations, loadProdCategories, loadSuppliers, loadStatutoryRates]);
+    }, [currentTab, loadLookups, loadLocations, loadSuppliers, loadStatutoryRates]);
 
     // =========================================================================
     // LOOKUP ACTIONS
@@ -336,45 +314,6 @@ export default function DataMaintenanceScreen() {
     };
 
     // =========================================================================
-    // PRODUCT CATEGORY ACTIONS
-    // =========================================================================
-    const handleSaveCategory = async () => {
-        if (!categoryName.trim()) {
-            Alert.alert('Required Field', 'Please enter a category name.');
-            return;
-        }
-        try {
-            if (editingCategory) {
-                await MasterDataService.updateCategory(editingCategory.id, {
-                    name: categoryName.trim(),
-                    slug: categorySlug.trim() || undefined,
-                    icon: categoryIcon.trim() || 'category',
-                });
-            } else {
-                await MasterDataService.createCategory({
-                    name: categoryName.trim(),
-                    slug: categorySlug.trim() || undefined,
-                    icon: categoryIcon.trim() || 'category',
-                    isActive: true,
-                });
-            }
-            setCategoryModalVisible(false);
-            loadProdCategories();
-        } catch (e: any) {
-            Alert.alert('Error', e.message || 'Failed to save category.');
-        }
-    };
-
-    const handleToggleCategory = async (cat: MarketplaceCategory) => {
-        try {
-            await MasterDataService.toggleCategoryActive(cat.id);
-            loadProdCategories();
-        } catch (e: any) {
-            Alert.alert('Error', e.message || 'Failed to update category.');
-        }
-    };
-
-    // =========================================================================
     // SUPPLIER ACTIONS
     // =========================================================================
     const handleSaveSupplier = async () => {
@@ -514,12 +453,6 @@ export default function DataMaintenanceScreen() {
                         icon="store"
                         active={currentTab === 'locations'}
                         onPress={() => setCurrentTab('locations')}
-                    />
-                    <TabButton
-                        label="Product Categories"
-                        icon="category"
-                        active={currentTab === 'categories'}
-                        onPress={() => setCurrentTab('categories')}
                     />
                     <TabButton
                         label="Suppliers"
@@ -858,80 +791,6 @@ export default function DataMaintenanceScreen() {
                             </ScrollView>
                         </View>
                     )}
-                </View>
-            )}
-
-            {/* TAB: PRODUCT CATEGORIES */}
-            {currentTab === 'categories' && (
-                <View className="flex-1 p-4">
-                    <View className="flex-row justify-between items-center mb-4">
-                        <View>
-                            <Text className="text-sm font-bold text-gray-900">Product & POS Categories</Text>
-                            <Text className="text-xs text-gray-500">Classifies inventory products, touch POS, and marketplace</Text>
-                        </View>
-                        <Pressable
-                            onPress={() => {
-                                setEditingCategory(null);
-                                setCategoryName('');
-                                setCategorySlug('');
-                                setCategoryIcon('category');
-                                setCategoryModalVisible(true);
-                            }}
-                            className="bg-blue-900 px-3.5 py-2 rounded-xl flex-row items-center active:bg-blue-800"
-                        >
-                            <MaterialIcons name="add" size={16} color="#FFFFFF" style={{ marginRight: 4 }} />
-                            <Text className="text-white text-xs font-bold">New Category</Text>
-                        </Pressable>
-                    </View>
-
-                    <ScrollView className="flex-1">
-                        <View className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden mb-6">
-                            {prodCategories.length === 0 ? (
-                                <View className="p-8 items-center">
-                                    <MaterialIcons name="category" size={40} color="#CBD5E1" />
-                                    <Text className="text-gray-700 font-bold mt-2">No product categories yet</Text>
-                                </View>
-                            ) : (
-                                prodCategories.map((c, idx) => (
-                                    <View
-                                        key={c.id}
-                                        className={`p-4 flex-row items-center justify-between ${
-                                            idx < prodCategories.length - 1 ? 'border-b border-gray-50' : ''
-                                        }`}
-                                    >
-                                        <View className="flex-row items-center flex-1 pr-3">
-                                            <View className="w-10 h-10 rounded-xl bg-blue-50 items-center justify-center mr-3 border border-blue-100">
-                                                <MaterialIcons name={(c.icon as any) || 'category'} size={20} color="#1E3A8A" />
-                                            </View>
-                                            <View>
-                                                <Text className="text-sm font-extrabold text-gray-900">{c.name}</Text>
-                                                <Text className="text-xs text-gray-500 font-mono">slug: {c.slug}</Text>
-                                            </View>
-                                        </View>
-                                        <View className="flex-row items-center gap-3">
-                                            <Switch
-                                                value={c.isActive}
-                                                onValueChange={() => handleToggleCategory(c)}
-                                                trackColor={{ true: '#1E3A8A', false: '#D1D5DB' }}
-                                            />
-                                            <Pressable
-                                                onPress={() => {
-                                                    setEditingCategory(c);
-                                                    setCategoryName(c.name);
-                                                    setCategorySlug(c.slug);
-                                                    setCategoryIcon(c.icon || 'category');
-                                                    setCategoryModalVisible(true);
-                                                }}
-                                                className="p-2 rounded-lg bg-gray-50"
-                                            >
-                                                <MaterialIcons name="edit" size={18} color="#4B5563" />
-                                            </Pressable>
-                                        </View>
-                                    </View>
-                                ))
-                            )}
-                        </View>
-                    </ScrollView>
                 </View>
             )}
 
@@ -1377,64 +1236,6 @@ export default function DataMaintenanceScreen() {
                                 className="flex-1 py-3 bg-blue-900 rounded-xl items-center active:bg-blue-800"
                             >
                                 <Text className="font-bold text-white text-sm">Save Location</Text>
-                            </Pressable>
-                        </View>
-                    </View>
-                </View>
-            </Modal>
-
-            {/* Add / Edit Category Modal */}
-            <Modal visible={categoryModalVisible} transparent animationType="fade" onRequestClose={() => setCategoryModalVisible(false)}>
-                <View className="flex-1 bg-black/50 justify-center items-center p-4">
-                    <View className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl">
-                        <View className="flex-row justify-between items-center mb-4">
-                            <Text className="text-lg font-black text-gray-900">
-                                {editingCategory ? 'Edit Product Category' : 'New Product Category'}
-                            </Text>
-                            <Pressable onPress={() => setCategoryModalVisible(false)}>
-                                <MaterialIcons name="close" size={20} color="#6B7280" />
-                            </Pressable>
-                        </View>
-
-                        <Text className="text-xs font-bold text-gray-700 mb-1">Category Name *</Text>
-                        <TextInput
-                            value={categoryName}
-                            onChangeText={setCategoryName}
-                            placeholder="e.g. Side Dishes & Drinks"
-                            placeholderTextColor="#9CA3AF"
-                            className="bg-gray-50 border border-gray-300 rounded-xl p-3 text-sm text-gray-900 mb-3"
-                        />
-
-                        <Text className="text-xs font-bold text-gray-700 mb-1">Slug (URL / Key)</Text>
-                        <TextInput
-                            value={categorySlug}
-                            onChangeText={setCategorySlug}
-                            placeholder="e.g. side-dishes-drinks"
-                            placeholderTextColor="#9CA3AF"
-                            className="bg-gray-50 border border-gray-300 rounded-xl p-3 text-sm text-gray-900 mb-3 font-mono"
-                        />
-
-                        <Text className="text-xs font-bold text-gray-700 mb-1">Icon Name (Material Icons)</Text>
-                        <TextInput
-                            value={categoryIcon}
-                            onChangeText={setCategoryIcon}
-                            placeholder="e.g. fastfood, local-drink, restaurant"
-                            placeholderTextColor="#9CA3AF"
-                            className="bg-gray-50 border border-gray-300 rounded-xl p-3 text-sm text-gray-900 mb-5 font-mono"
-                        />
-
-                        <View className="flex-row gap-3">
-                            <Pressable
-                                onPress={() => setCategoryModalVisible(false)}
-                                className="flex-1 py-3 bg-gray-100 rounded-xl items-center"
-                            >
-                                <Text className="font-bold text-gray-700 text-sm">Cancel</Text>
-                            </Pressable>
-                            <Pressable
-                                onPress={handleSaveCategory}
-                                className="flex-1 py-3 bg-blue-900 rounded-xl items-center active:bg-blue-800"
-                            >
-                                <Text className="font-bold text-white text-sm">Save Category</Text>
                             </Pressable>
                         </View>
                     </View>

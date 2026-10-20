@@ -7,7 +7,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { database } from '../../../src/database';
 import UserProfile from '../../../src/database/models/UserProfile';
-import Borrower from '../../../src/database/models/Borrower';
 import BusinessUnit from '../../../src/database/models/BusinessUnit';
 import { Q } from '@nozbe/watermelondb';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -29,7 +28,6 @@ const schema = z.object({
     isActive: z.boolean(),
     branchId: z.string().optional(),
     areaId: z.string().optional(),
-    borrowerId: z.string().optional(),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -46,10 +44,7 @@ export default function EditUserScreen() {
     const [activeTab, setActiveTab] = useState<ActiveTab>('profile');
     
     // Form Selectors State
-    const [borrowers, setBorrowers] = useState<Borrower[]>([]);
     const [businessUnits, setBusinessUnits] = useState<{ id: string; name: string }[]>([]);
-    const [searchQuery, setSearchQuery] = useState('');
-    const [loadingBorrowers, setLoadingBorrowers] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
     // Activity History State
@@ -71,10 +66,6 @@ export default function EditUserScreen() {
 
     const selectedRole = watch('role');
     const isActiveValue = watch('isActive');
-
-    const filteredBorrowers = borrowers.filter(b =>
-        b.fullName.toLowerCase().includes(searchQuery.toLowerCase())
-    );
 
     useEffect(() => {
         const loadData = async () => {
@@ -107,12 +98,6 @@ export default function EditUserScreen() {
                     ]);
                 }
 
-                let bId = '';
-                if (u.role === ROLES.borrower) {
-                    const linkedBorrower = await database.collections.get<Borrower>('borrowers').query(Q.where('auth_id', id)).fetch();
-                    if (linkedBorrower.length > 0) bId = linkedBorrower[0].id;
-                }
-
                 reset({
                     fullName: u.fullName,
                     email: u.email,
@@ -120,12 +105,8 @@ export default function EditUserScreen() {
                     isActive: u.isActive,
                     branchId: u.branchId || '',
                     areaId: u.areaId || '',
-                    borrowerId: bId,
                 });
 
-                if (u.role === ROLES.borrower) {
-                    loadBorrowers();
-                }
             } catch (error) {
                 console.error('Failed to load user:', error);
                 safeBack(router, '/(admin)');
@@ -136,12 +117,6 @@ export default function EditUserScreen() {
         loadData();
     }, [id]);
 
-    useEffect(() => {
-        if (selectedRole === ROLES.borrower && borrowers.length === 0) {
-            loadBorrowers();
-        }
-    }, [selectedRole]);
-
     // Lazy load timeline or relationships on tab activation
     useEffect(() => {
         if (activeTab === 'history' && !timelineLoaded) {
@@ -150,18 +125,6 @@ export default function EditUserScreen() {
             loadRelationships();
         }
     }, [activeTab, id, timelineLoaded, relationshipsLoaded]);
-
-    const loadBorrowers = async () => {
-        setLoadingBorrowers(true);
-        try {
-            const fetched = await database.collections.get<Borrower>('borrowers').query(Q.sortBy('full_name', Q.asc)).fetch();
-            setBorrowers(fetched);
-        } catch (error) {
-            console.error('Failed to load borrowers:', error);
-        } finally {
-            setLoadingBorrowers(false);
-        }
-    };
 
     const loadTimeline = async () => {
         if (!id) return;
@@ -233,97 +196,6 @@ export default function EditUserScreen() {
                     oldData: oldUserProfile,
                     newData: newUserProfile
                 });
-
-                // 2. Collector Sync Logic
-                const collectorColl = database.collections.get<any>('collectors');
-                const existingCollector = await collectorColl.query(Q.where('auth_id', user.id)).fetch();
-
-                if (data.role === ROLES.collector) {
-                    if (existingCollector.length > 0) {
-                        const coll = existingCollector[0];
-                        const oldCollData = { fullName: coll.fullName, isActive: coll.isActive };
-                        const newCollData = { fullName: data.fullName.trim(), isActive: data.isActive };
-
-                        batchOps.push(coll.prepareUpdate((c: any) => {
-                            c.fullName = newCollData.fullName;
-                            c.isActive = newCollData.isActive;
-                            c.deletedAt = null; 
-                        }));
-
-                        logs.push({
-                            entityType: 'collectors',
-                            entityId: coll.id,
-                            action: 'UPDATE',
-                            oldData: oldCollData,
-                            newData: newCollData
-                        });
-                    } else {
-                        const newColl = collectorColl.prepareCreate((c: any) => {
-                            c.fullName = data.fullName.trim();
-                            c.authId = user.id;
-                            c.isActive = data.isActive;
-                        });
-                        batchOps.push(newColl);
-
-                        logs.push({
-                            entityType: 'collectors',
-                            entityId: newColl.id,
-                            action: 'CREATE',
-                            newData: { fullName: data.fullName.trim(), authId: user.id, isActive: data.isActive }
-                        });
-                    }
-                } else if (existingCollector.length > 0) {
-                    for (const c of existingCollector) {
-                        batchOps.push(c.prepareUpdate((collect: any) => {
-                            collect.isActive = false;
-                            collect.deletedAt = new Date().getTime();
-                        }));
-
-                        logs.push({
-                            entityType: 'collectors',
-                            entityId: c.id,
-                            action: 'UPDATE',
-                            oldData: { isActive: c.isActive },
-                            newData: { isActive: false, deletedAt: 'Soft Deleted' }
-                        });
-                    }
-                }
-
-                // 3. Update borrower link
-                const currentLinked = await database.collections.get<Borrower>('borrowers').query(Q.where('auth_id', user.id)).fetch();
-                for (const b of currentLinked) {
-                    if (data.role !== ROLES.borrower || b.id !== data.borrowerId) {
-                        batchOps.push(b.prepareUpdate(borrower => {
-                            borrower.authId = '';
-                        }));
-
-                        logs.push({
-                            entityType: 'borrowers',
-                            entityId: b.id,
-                            action: 'UPDATE',
-                            oldData: { authId: user.id },
-                            newData: { authId: '' }
-                        });
-                    }
-                }
-
-                if (data.role === ROLES.borrower && data.borrowerId) {
-                    const isAlreadyLinked = currentLinked.some(b => b.id === data.borrowerId);
-                    if (!isAlreadyLinked) {
-                        const b = await database.collections.get<Borrower>('borrowers').find(data.borrowerId);
-                        batchOps.push(b.prepareUpdate(borrower => {
-                            borrower.authId = user.id;
-                        }));
-
-                        logs.push({
-                            entityType: 'borrowers',
-                            entityId: b.id,
-                            action: 'UPDATE',
-                            oldData: { authId: b.authId },
-                            newData: { authId: user.id }
-                        });
-                    }
-                }
 
                 const auditLogs = await ActionLogService.prepareLogActions(logs);
                 await database.batch(...batchOps, ...auditLogs);
@@ -411,37 +283,6 @@ export default function EditUserScreen() {
                         oldData: { email: user.email, fullName: user.fullName }
                     });
 
-                    // 2. Soft-delete linked collector if any
-                    const existingCollectors = await database.collections.get<any>('collectors').query(Q.where('auth_id', id)).fetch();
-                    for (const c of existingCollectors) {
-                        batchOps.push(c.prepareUpdate((collect: any) => {
-                            collect.isActive = false;
-                            collect.deletedAt = new Date().getTime();
-                        }));
-
-                        logs.push({
-                            entityType: 'collectors',
-                            entityId: c.id,
-                            action: 'DELETE',
-                            oldData: { fullName: c.fullName }
-                        });
-                    }
-
-                    // 3. Clear borrower links
-                    const currentLinked = await database.collections.get<Borrower>('borrowers').query(Q.where('auth_id', id)).fetch();
-                    for (const b of currentLinked) {
-                        batchOps.push(b.prepareUpdate(borrower => {
-                            borrower.authId = '';
-                        }));
-
-                        logs.push({
-                            entityType: 'borrowers',
-                            entityId: b.id,
-                            action: 'UPDATE',
-                            oldData: { authId: user.id },
-                            newData: { authId: '' }
-                        });
-                    }
                 }
 
                 const auditLogs = await ActionLogService.prepareLogActions(logs);
@@ -807,60 +648,6 @@ export default function EditUserScreen() {
                         />
                     </View>
 
-                    {selectedRole === ROLES.borrower && (
-                        <View className="mb-4 bg-blue-50 p-4 rounded-2xl border border-blue-100">
-                            <Text className="text-xs font-bold text-blue-800 mb-2 uppercase tracking-widest">Link to Borrower Profile</Text>
-                            {loadingBorrowers ? (
-                                <ActivityIndicator size="small" color="#1E3A8A" />
-                            ) : (
-                                <View>
-                                    <View className="relative mb-2 flex-row items-center bg-white rounded-xl border border-blue-200 px-3">
-                                        <MaterialIcons name="search" size={20} color="#6B7280" className="mr-2" />
-                                        <TextInput
-                                            className="flex-1 py-3 text-gray-900 font-medium text-sm"
-                                            placeholder="Search member/borrower..."
-                                            placeholderTextColor="#9CA3AF"
-                                            value={searchQuery}
-                                            onChangeText={setSearchQuery}
-                                        />
-                                        {searchQuery.length > 0 && (
-                                            <Pressable onPress={() => setSearchQuery('')} className="p-1">
-                                                <MaterialIcons name="close" size={18} color="#6B7280" />
-                                            </Pressable>
-                                        )}
-                                    </View>
-                                    <Controller
-                                        control={control}
-                                        name="borrowerId"
-                                        render={({ field: { onChange, value } }) => (
-                                            <View>
-                                                {filteredBorrowers.length === 0 ? (
-                                                    <Text className="text-gray-700 text-xs py-2 italic flex-wrap">
-                                                        {borrowers.length === 0 ? 'No borrowers found.' : 'No matching borrowers.'}
-                                                    </Text>
-                                                ) : (
-                                                    <ScrollView className="max-h-40" nestedScrollEnabled>
-                                                        {filteredBorrowers.map(b => (
-                                                            <Pressable
-                                                                key={b.id}
-                                                                onPress={() => onChange(b.id)}
-                                                                className={`p-3 rounded-lg mb-1 flex-row justify-between items-center ${value === b.id ? 'bg-blue-600' : 'bg-white'}`}
-                                                            >
-                                                                <Text className={`text-sm ${value === b.id ? 'text-white font-bold' : 'text-gray-700'}`}>{b.fullName}</Text>
-                                                                {value === b.id && <MaterialIcons name="check" size={16} color="#FFF" />}
-                                                            </Pressable>
-                                                        ))}
-                                                    </ScrollView>
-                                                )}
-                                            </View>
-                                        )}
-                                    />
-                                </View>
-                            )}
-                            {errors.borrowerId && <Text className="text-red-500 text-xs mt-1 font-bold">{errors.borrowerId.message}</Text>}
-                        </View>
-                    )}
-
                     <View className="flex-row items-center justify-between mb-8 p-4 bg-gray-50 rounded-2xl">
                         <View className="flex-1 mr-4">
                             <Text className="text-sm font-bold text-gray-900">Active Status</Text>
@@ -1138,45 +925,6 @@ export default function EditUserScreen() {
                                 </View>
                             </View>
 
-                            {/* Linked Member / Borrower Profile (if applicable) */}
-                            {relationships.linkedBorrower && (
-                                <View className="bg-blue-50 border border-blue-200 p-5 rounded-3xl mb-4">
-                                    <View className="flex-row items-center justify-between mb-2">
-                                        <View className="flex-row items-center">
-                                            <MaterialIcons name="account-circle" size={22} color="#1E3A8A" />
-                                            <Text className="text-xs font-black text-blue-900 uppercase tracking-widest ml-2">
-                                                Linked Member Profile
-                                            </Text>
-                                        </View>
-                                        <View className="bg-blue-200 px-2.5 py-0.5 rounded-full">
-                                            <Text className="text-blue-900 text-[10px] font-bold">Borrower Link</Text>
-                                        </View>
-                                    </View>
-                                    <Text className="text-base font-black text-gray-900">
-                                        {relationships.linkedBorrower.fullName}
-                                    </Text>
-                                    {relationships.linkedBorrower.memberId && (
-                                        <Text className="text-xs text-blue-800 font-semibold mt-0.5">
-                                            Member ID: {relationships.linkedBorrower.memberId}
-                                        </Text>
-                                    )}
-                                    {relationships.linkedBorrower.contactNumber && (
-                                        <Text className="text-xs text-gray-600 mt-0.5">
-                                            Contact: {relationships.linkedBorrower.contactNumber}
-                                        </Text>
-                                    )}
-                                    <Pressable
-                                        onPress={() => {
-                                            router.push(`/(admin)/borrowers/${relationships.linkedBorrower?.id}` as any);
-                                        }}
-                                        className="mt-3 bg-blue-900 py-2.5 px-4 rounded-xl flex-row items-center justify-center active:bg-blue-800"
-                                    >
-                                        <MaterialIcons name="open-in-new" size={16} color="#FFFFFF" />
-                                        <Text className="text-white text-xs font-bold ml-1.5">View Member File</Text>
-                                    </Pressable>
-                                </View>
-                            )}
-
                             {/* Operational Activity Metrics Grid */}
                             <Text className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">
                                 Operational Impact & Responsibilities
@@ -1190,36 +938,6 @@ export default function EditUserScreen() {
                                     </View>
                                     <Text className="text-2xl font-black text-gray-900">{relationships.counts.actionsLogged}</Text>
                                     <Text className="text-[10px] text-gray-500 mt-0.5">Audit actions recorded</Text>
-                                </View>
-
-                                {/* Approved Loans */}
-                                <View className="flex-1 min-w-[140px] bg-white p-3.5 rounded-2xl border border-gray-100 shadow-sm">
-                                    <View className="flex-row items-center justify-between mb-1">
-                                        <Text className="text-[11px] font-bold text-emerald-700 uppercase">Approved Loans</Text>
-                                        <MaterialIcons name="check-circle" size={18} color="#059669" />
-                                    </View>
-                                    <Text className="text-2xl font-black text-emerald-700">{relationships.counts.loansApproved}</Text>
-                                    <Text className="text-[10px] text-gray-500 mt-0.5">Vol: {formatPHP(relationships.totals.loansVolume)}</Text>
-                                </View>
-
-                                {/* Collections */}
-                                <View className="flex-1 min-w-[140px] bg-white p-3.5 rounded-2xl border border-gray-100 shadow-sm">
-                                    <View className="flex-row items-center justify-between mb-1">
-                                        <Text className="text-[11px] font-bold text-blue-700 uppercase">Payments Collected</Text>
-                                        <MaterialIcons name="payments" size={18} color="#2563EB" />
-                                    </View>
-                                    <Text className="text-2xl font-black text-blue-700">{relationships.counts.paymentsCollected}</Text>
-                                    <Text className="text-[10px] text-gray-500 mt-0.5">Vol: {formatPHP(relationships.totals.paymentsVolume)}</Text>
-                                </View>
-
-                                {/* Remittances Handled */}
-                                <View className="flex-1 min-w-[140px] bg-white p-3.5 rounded-2xl border border-gray-100 shadow-sm">
-                                    <View className="flex-row items-center justify-between mb-1">
-                                        <Text className="text-[11px] font-bold text-purple-700 uppercase">Remittances</Text>
-                                        <MaterialIcons name="receipt-long" size={18} color="#7C3AED" />
-                                    </View>
-                                    <Text className="text-2xl font-black text-purple-700">{relationships.counts.remittancesHandled}</Text>
-                                    <Text className="text-[10px] text-gray-500 mt-0.5">Handled / Approved</Text>
                                 </View>
 
                                 {/* Journal Entries */}
@@ -1335,7 +1053,7 @@ export default function EditUserScreen() {
                             <MaterialIcons name="account-tree" size={42} color="#9CA3AF" />
                             <Text className="text-gray-900 font-bold text-sm mt-3">No relational data found</Text>
                             <Text className="text-gray-500 text-xs text-center mt-1">
-                                This user does not have any linked branches, loans, or transactions in the database.
+                                This user does not have any linked branches, areas, journal entries, or stock movements in the database.
                             </Text>
                         </View>
                     )}

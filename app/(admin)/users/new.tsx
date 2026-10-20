@@ -7,7 +7,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { database } from '../../../src/database';
 import UserProfile from '../../../src/database/models/UserProfile';
-import Borrower from '../../../src/database/models/Borrower';
 import BusinessUnit from '../../../src/database/models/BusinessUnit';
 import { Q } from '@nozbe/watermelondb';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -25,7 +24,6 @@ const schema = z.object({
     isActive: z.boolean(),
     branchId: z.string().optional(),
     areaId: z.string().optional(),
-    borrowerId: z.string().optional(),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -33,10 +31,7 @@ type FormData = z.infer<typeof schema>;
 export default function NewUserScreen() {
     const router = useRouter();
     const [saving, setSaving] = useState(false);
-    const [borrowers, setBorrowers] = useState<Borrower[]>([]);
     const [businessUnits, setBusinessUnits] = useState<{ id: string; name: string }[]>([]);
-    const [searchQuery, setSearchQuery] = useState('');
-    const [loadingBorrowers, setLoadingBorrowers] = useState(false);
 
     const { control, handleSubmit, watch, setValue, formState: { errors } } = useForm<FormData>({
         resolver: zodResolver(schema),
@@ -47,7 +42,6 @@ export default function NewUserScreen() {
             isActive: true,
             branchId: 'branch-bagacay',
             areaId: '',
-            borrowerId: '',
         }
     });
 
@@ -56,12 +50,6 @@ export default function NewUserScreen() {
     useEffect(() => {
         loadBranches();
     }, []);
-
-    useEffect(() => {
-        if (selectedRole === ROLES.borrower) {
-            loadBorrowers();
-        }
-    }, [selectedRole]);
 
     const loadBranches = async () => {
         try {
@@ -88,18 +76,6 @@ export default function NewUserScreen() {
                 { id: 'branch-noph', name: 'NOPH Main Gate' },
                 { id: 'branch-batinguel', name: 'Batinguel Highway' },
             ]);
-        }
-    };
-
-    const loadBorrowers = async () => {
-        setLoadingBorrowers(true);
-        try {
-            const fetched = await database.collections.get<Borrower>('borrowers').query(Q.sortBy('full_name', Q.asc)).fetch();
-            setBorrowers(fetched);
-        } catch (error) {
-            console.error('Failed to load borrowers:', error);
-        } finally {
-            setLoadingBorrowers(false);
         }
     };
 
@@ -135,40 +111,6 @@ export default function NewUserScreen() {
                         areaId: data.areaId,
                     }
                 });
-
-                // If it's a collector, create a collector profile
-                if (data.role === ROLES.collector) {
-                    const newCollector = database.collections.get<any>('collectors').prepareCreate((c: any) => {
-                        c.fullName = data.fullName.trim();
-                        c.authId = newUser.id;
-                        c.isActive = data.isActive;
-                    });
-                    batchOps.push(newCollector);
-
-                    logs.push({
-                        entityType: 'collectors',
-                        entityId: newCollector.id,
-                        action: 'CREATE',
-                        newData: { fullName: data.fullName, authId: newUser.id, isActive: data.isActive }
-                    });
-                }
-
-                // If it's a borrower, link them
-                if (data.role === ROLES.borrower && data.borrowerId) {
-                    const borrower = await database.collections.get<Borrower>('borrowers').find(data.borrowerId);
-                    const oldAuthId = borrower.authId;
-                    batchOps.push(borrower.prepareUpdate(b => {
-                        b.authId = newUser.id;
-                    }));
-
-                    logs.push({
-                        entityType: 'borrowers',
-                        entityId: borrower.id,
-                        action: 'UPDATE',
-                        oldData: { authId: oldAuthId },
-                        newData: { authId: newUser.id }
-                    });
-                }
 
                 const auditLogs = await ActionLogService.prepareLogActions(logs);
                 await database.batch(...batchOps, ...auditLogs);
@@ -212,10 +154,6 @@ export default function NewUserScreen() {
             setSaving(false);
         }
     };
-
-    const filteredBorrowers = borrowers.filter(b => 
-        b.fullName.toLowerCase().includes(searchQuery.toLowerCase())
-    );
 
     return (
         <ScrollView className="flex-1 bg-gray-50" contentContainerStyle={{ padding: 20 }}>
@@ -339,60 +277,6 @@ export default function NewUserScreen() {
                         )}
                     />
                 </View>
-
-                {selectedRole === ROLES.borrower && (
-                    <View className="mb-4 bg-blue-50 p-4 rounded-2xl border border-blue-100">
-                        <Text className="text-xs font-bold text-blue-800 mb-2 uppercase tracking-widest">Link to Borrower Profile</Text>
-                        {loadingBorrowers ? (
-                            <ActivityIndicator size="small" color="#1E3A8A" />
-                        ) : (
-                            <View>
-                                <View className="relative mb-2 flex-row items-center bg-white rounded-xl border border-blue-200 px-3">
-                                    <MaterialIcons name="search" size={20} color="#6B7280" className="mr-2" />
-                                    <TextInput
-                                        className="flex-1 py-3 text-gray-900 font-medium text-sm"
-                                        placeholder="Search member/borrower..."
-                                        placeholderTextColor="#9CA3AF"
-                                        value={searchQuery}
-                                        onChangeText={setSearchQuery}
-                                    />
-                                    {searchQuery.length > 0 && (
-                                        <Pressable onPress={() => setSearchQuery('')} className="p-1">
-                                            <MaterialIcons name="close" size={18} color="#6B7280" />
-                                        </Pressable>
-                                    )}
-                                </View>
-                                <Controller
-                                    control={control}
-                                    name="borrowerId"
-                                    render={({ field: { onChange, value } }) => (
-                                        <View>
-                                            {filteredBorrowers.length === 0 ? (
-                                                <Text className="text-gray-700 text-xs py-2 italic flex-wrap">
-                                                    {borrowers.length === 0 ? 'No borrowers found backend database.' : 'No matching borrowers.'}
-                                                </Text>
-                                            ) : (
-                                                <ScrollView className="max-h-40" nestedScrollEnabled>
-                                                    {filteredBorrowers.map(b => (
-                                                        <Pressable
-                                                            key={b.id}
-                                                            onPress={() => onChange(b.id)}
-                                                            className={`p-3 rounded-lg mb-1 flex-row justify-between items-center ${value === b.id ? 'bg-blue-600' : 'bg-white'}`}
-                                                        >
-                                                            <Text className={`text-sm ${value === b.id ? 'text-white font-bold' : 'text-gray-700'}`}>{b.fullName}</Text>
-                                                            {value === b.id && <MaterialIcons name="check" size={16} color="#FFF" />}
-                                                        </Pressable>
-                                                    ))}
-                                                </ScrollView>
-                                            )}
-                                        </View>
-                                    )}
-                                />
-                            </View>
-                        )}
-                        {errors.borrowerId && <Text className="text-red-500 text-xs mt-1 font-bold">{errors.borrowerId.message}</Text>}
-                    </View>
-                )}
 
                 <View className="flex-row items-center justify-between mb-8 p-4 bg-gray-50 rounded-2xl">
                     <View>
