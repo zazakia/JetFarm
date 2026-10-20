@@ -6,13 +6,13 @@ import { MaterialIcons } from '@expo/vector-icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { database } from '../../../src/database';
 import { Q } from '@nozbe/watermelondb';
-import Payment from '../../../src/database/models/Payment';
+import CashTransaction from '../../../src/database/models/CashTransaction';
 import Expense from '../../../src/database/models/Expense';
-import Remittance from '../../../src/database/models/Remittance';
-import SavingsTransaction from '../../../src/database/models/SavingsTransaction';
-import ShareCapitalTransaction from '../../../src/database/models/ShareCapitalTransaction';
+import AgriFarmExpense from '../../../src/database/models/AgriFarmExpense';
+import AgriLaborLog from '../../../src/database/models/AgriLaborLog';
+import AgriWeeklySettlement from '../../../src/database/models/AgriWeeklySettlement';
+import AgriInvestorLedger from '../../../src/database/models/AgriInvestorLedger';
 import { formatPHP } from '../../../src/utils/currency';
-import { format, startOfQuarter, endOfQuarter } from 'date-fns';
 
 const QUARTERS = [
     { label: 'Q1', months: 'Jan–Mar', start: 0 },
@@ -35,44 +35,50 @@ export default function CashFlowsScreen() {
             const start = new Date(year, q.start, 1).getTime();
             const end = new Date(year, q.start + 3, 0, 23, 59, 59).getTime();
 
-            const [payments, expenses, remittances, savingsTx, shareTx] = await Promise.all([
-                database.get<Payment>('payments').query(Q.where('payment_date', Q.between(start, end)), Q.where('deleted_at', null)).fetch(),
-                database.get<Expense>('expenses').query(Q.where('expense_date', Q.between(start, end)), Q.where('deleted_at', null)).fetch(),
-                database.get<Remittance>('remittances').query(Q.where('status', 'approved'), Q.where('remittance_date', Q.between(start, end)), Q.where('deleted_at', null)).fetch(),
-                database.get<SavingsTransaction>('savings_transactions').query(Q.where('date', Q.between(start, end)), Q.where('deleted_at', null)).fetch(),
-                database.get<ShareCapitalTransaction>('share_capital_transactions').query(Q.where('date', Q.between(start, end)), Q.where('deleted_at', null)).fetch(),
+            const NOT_DELETED = Q.where('deleted_at', null);
+            const [cashIns, expenses, farmExpenses, laborPaid, settlementsPaid, investorLedgers] = await Promise.all([
+                database.get<CashTransaction>('cash_transactions').query(NOT_DELETED, Q.where('type', 'in'), Q.where('transaction_date', Q.between(start, end))).fetch(),
+                database.get<Expense>('expenses').query(NOT_DELETED, Q.where('expense_date', Q.between(start, end))).fetch(),
+                database.get<AgriFarmExpense>('agri_farm_expenses').query(NOT_DELETED, Q.where('expense_date', Q.between(start, end))).fetch(),
+                database.get<AgriLaborLog>('agri_labor_logs').query(NOT_DELETED, Q.where('payment_status', 'paid'), Q.where('work_date', Q.between(start, end))).fetch(),
+                database.get<AgriWeeklySettlement>('agri_weekly_settlements').query(NOT_DELETED, Q.where('payment_status', 'paid'), Q.where('week_end_date', Q.between(start, end))).fetch(),
+                database.get<AgriInvestorLedger>('agri_investor_ledgers').query(NOT_DELETED, Q.where('transaction_date', Q.between(start, end))).fetch(),
             ]);
 
-            // Operating Activities
-            const loanRepayments = payments.reduce((s, p) => s + (p.amount ?? 0), 0);
-            const operatingExpenses = expenses.reduce((s, e) => s + (e.amount ?? 0), 0);
-            const netOperating = loanRepayments - operatingExpenses;
+            const sum = (rows: any[], field: string) => rows.reduce((s, r) => s + (r[field] ?? 0), 0);
 
-            // Investing Activities — savings withdrawals vs deposits as rough proxy
-            const savingsDeposits = savingsTx.filter(t => t.type === 'deposit').reduce((s, t) => s + t.amount, 0);
-            const savingsWithdrawals = savingsTx.filter(t => t.type === 'withdrawal').reduce((s, t) => s + t.amount, 0);
-            const netInvesting = savingsDeposits - savingsWithdrawals;
+            // Operating Activities — cash received into the till less recorded expenses
+            const cashReceipts = sum(cashIns, 'amount');
+            const operatingExpenses = sum(expenses, 'amount');
+            const netOperating = cashReceipts - operatingExpenses;
 
-            // Financing Activities — share capital contributions
-            const shareDeposits = shareTx.filter(t => t.transactionType === 'DEPOSIT').reduce((s, t) => s + t.amount, 0);
-            const netFinancing = shareDeposits;
+            // Investing Activities — what the field consumed this quarter
+            const farmInputs = sum(farmExpenses, 'amount');
+            const laborAndSettlements = sum(laborPaid, 'totalPay') + sum(settlementsPaid, 'netPayoutDueThisWeek');
+            const netInvesting = -(farmInputs + laborAndSettlements);
+
+            // Financing Activities — investor capital against off-take and refunds
+            const investorCapital = sum(investorLedgers.filter(l => l.type === 'capital_injection' || l.type === 'equipment_provision'), 'amount');
+            const investorOutflows = sum(investorLedgers.filter(l => l.type === 'harvest_offtake' || l.type === 'payout_refund'), 'amount');
+            const netFinancing = investorCapital - investorOutflows;
 
             const netChange = netOperating + netInvesting + netFinancing;
 
             setData({
                 period: { year, q: q.label, months: q.months },
                 operating: [
-                    { label: 'Loan Repayments Collected', amount: loanRepayments, inflow: true },
+                    { label: 'Cash Receipts Recorded', amount: cashReceipts, inflow: true },
                     { label: 'Operating Expenses Paid', amount: operatingExpenses, inflow: false },
                 ],
                 netOperating,
                 investing: [
-                    { label: 'Savings Deposits Received', amount: savingsDeposits, inflow: true },
-                    { label: 'Savings Withdrawals Paid', amount: savingsWithdrawals, inflow: false },
+                    { label: 'Farm Inputs Paid', amount: farmInputs, inflow: false },
+                    { label: 'Labour & Land-Owner Payouts', amount: laborAndSettlements, inflow: false },
                 ],
                 netInvesting,
                 financing: [
-                    { label: 'Share Capital Contributions', amount: shareDeposits, inflow: true },
+                    { label: 'Investor Capital Injected', amount: investorCapital, inflow: true },
+                    { label: 'Off-take Deductions & Refunds', amount: investorOutflows, inflow: false },
                 ],
                 netFinancing,
                 netChange,

@@ -142,7 +142,6 @@ export const WEEKLY_REPORTS: MenuItem[] = [
 ];
 
 export const MONTHLY_REPORTS: MenuItem[] = [
-    { icon: 'assessment', label: 'Financial Summary', route: '/(admin)/reports/financial-summary', featureKey: 'module.reports' },
     { icon: 'trending-up', label: 'Collector Efficiency', route: '/(admin)/reports/collector-efficiency', featureKey: 'system.lending' },
     { icon: 'assignment-late', label: 'Portfolio Aging', route: '/(admin)/reports/portfolio-aging', featureKey: 'system.lending' },
     { icon: 'repeat', label: 'Borrower Retention', route: '/(admin)/reports/renewals', featureKey: 'system.lending' },

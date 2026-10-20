@@ -395,34 +395,38 @@ export default function AnnualReportScreen() {
                             <Animated.View entering={FadeInDown.delay(100).springify()} className="bg-white rounded-3xl border border-gray-100 shadow-sm p-5 mb-4">
                                 <Text className="text-xs font-black text-gray-900 mb-4">Key Disclosures — {year}</Text>
 
-                                {/* Loan Portfolio */}
-                                <Text className="text-[10px] font-black text-blue-700 uppercase tracking-wider mb-2">Loan Portfolio</Text>
+                                {/* Farm Operations */}
+                                <Text className="text-[10px] font-black text-green-700 uppercase tracking-wider mb-2">Farm Operations</Text>
                                 <View className="flex-row justify-between py-1.5 border-b border-gray-50">
-                                    <Text className="text-xs text-gray-600">Outstanding Portfolio</Text>
-                                    <Text className="text-xs font-bold text-gray-900">{formatPHP(notes.loanPortfolio.totalOutstanding)}</Text>
+                                    <Text className="text-xs text-gray-600">Parcels Under Management</Text>
+                                    <Text className="text-xs font-bold text-gray-900">{notes.farmOperations.numberOfParcels.toLocaleString()}</Text>
                                 </View>
                                 <View className="flex-row justify-between py-1.5 border-b border-gray-50">
-                                    <Text className="text-xs text-gray-600">Active Loans</Text>
-                                    <Text className="text-xs font-bold text-gray-900">{notes.loanPortfolio.numberOfActiveLoans.toLocaleString()}</Text>
+                                    <Text className="text-xs text-gray-600">Active Crop Cycles</Text>
+                                    <Text className="text-xs font-bold text-gray-900">{notes.farmOperations.activeCropCycles.toLocaleString()}</Text>
                                 </View>
                                 <View className="flex-row justify-between py-1.5 border-b border-gray-50">
-                                    <Text className="text-xs text-gray-600">Total Borrowers</Text>
-                                    <Text className="text-xs font-bold text-gray-900">{notes.loanPortfolio.numberOfBorrowers.toLocaleString()}</Text>
+                                    <Text className="text-xs text-gray-600">Actual Harvest (kg)</Text>
+                                    <Text className="text-xs font-bold text-gray-900">{notes.farmOperations.actualYieldKg.toLocaleString()}</Text>
                                 </View>
                                 <View className="flex-row justify-between py-1.5 mb-4 border-b border-gray-50">
-                                    <Text className="text-xs text-gray-600">Average Loan Size</Text>
-                                    <Text className="text-xs font-bold text-gray-900">{formatPHP(notes.loanPortfolio.averageLoanSize)}</Text>
+                                    <Text className="text-xs text-gray-600">Total Production Cost</Text>
+                                    <Text className="text-xs font-bold text-gray-900">{formatPHP(notes.productionCosts.totalProductionCost)}</Text>
                                 </View>
 
-                                {/* Share Capital */}
-                                <Text className="text-[10px] font-black text-purple-700 uppercase tracking-wider mb-2">Share Capital</Text>
+                                {/* Investor Participation */}
+                                <Text className="text-[10px] font-black text-purple-700 uppercase tracking-wider mb-2">Investor Participation</Text>
                                 <View className="flex-row justify-between py-1.5 border-b border-gray-50">
-                                    <Text className="text-xs text-gray-600">Total Paid-Up</Text>
-                                    <Text className="text-xs font-bold text-gray-900">{formatPHP(notes.shareCapital.totalPaidUp)}</Text>
+                                    <Text className="text-xs text-gray-600">Capital Injected</Text>
+                                    <Text className="text-xs font-bold text-gray-900">{formatPHP(notes.investorParticipation.capitalInjected)}</Text>
+                                </View>
+                                <View className="flex-row justify-between py-1.5 border-b border-gray-50">
+                                    <Text className="text-xs text-gray-600">Off-take Deductions</Text>
+                                    <Text className="text-xs font-bold text-gray-900">{formatPHP(notes.investorParticipation.offtakeDeductions)}</Text>
                                 </View>
                                 <View className="flex-row justify-between py-1.5 mb-4 border-b border-gray-50">
-                                    <Text className="text-xs text-gray-600">No. of Shareholders</Text>
-                                    <Text className="text-xs font-bold text-gray-900">{notes.shareCapital.numberOfShareholders.toLocaleString()}</Text>
+                                    <Text className="text-xs text-gray-600">Net Investor Balance</Text>
+                                    <Text className="text-xs font-bold text-gray-900">{formatPHP(notes.investorParticipation.netInvestorBalance)}</Text>
                                 </View>
 
                                 {/* Statutory Funds */}

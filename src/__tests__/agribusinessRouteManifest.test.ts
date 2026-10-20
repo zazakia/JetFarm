@@ -45,19 +45,17 @@ const FORBIDDEN_ADMIN_FILES = ['remittances.tsx'];
 
 const FORBIDDEN_ROOT_FILES = ['loan-application.tsx', 'loan-calculator.tsx'];
 
-// The 13 financial-statement reports survive. `audit.tsx` (the credit/ops audit report) and
-// `dashboard.tsx` (the MfiKpi lending dashboard) were on the original keep list but are not
-// financial statements, so they go with the lending services behind them.
+// The 10 general-ledger financial statements survive. `audit.tsx` (credit/ops audit),
+// `dashboard.tsx` (MfiKpi lending dashboard), `bank-export.tsx`, `monthly-sales.tsx` and
+// `financial-summary.tsx` were on the original keep list but read loans, payments, remittances and
+// collector balances, so they go with the lending services behind them.
 const KEPT_REPORTS = [
     'annual-report.tsx',
     'balance-sheet.tsx',
-    'bank-export.tsx',
     'cash-flows.tsx',
     'changes-in-equity.tsx',
     'expenses.tsx',
-    'financial-summary.tsx',
     'income-statement.tsx',
-    'monthly-sales.tsx',
     'notes-to-fs.tsx',
     'period-settings.tsx',
     'segment-comparison.tsx',
@@ -101,7 +99,7 @@ describe('agribusiness-only route manifest', () => {
         expect(present).toEqual([]);
     });
 
-    it('keeps only the 13 financial-statement reports', () => {
+    it('keeps only the 10 general-ledger financial statements', () => {
         const reports = listFiles(path.join(APP_DIR, '(admin)', 'reports')).sort();
         const extra = reports.filter((f) => !KEPT_REPORTS.includes(f));
         const missing = [...KEPT_REPORTS].sort().filter((f) => !reports.includes(f));

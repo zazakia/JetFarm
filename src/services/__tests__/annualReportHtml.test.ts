@@ -105,23 +105,26 @@ const mockData: AnnualReportData = {
             primaryPurpose: "Savings and Credit",
         },
         accountingPolicies: ["Accrual basis"],
-        loanPortfolio: {
-            totalLoansReleased: 100000,
-            totalOutstanding: 50000,
-            numberOfActiveLoans: 100,
-            averageLoanSize: 1000,
-            numberOfBorrowers: 80,
+        farmOperations: {
+            numberOfParcels: 12,
+            totalHectares: 34.5,
+            activeCropCycles: 4,
+            totalPlantedHectares: 28.25,
+            expectedYieldKg: 90000,
+            actualYieldKg: 76500,
         },
-        savingsDeposits: {
-            totalDeposits: 50000,
-            totalWithdrawals: 30000,
-            netBalance: 20000,
-            numberOfAccounts: 150,
+        productionCosts: {
+            farmExpenses: 50000,
+            laborPaid: 30000,
+            landOwnerSettlements: 20000,
+            totalProductionCost: 100000,
         },
-        shareCapital: {
-            totalSubscribed: 50000,
-            totalPaidUp: 30000,
-            numberOfShareholders: 200,
+        investorParticipation: {
+            numberOfInvestors: 8,
+            capitalInjected: 200000,
+            offtakeDeductions: 120000,
+            payoutsRefunded: 45000,
+            netInvestorBalance: 35000,
         },
         statutoryFunds: {
             reserveFund: 1000,

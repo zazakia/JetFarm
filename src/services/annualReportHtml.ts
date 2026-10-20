@@ -501,43 +501,48 @@ function buildNotes(notes: NotesData): string {
         `).join('')
     )}
 
-    ${noteSection(3, 'Loan Receivables',
-        `<p class="body-text">The cooperative's loan portfolio as of December 31, ${n.year} is as follows:</p>
+    ${noteSection(3, 'Farm Operations',
+        `<p class="body-text">The agricultural operation as of December 31, ${n.year} is as follows:</p>
         <table style="width:100%;border-collapse:collapse;font-size:11px;margin:8px 0;">
           <tr style="background:#EFF6FF;font-weight:700;">
             <td style="padding:6px;">Particulars</td>
             <td style="text-align:right;padding:6px;">Amount</td>
           </tr>
-          <tr><td style="padding:4px;">Total Outstanding Loan Portfolio</td><td style="text-align:right;padding:4px;">${php2(n.loanPortfolio.totalOutstanding)}</td></tr>
-          <tr><td style="padding:4px;">Number of Active Loans</td><td style="text-align:right;padding:4px;">${n.loanPortfolio.numberOfActiveLoans.toLocaleString()}</td></tr>
-          <tr><td style="padding:4px;">Number of Borrowers</td><td style="text-align:right;padding:4px;">${n.loanPortfolio.numberOfBorrowers.toLocaleString()}</td></tr>
-          <tr><td style="padding:4px;">Average Loan Size</td><td style="text-align:right;padding:4px;">${php2(n.loanPortfolio.averageLoanSize)}</td></tr>
+          <tr><td style="padding:4px;">Parcels Under Management</td><td style="text-align:right;padding:4px;">${n.farmOperations.numberOfParcels.toLocaleString()}</td></tr>
+          <tr><td style="padding:4px;">Total Parcel Area (ha)</td><td style="text-align:right;padding:4px;">${n.farmOperations.totalHectares.toLocaleString()}</td></tr>
+          <tr><td style="padding:4px;">Active Crop Cycles</td><td style="text-align:right;padding:4px;">${n.farmOperations.activeCropCycles.toLocaleString()}</td></tr>
+          <tr><td style="padding:4px;">Planted Area (ha)</td><td style="text-align:right;padding:4px;">${n.farmOperations.totalPlantedHectares.toLocaleString()}</td></tr>
+          <tr><td style="padding:4px;">Expected Yield (kg)</td><td style="text-align:right;padding:4px;">${n.farmOperations.expectedYieldKg.toLocaleString()}</td></tr>
+          <tr style="font-weight:700;border-top:1px solid #ccc;"><td style="padding:4px;">Actual Harvest (kg)</td><td style="text-align:right;padding:4px;">${n.farmOperations.actualYieldKg.toLocaleString()}</td></tr>
         </table>`
     )}
 
-    ${noteSection(4, 'Member Savings Deposits',
-        `<p class="body-text">Member savings deposits represent the accumulated savings of cooperative members and are repayable on demand.</p>
+    ${noteSection(4, 'Production Costs',
+        `<p class="body-text">Production costs recognized for the year comprise farm inputs, field labour paid, and land-owner settlements disbursed.</p>
         <table style="width:100%;border-collapse:collapse;font-size:11px;margin:8px 0;">
           <tr style="background:#EFF6FF;font-weight:700;">
             <td style="padding:6px;">Particulars</td>
             <td style="text-align:right;padding:6px;">Amount</td>
           </tr>
-          <tr><td style="padding:4px;">Total Deposits Received (cumulative)</td><td style="text-align:right;padding:4px;">${php2(n.savingsDeposits.totalDeposits)}</td></tr>
-          <tr><td style="padding:4px;">Total Withdrawals (cumulative)</td><td style="text-align:right;padding:4px;">${php2(n.savingsDeposits.totalWithdrawals)}</td></tr>
-          <tr style="font-weight:700;border-top:1px solid #ccc;"><td style="padding:4px;">Net Savings Balance</td><td style="text-align:right;padding:4px;">${php2(n.savingsDeposits.netBalance)}</td></tr>
+          <tr><td style="padding:4px;">Farm Inputs</td><td style="text-align:right;padding:4px;">${php2(n.productionCosts.farmExpenses)}</td></tr>
+          <tr><td style="padding:4px;">Field Labour Paid</td><td style="text-align:right;padding:4px;">${php2(n.productionCosts.laborPaid)}</td></tr>
+          <tr><td style="padding:4px;">Land-Owner Settlements</td><td style="text-align:right;padding:4px;">${php2(n.productionCosts.landOwnerSettlements)}</td></tr>
+          <tr style="font-weight:700;border-top:1px solid #ccc;"><td style="padding:4px;">Total Production Cost</td><td style="text-align:right;padding:4px;">${php2(n.productionCosts.totalProductionCost)}</td></tr>
         </table>`
     )}
 
-    ${noteSection(5, 'Share Capital',
-        `<p class="body-text">Share capital represents paid-up subscriptions by members in accordance with the cooperative's articles of cooperation and by-laws.</p>
+    ${noteSection(5, 'Investor Participation',
+        `<p class="body-text">Crop investors fund capital in exchange for harvest off-take. The balance owed to investors is reduced by off-take deductions and any refunds paid.</p>
         <table style="width:100%;border-collapse:collapse;font-size:11px;margin:8px 0;">
           <tr style="background:#EFF6FF;font-weight:700;">
             <td style="padding:6px;">Particulars</td>
             <td style="text-align:right;padding:6px;">Amount</td>
           </tr>
-          <tr><td style="padding:4px;">Total Subscribed Capital</td><td style="text-align:right;padding:4px;">${php2(n.shareCapital.totalSubscribed)}</td></tr>
-          <tr><td style="padding:4px;">Total Paid-Up Capital</td><td style="text-align:right;padding:4px;">${php2(n.shareCapital.totalPaidUp)}</td></tr>
-          <tr><td style="padding:4px;">Number of Shareholders</td><td style="text-align:right;padding:4px;">${n.shareCapital.numberOfShareholders.toLocaleString()}</td></tr>
+          <tr><td style="padding:4px;">Number of Investors</td><td style="text-align:right;padding:4px;">${n.investorParticipation.numberOfInvestors.toLocaleString()}</td></tr>
+          <tr><td style="padding:4px;">Capital Injected</td><td style="text-align:right;padding:4px;">${php2(n.investorParticipation.capitalInjected)}</td></tr>
+          <tr><td style="padding:4px;">Off-take Deductions</td><td style="text-align:right;padding:4px;">${php2(n.investorParticipation.offtakeDeductions)}</td></tr>
+          <tr><td style="padding:4px;">Payouts Refunded</td><td style="text-align:right;padding:4px;">${php2(n.investorParticipation.payoutsRefunded)}</td></tr>
+          <tr style="font-weight:700;border-top:1px solid #ccc;"><td style="padding:4px;">Net Investor Balance</td><td style="text-align:right;padding:4px;">${php2(n.investorParticipation.netInvestorBalance)}</td></tr>
         </table>`
     )}
 
