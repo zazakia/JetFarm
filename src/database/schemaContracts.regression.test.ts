@@ -385,13 +385,11 @@ describe('local/remote schema regression contracts', () => {
             const remote = remoteColumnsByTable();
             const local = localSchemaTables();
 
-            // Task 2 is LOCAL persistence only. Task 6 must replace these exact deferrals
-            // with the transactional remote schema contract before config-sync activation.
-            const pendingRemoteTables = new Set(['agri_parcel_blocks', 'agri_block_assignments', 'agri_block_progress']);
-            const pendingParcelColumns = new Set(['gps_exclusions', 'boundary_revision', 'layout_revision', 'boundary_saved_at']);
+            // The Task 6 deferrals that used to live here (agri_parcel_blocks,
+            // agri_block_assignments, agri_block_progress and the four agri_parcels layout
+            // columns) are retired: 20261019000000 publishes their remote schema.
             const offenders: string[] = [];
             for (const table of synced) {
-                if (pendingRemoteTables.has(table)) continue;
                 const remoteName = remoteMap[table] ?? table;
                 const remoteColumns = remote[remoteName];
                 if (!remoteColumns) {
@@ -400,12 +398,105 @@ describe('local/remote schema regression contracts', () => {
                 }
                 // deleted_at is always sent by the soft-delete upsert, even with no local deletion.
                 const required = new Set([...(local[table] ?? []), 'deleted_at']);
-                const missing = [...required].filter((column) => !remoteColumns.has(column)
-                    && !(table === 'agri_parcels' && pendingParcelColumns.has(column)));
+                const missing = [...required].filter((column) => !remoteColumns.has(column));
                 if (missing.length) offenders.push(`${table} -> ${remoteName}: ${missing.sort().join(', ')}`);
             }
 
             expect(offenders).toEqual([]);
+        });
+
+        it('republishes every column production lost in a forward-only drift repair', () => {
+            // WHY THIS EXISTS -------------------------------------------------------------------
+            // `deploy_schema_migrations` records all 66 local migrations as applied while the live
+            // database is missing 59 columns and 3 tables (measured 2026-10-18 with
+            // scripts/audit-remote-schema-gap.mjs). The cause is idempotent-DDL blindness: a
+            // `CREATE TABLE IF NOT EXISTS` against an older same-named table (suppliers), and a
+            // 29-column `ALTER TABLE ... ADD COLUMN` that aborts as one statement if any single
+            // column already exists (app_borrowers), were both recorded as success. Because the
+            // ledger claims them applied, `npm run db:migrate` reports "nothing pending" forever,
+            // so the only way to converge production is a NEW migration file.
+            //
+            // The pinned list is the live-audit output, not a guess: sync pushes fail with
+            // PGRST204/42703 on exactly these columns, and the borrower batch failure cascades into
+            // 409 FK violations on app_loan_applications and app_share_capital_transactions.
+            const repairPath = path.join(
+                process.cwd(), 'supabase', 'migrations', '20261019000000_sync_push_repair_production_drift.sql'
+            );
+            expect(fs.existsSync(repairPath)).toBe(true);
+            const repair = fs.readFileSync(repairPath, 'utf8');
+
+            const drift: Record<string, string[]> = {
+                app_borrowers: [
+                    'barangay', 'birthplace', 'bod_resolution_number', 'city_municipality', 'cycle_id',
+                    'date_accepted', 'date_joined', 'date_of_death', 'deceased', 'education_level',
+                    'employer', 'gsis_number', 'loan_code', 'member_id', 'membership_number',
+                    'membership_status', 'membership_type', 'middle_name', 'mother_maiden_name',
+                    'name_suffix', 'nearest_relative', 'number_of_dependents', 'other_income_source',
+                    'philhealth_number', 'pmes_completed', 'pmes_date', 'province', 'religion', 'salary',
+                    'spouse_birthplace', 'spouse_date_of_birth', 'spouse_first_name', 'spouse_middle_name',
+                    'spouse_name_extension', 'spouse_occupation', 'spouse_phone', 'spouse_surname',
+                    'sss_number', 'termination_date', 'termination_resolution', 'tin_number', 'zip_code',
+                ],
+                app_loans: ['savings_amount'],
+                app_payments: ['payment_type'],
+                app_cash_transactions: ['branch_id', 'is_petty_cash', 'pos_session_id'],
+                app_bank_transactions: ['cleared_at', 'is_cleared'],
+                user_profiles: ['area_id', 'branch_id'],
+                suppliers: ['deleted_at', 'is_active', 'payment_terms_days', 'tin'],
+                agri_parcels: ['boundary_revision', 'boundary_saved_at', 'gps_exclusions', 'layout_revision'],
+            };
+            for (const [table, columns] of Object.entries(drift)) {
+                for (const column of columns) {
+                    expect(repair).toContain(`${column}`);
+                }
+                expect(repair).toMatch(new RegExp(`ALTER TABLE (public\\.)?${table}`));
+            }
+
+            for (const table of ['agri_parcel_blocks', 'agri_block_assignments', 'agri_block_progress']) {
+                expect(repair).toMatch(new RegExp(`CREATE TABLE IF NOT EXISTS (public\\.)?${table}`));
+            }
+
+            // Every other repair migration ends with a cache reload, and without it PostgREST keeps
+            // answering with the old column list even after the ALTER succeeds.
+            expect(repair).toContain("NOTIFY pgrst, 'reload schema'");
+            // Forward-only: the file may not destroy anything.
+            expect(repair).not.toMatch(/\b(DROP TABLE|DROP COLUMN|DELETE FROM|TRUNCATE)\b/i);
+        });
+
+        it('checks the live database against the whole sync contract, not a pinned column list', () => {
+            // WHY THIS EXISTS -------------------------------------------------------------------
+            // scripts/apply-hetzner-migrations.mjs used to finish every run with
+            // "✅ Repair is live: every pushed column exists" after probing 7 hardcoded columns.
+            // On 2026-10-18 that message printed while production was missing 59 columns and 3 whole
+            // tables, and the same script reported "0 pending" because the ledger claims every file
+            // applied. A green gate that cannot fail is worse than no gate: it is what made the
+            // borrowers/app_loans push failures look like a client bug.
+            const script = fs.readFileSync(
+                path.join(process.cwd(), 'scripts', 'apply-hetzner-migrations.mjs'),
+                'utf8'
+            );
+            const lib = fs.readFileSync(
+                path.join(process.cwd(), 'scripts', 'lib', 'sync-schema-contract.mjs'),
+                'utf8'
+            );
+
+            // The expected set is derived, never listed.
+            expect(script).not.toMatch(/const EXPECTED_COLUMNS/);
+            expect(script).toContain('sync-schema-contract.mjs');
+            expect(script).toMatch(/localSchemaColumns|from '\.\/lib\/sync-schema-contract\.mjs'/);
+            expect(lib).toContain("syncTableContract.json");
+            expect(lib).toContain('src/database/schema.ts');
+
+            // Every synced table is compared through remoteTableMap, and a table missing entirely is
+            // a distinct, reported failure (an absent table must not read as "0 columns missing").
+            expect(lib).toContain('remoteTableMap');
+            expect(script).toMatch(/remoteTableFor|remoteTableMap/);
+            expect(script).toMatch(/missing table|MISSING TABLE|missingTables/i);
+
+            // One batched catalog read, read-only, no credentials, and it still exits non-zero on a gap.
+            expect(script).toContain('information_schema.columns');
+            expect(script).toMatch(/WHERE table_schema = 'public'/);
+            expect(script).not.toMatch(/INSERT INTO information_schema|UPDATE information_schema/);
         });
 
         it('keeps the coop module registry honest about the tables it claims', () => {

@@ -27,6 +27,7 @@ import { execSync, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { expectedRemoteColumns, diffAgainstLiveSchema } from './lib/sync-schema-contract.mjs';
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const migrationsDir = path.join(rootDir, 'supabase', 'migrations');
@@ -42,14 +43,10 @@ const verifyOnly = args.includes('--verify');
 const onlyIdx = args.indexOf('--only');
 const only = onlyIdx >= 0 ? (args[onlyIdx + 1] || '').split(',').map((s) => s.trim()).filter(Boolean) : [];
 
-// What the sync-repair migrations are supposed to produce, checked against the live catalog.
-const EXPECTED_COLUMNS = {
-    app_collectors: ['commission_rate', 'member_id'],
-    employees: ['name', 'role', 'base_salary'],
-    device_registry: ['deleted_at'],
-    statutory_rates: ['deleted_at']
-};
-
+// What the live database must contain is DERIVED, never listed: every column the local
+// WatermelonDB schema pushes, mapped through remoteTableMap, comes from
+// scripts/lib/sync-schema-contract.mjs. A pinned list is how this script managed to print
+// "every pushed column exists" while production was missing 59 columns.
 function psql(sql, { input = null, label = 'psql', bare = false } = {}) {
     const flags = bare ? '-t -A' : '-q';
     const sshOpts = '-o BatchMode=yes -o ConnectTimeout=15 -o ServerAliveInterval=10 -o ServerAliveCountMax=3';
@@ -102,24 +99,32 @@ function pending() {
 }
 
 function verify() {
-    console.log('\n🔎 Live schema check (read-only)');
-    const present = new Set();
+    console.log('\n🔎 Live schema check (read-only, contract-wide)');
 
-    const expectedTables = Object.keys(EXPECTED_COLUMNS);
-    const tableListSql = expectedTables.map((t) => `'${t}'`).join(',');
-    const rows = psql(
-        `SELECT table_name || '.' || column_name FROM information_schema.columns WHERE table_schema = 'public' AND table_name IN (${tableListSql});`,
-        { label: 'batch column probe', bare: true }
+    const expected = expectedRemoteColumns(rootDir);
+    const columnRows = psql(
+        `SELECT table_name || '.' || column_name FROM information_schema.columns WHERE table_schema = 'public';`,
+        { label: 'catalog column probe', bare: true }
     );
-    rows.forEach((row) => present.add(row.trim()));
+    const tableRows = psql(
+        `SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';`,
+        { label: 'catalog table probe', bare: true }
+    );
+    const liveKeys = columnRows.map((row) => row.trim()).filter(Boolean);
+    const liveTables = tableRows.map((row) => row.trim()).filter(Boolean);
+    const { missingTables, missingColumns, checkedTables } = diffAgainstLiveSchema(expected, liveKeys, liveTables);
 
-    const missing = [];
-    for (const [table, columns] of Object.entries(EXPECTED_COLUMNS)) {
-        for (const column of columns) {
-            const key = `${table}.${column}`;
-            if (!present.has(key)) missing.push(key);
-            console.log(`  ${present.has(key) ? '✓' : '✗'} ${key}`);
-        }
+    console.log(`  · contract: ${checkedTables} synced table(s), ${liveTables.length} live table(s), ${liveKeys.length} live column(s) probed`);
+
+    for (const table of missingTables) {
+        console.log(`  ✗ MISSING TABLE  ${table.localTable} -> ${table.remoteTable} (${table.columns.length} pushed columns)`);
+    }
+    for (const gap of missingColumns) {
+        console.log(`  ✗ COLUMN GAP     ${gap.localTable} -> ${gap.remoteTable}: ${gap.missing.length} missing`);
+        console.log(`                 ${gap.missing.join(', ')}`);
+    }
+    if (!missingTables.length && !missingColumns.length) {
+        console.log(`  ✓ every pushed column of every synced table exists remotely`);
     }
 
     const countRows = psql(
@@ -132,8 +137,15 @@ function verify() {
     console.log(`  ${Number(fkCount) === 0 ? '✓' : '✗'} app_payrolls -> app_employees foreign key removed (found ${fkCount})`);
     console.log(`  · legacy payload size: app_payrolls=${payrolls} rows, app_employees=${employees} rows`);
 
-    if (missing.length || Number(fkCount) !== 0) {
-        if (missing.length) console.error(`\n❌ still missing: ${missing.join(', ')}`);
+    const gapCount = missingTables.length + missingColumns.length;
+    if (gapCount || Number(fkCount) !== 0) {
+        if (gapCount) {
+            console.error(`\n❌ ${gapCount} synced table(s) still short of what SyncService pushes.`);
+            console.error('   The ledger is not evidence: it can record a migration as applied while its');
+            console.error('   objects are absent (CREATE TABLE IF NOT EXISTS over an older table, or a');
+            console.error('   multi-column ALTER that aborted as one statement). Author a NEW forward-only');
+            console.error('   migration -- editing an applied file changes history without changing the database.');
+        }
         if (Number(fkCount) !== 0) console.error('❌ the stale foreign key is still in place.');
         return false;
     }
