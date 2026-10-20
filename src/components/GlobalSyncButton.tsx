@@ -6,7 +6,7 @@ import { SyncService } from '../services/SyncService';
 import { useSyncStore } from '../stores/syncStore';
 import { useAuth } from '../store/AuthContext';
 
-const HIDDEN_ROUTES = ['/login', '/register', '/loading', '/sync-center', '/(admin)'];
+const HIDDEN_ROUTES = ['/login', '/loading', '/sync-center', '/(admin)'];
 
 export function GlobalSyncButton() {
     const router = useRouter();

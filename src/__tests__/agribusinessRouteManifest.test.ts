@@ -45,16 +45,15 @@ const FORBIDDEN_ADMIN_FILES = ['remittances.tsx'];
 
 const FORBIDDEN_ROOT_FILES = ['loan-application.tsx', 'loan-calculator.tsx'];
 
-// The 15 financial-statement reports survive; everything else under reports/ is a credit,
-// collection or coop share-capital screen and goes with lending.
+// The 13 financial-statement reports survive. `audit.tsx` (the credit/ops audit report) and
+// `dashboard.tsx` (the MfiKpi lending dashboard) were on the original keep list but are not
+// financial statements, so they go with the lending services behind them.
 const KEPT_REPORTS = [
     'annual-report.tsx',
-    'audit.tsx',
     'balance-sheet.tsx',
     'bank-export.tsx',
     'cash-flows.tsx',
     'changes-in-equity.tsx',
-    'dashboard.tsx',
     'expenses.tsx',
     'financial-summary.tsx',
     'income-statement.tsx',
@@ -102,7 +101,7 @@ describe('agribusiness-only route manifest', () => {
         expect(present).toEqual([]);
     });
 
-    it('keeps only the 15 financial-statement reports', () => {
+    it('keeps only the 13 financial-statement reports', () => {
         const reports = listFiles(path.join(APP_DIR, '(admin)', 'reports')).sort();
         const extra = reports.filter((f) => !KEPT_REPORTS.includes(f));
         const missing = [...KEPT_REPORTS].sort().filter((f) => !reports.includes(f));
@@ -127,15 +126,21 @@ describe('agribusiness-only route manifest', () => {
             ['(admin)', 'bank-accounts'],
             ['(admin)', 'expenses'],
             ['(admin)', 'transfers'],
-            ['(admin)', 'returns'],
             ['(expenses-encoder)', 'index.tsx'],
             ['login.tsx'],
-            ['register.tsx'],
             ['select-branch.tsx'],
             ['loading.tsx'],
             ['sync-center.tsx'],
         ];
         const missing = required.filter((parts) => !exists(...parts));
         expect(missing.map((p) => p.join('/'))).toEqual([]);
+    });
+
+    it('offers no borrower-facing sign-up route', () => {
+        // Self-registration created an inactive `borrower` profile and an approval queue that only
+        // the lending coop used; agribusiness accounts are provisioned under (admin)/users.
+        expect(exists('register.tsx')).toBe(false);
+        expect(exists('(admin)', 'returns.tsx')).toBe(false);
+        expect(exists('(admin)', 'returns', 'index.tsx')).toBe(false);
     });
 });

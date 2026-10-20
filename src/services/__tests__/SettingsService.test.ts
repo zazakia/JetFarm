@@ -1,8 +1,7 @@
 import { Database } from '@nozbe/watermelondb';
 import { createTestDatabase, closeTestDatabase } from '../../__tests__/test-utils';
 import { SettingsServiceClass } from '../SettingsService';
-import { DEFAULT_FEATURE_FLAGS, DEFAULT_LOAN_PRODUCTS, DEFAULT_ROLE_PERMISSIONS } from '../../constants/configDefaults';
-import { getLoanProductPreset, validateLoanProductPrincipal } from '../../utils/loanProducts';
+import { DEFAULT_FEATURE_FLAGS, DEFAULT_ROLE_PERMISSIONS } from '../../constants/configDefaults';
 
 describe('SettingsService', () => {
     let db: Database;
@@ -26,7 +25,7 @@ describe('SettingsService', () => {
             db.get('role_permissions').query().fetch(),
         ]);
 
-        expect(loanProducts).toHaveLength(DEFAULT_LOAN_PRODUCTS.length);
+        expect(loanProducts).toHaveLength(0);
         expect(featureFlags).toHaveLength(DEFAULT_FEATURE_FLAGS.length);
         expect(rolePermissions).toHaveLength(DEFAULT_ROLE_PERMISSIONS.length);
         expect([
@@ -34,13 +33,6 @@ describe('SettingsService', () => {
             ...featureFlags,
             ...rolePermissions,
         ].every(record => (record as any)._raw._status === 'synced' && (record as any)._raw._changed === '')).toBe(true);
-    });
-
-    it('loads loan products as runtime presets', async () => {
-        const presets = await service.getLoanProductPresetMap();
-
-        expect(presets.standard.defaultRatePercent).toBe('20');
-        expect(presets.livelihood).toBeDefined();
     });
 
     it('exposes feature and role permission maps', async () => {
@@ -70,41 +62,6 @@ describe('SettingsService', () => {
 
         await expect(service.isFeatureEnabled('module.loans')).resolves.toBe(false);
         await expect(service.isRolePermissionEnabled('collector', 'route.(collector)')).resolves.toBe(false);
-    });
-
-    it('updates loan product presets used by runtime loan helpers', async () => {
-        await service.ensureDefaults();
-        const product = (await service.getLoanProducts()).find(item => item.productType === 'standard');
-
-        expect(product).toBeTruthy();
-
-        await service.updateLoanProduct(product!, {
-            label: 'Configurable Standard',
-            defaultRatePercent: 12,
-            maxPrincipal: 5000,
-        } as any);
-
-        expect(getLoanProductPreset('standard').label).toBe('Configurable Standard');
-        expect(getLoanProductPreset('standard').defaultRatePercent).toBe('12');
-        expect(validateLoanProductPrincipal('standard', 6000)).toContain('₱5,000');
-    });
-
-    it('sets isActive status in presets and does not filter out disabled presets', async () => {
-        await service.ensureDefaults();
-        const product = (await service.getLoanProducts()).find(item => item.productType === 'petty_cash');
-        expect(product).toBeTruthy();
-
-        // Initially active
-        let presets = await service.getLoanProductPresetMap();
-        expect(presets.petty_cash.isActive).toBe(true);
-
-        // Deactivate it
-        await service.updateLoanProduct(product!, {
-            isActive: false,
-        } as any);
-
-        presets = await service.getLoanProductPresetMap();
-        expect(presets.petty_cash.isActive).toBe(false);
     });
 
     it('bootstraps branding and company name settings defaults', async () => {

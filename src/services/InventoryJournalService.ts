@@ -5,8 +5,8 @@
  * Every movement creates a corresponding double-entry journal entry.
  *
  * Journal Entries:
- * - Purchase (in):    DR 1210/1220/1230 Merchandise Inventory / CR 2030 AP
- * - Sale (out):       DR 5130/5140/5150 COGS / CR 1210/1220/1230 Inventory
+ * - Purchase (in):    DR 1210 Merchandise Inventory / CR 2030 AP
+ * - Sale (out):       DR 5130 COGS / CR 1210 Inventory
  * - Adjustment +:     DR 12xx Inventory / CR 4070 Misc Income
  * - Adjustment -:     DR 5100 Other Op Expenses / CR 12xx Inventory
  * - Return to supplier: DR 2030 AP / CR 12xx Inventory
@@ -21,16 +21,10 @@ import ActionLogService from './ActionLogService';
 
 const INVENTORY_ACCOUNT_MAP: Record<string, string> = {
     'agri-store': '1210',
-    'pharmacy': '1220',
-    'marketplace': '1230',
-    'water-station': '1015',
 };
 
 const COGS_ACCOUNT_MAP: Record<string, string> = {
     'agri-store': '5130',
-    'pharmacy': '5140',
-    'marketplace': '5150',
-    'water-station': '5120',
 };
 
 export interface StockMovementInput {
@@ -122,8 +116,8 @@ export class InventoryJournalServiceClass {
      * Record a stock movement and post the corresponding journal entry.
      */
     async recordMovement(input: StockMovementInput): Promise<StockMovement> {
-        const inventoryAccount = INVENTORY_ACCOUNT_MAP[input.moduleId] ?? '1230';
-        const cogsAccount = COGS_ACCOUNT_MAP[input.moduleId] ?? '5150';
+        const inventoryAccount = INVENTORY_ACCOUNT_MAP[input.moduleId] ?? '1210';
+        const cogsAccount = COGS_ACCOUNT_MAP[input.moduleId] ?? '5130';
         const currentStock = await this.getCurrentStock(input.productId, input.productSource);
         const wac = await this.computeWAC(input.productId, input.productSource);
 

@@ -2,20 +2,17 @@ import { Database, Q } from '@nozbe/watermelondb';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { database as globalDatabase } from '../database';
 import AppSetting from '../database/models/AppSetting';
-import LoanProduct from '../database/models/LoanProduct';
 import FeatureFlag from '../database/models/FeatureFlag';
 import RolePermission from '../database/models/RolePermission';
 import { ActionLogService } from './ActionLogService';
 import {
     DEFAULT_FEATURE_FLAGS,
-    DEFAULT_LOAN_PRODUCTS,
     DEFAULT_ROLE_PERMISSIONS,
     DEFAULT_COOP_SETTINGS,
     DefaultFeatureFlag,
     DefaultRolePermission,
     DefaultCoopSetting,
 } from '../constants/configDefaults';
-import { LoanProductPreset, LoanProductType, LOAN_PRODUCT_PRESETS, setRuntimeLoanProductPresets } from '../utils/loanProducts';
 import { isLendingFeatureKey } from '../utils/featureFlags';
 import { ErrorService } from "./ErrorService";
 import {
@@ -25,16 +22,9 @@ import {
 
 type ConfigDatabase = Database;
 
-export type LoanProductConfig = typeof DEFAULT_LOAN_PRODUCTS[number];
-
 const now = () => Date.now();
 const activeQuery = [Q.where('deleted_at', Q.eq(null))];
 const localSettingStorageKey = (key: string) => `local_only_setting:${key}`;
-
-const optionalNumber = (value: number | null | undefined): number | undefined => {
-    if (typeof value !== 'number' || !Number.isFinite(value) || value === 0) return undefined;
-    return value;
-};
 
 export class SettingsServiceClass {
     private ensureDefaultsPromise: Promise<void> | null = null;
@@ -52,7 +42,6 @@ export class SettingsServiceClass {
         if (this.ensureDefaultsPromise) return this.ensureDefaultsPromise;
 
         this.ensureDefaultsPromise = (async () => {
-            await this.ensureLoanProducts();
             await this.ensureFeatureFlags();
             await this.ensureRolePermissions();
             await this.ensureCoopSettings();
@@ -78,23 +67,6 @@ export class SettingsServiceClass {
         // will try to push them and correctly hit configuration-table RLS.
         record._raw._status = 'synced';
         record._raw._changed = '';
-    }
-
-    private async ensureLoanProducts() {
-        const collection = this.database.get<LoanProduct>('loan_products');
-        for (const product of DEFAULT_LOAN_PRODUCTS) {
-            if (await this.exists('loan_products', product.id)) continue;
-            await this.database.write(async () => {
-                await collection.create(record => {
-                    (record as any)._raw.id = product.id;
-                    this.assignLoanProduct(record, product);
-                    record.createdAt = now();
-                    record.updatedAt = now();
-                    record.deletedAt = null;
-                    this.markSeededDefaultAsSynced(record);
-                });
-            });
-        }
     }
 
     private async ensureFeatureFlags() {
@@ -150,28 +122,6 @@ export class SettingsServiceClass {
                 });
             });
         }
-    }
-
-    private assignLoanProduct(record: LoanProduct, product: LoanProductConfig) {
-        record.productType = product.productType;
-        record.label = product.label;
-        record.description = product.description;
-        record.defaultRatePercent = product.defaultRatePercent;
-        record.defaultTerm = product.defaultTerm;
-        record.defaultTermUnit = product.defaultTermUnit;
-        record.defaultFrequency = product.defaultFrequency;
-        record.defaultProcessingFeeRate = product.defaultProcessingFeeRate;
-        record.defaultProcessingFeeFlat = product.defaultProcessingFeeFlat;
-        record.defaultNotarialFee = product.defaultNotarialFee;
-        record.notarialFeeThreshold = product.notarialFeeThreshold;
-        record.notarialFeeAboveThreshold = product.notarialFeeAboveThreshold;
-        record.defaultSavingsPerPayment = product.defaultSavingsPerPayment;
-        record.defaultPrincipal = product.defaultPrincipal;
-        record.maxPrincipal = product.maxPrincipal;
-        record.minTermMonths = product.minTermMonths;
-        record.maxTermMonths = product.maxTermMonths;
-        record.isActive = product.isActive;
-        record.sortOrder = product.sortOrder;
     }
 
     private assignFeatureFlag(record: FeatureFlag, flag: DefaultFeatureFlag) {
@@ -309,89 +259,6 @@ export class SettingsServiceClass {
                 });
             });
         }
-    }
-
-    async getLoanProducts() {
-        await this.ensureDefaults();
-        return this.database.get<LoanProduct>('loan_products').query(
-            ...activeQuery,
-            Q.sortBy('sort_order', Q.asc),
-        ).fetch();
-    }
-
-    async getLoanProductPresetMap() {
-        const products = await this.getLoanProducts();
-        const map: Record<LoanProductType, LoanProductPreset> = { ...LOAN_PRODUCT_PRESETS };
-        products
-            .forEach(product => {
-                const type = product.productType as LoanProductType;
-                if (!LOAN_PRODUCT_PRESETS[type]) return;
-                map[type] = this.toPreset(product);
-            });
-        setRuntimeLoanProductPresets(map);
-        return map;
-    }
-
-    toPreset(product: LoanProduct): LoanProductPreset {
-        return {
-            label: product.label,
-            description: product.description || '',
-            defaultRatePercent: String(product.defaultRatePercent ?? 0),
-            defaultTerm: String(product.defaultTerm ?? 1),
-            defaultTermUnit: (product.defaultTermUnit || 'months') as LoanProductPreset['defaultTermUnit'],
-            defaultFrequency: (product.defaultFrequency || 'monthly') as LoanProductPreset['defaultFrequency'],
-            defaultProcessingFeeRate: product.defaultProcessingFeeRate ?? 0,
-            defaultProcessingFeeFlat: optionalNumber(product.defaultProcessingFeeFlat),
-            defaultNotarialFee: String(product.defaultNotarialFee ?? 0),
-            notarialFeeThreshold: optionalNumber(product.notarialFeeThreshold),
-            notarialFeeAboveThreshold: optionalNumber(product.notarialFeeAboveThreshold),
-            defaultSavingsPerPayment: String(product.defaultSavingsPerPayment ?? 0),
-            defaultPrincipal: optionalNumber(product.defaultPrincipal)?.toString(),
-            maxPrincipal: optionalNumber(product.maxPrincipal),
-            minTermMonths: optionalNumber(product.minTermMonths),
-            maxTermMonths: optionalNumber(product.maxTermMonths),
-            isActive: product.isActive !== false,
-        };
-    }
-
-    async updateLoanProduct(product: LoanProduct, patch: Partial<LoanProductConfig>, performedBy?: string) {
-        const oldData = { ...product._raw };
-        await this.database.write(async () => {
-            await product.update(record => {
-                this.assignLoanProduct(record, {
-                    id: product.id,
-                    productType: product.productType as LoanProductType,
-                    label: patch.label ?? product.label,
-                    description: patch.description ?? product.description,
-                    defaultRatePercent: patch.defaultRatePercent ?? product.defaultRatePercent,
-                    defaultTerm: patch.defaultTerm ?? product.defaultTerm,
-                    defaultTermUnit: (patch.defaultTermUnit ?? product.defaultTermUnit) as LoanProductConfig['defaultTermUnit'],
-                    defaultFrequency: (patch.defaultFrequency ?? product.defaultFrequency) as LoanProductConfig['defaultFrequency'],
-                    defaultProcessingFeeRate: patch.defaultProcessingFeeRate ?? product.defaultProcessingFeeRate,
-                    defaultProcessingFeeFlat: patch.defaultProcessingFeeFlat ?? product.defaultProcessingFeeFlat ?? 0,
-                    defaultNotarialFee: patch.defaultNotarialFee ?? product.defaultNotarialFee ?? 0,
-                    notarialFeeThreshold: patch.notarialFeeThreshold ?? product.notarialFeeThreshold ?? 0,
-                    notarialFeeAboveThreshold: patch.notarialFeeAboveThreshold ?? product.notarialFeeAboveThreshold ?? 0,
-                    defaultSavingsPerPayment: patch.defaultSavingsPerPayment ?? product.defaultSavingsPerPayment ?? 0,
-                    defaultPrincipal: patch.defaultPrincipal ?? product.defaultPrincipal ?? 0,
-                    maxPrincipal: patch.maxPrincipal ?? product.maxPrincipal ?? 0,
-                    minTermMonths: patch.minTermMonths ?? product.minTermMonths ?? 0,
-                    maxTermMonths: patch.maxTermMonths ?? product.maxTermMonths ?? 0,
-                    isActive: patch.isActive ?? product.isActive,
-                    sortOrder: patch.sortOrder ?? product.sortOrder ?? 0,
-                });
-                record.updatedAt = now();
-            });
-        });
-        await this.actionLogService.logAction({
-            entityType: 'loan_products',
-            entityId: product.id,
-            action: 'UPDATE',
-            oldData,
-            newData: product._raw,
-            performedBy,
-        });
-        await this.getLoanProductPresetMap();
     }
 
     async getFeatureFlags() {

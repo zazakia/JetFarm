@@ -1,29 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
 import { SettingsService } from '../services/SettingsService';
-import { LoanProductPreset, LoanProductType, LOAN_PRODUCT_PRESETS } from '../utils/loanProducts';
-
-export function useLoanProductPresets() {
-    const [presets, setPresets] = useState<Record<LoanProductType, LoanProductPreset>>(LOAN_PRODUCT_PRESETS);
-    const [loading, setLoading] = useState(true);
-
-    const reload = useCallback(async () => {
-        setLoading(true);
-        try {
-            setPresets(await SettingsService.getLoanProductPresetMap());
-        } catch (error) {
-            console.warn('[useLoanProductPresets] Falling back to built-in loan products:', error);
-            setPresets(LOAN_PRODUCT_PRESETS);
-        } finally {
-            setLoading(false);
-        }
-    }, []);
-
-    useEffect(() => {
-        void reload();
-    }, [reload]);
-
-    return { presets, loading, reload };
-}
 
 import { isLendingFeatureKey } from '../utils/featureFlags';
 

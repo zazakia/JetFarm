@@ -335,15 +335,15 @@ describe('LoginScreen', () => {
         expect(passwordInput.props.secureTextEntry).toBe(false);
     });
 
-    it('navigates to register when register now is pressed', async () => {
+    it('offers no self-service registration on the agribusiness build', async () => {
         render(<LoginScreen />);
         await waitFor(() => {
             expect(AuthService.getQuickLoginUsers).toHaveBeenCalled();
         });
 
-        fireEvent.press(screen.getByText(/Register Now/i));
-        const mockRouter = require('expo-router').useRouter();
-        expect(mockRouter.push).toHaveBeenCalledWith('/register');
+        // Borrower self-sign-up is retired; accounts are provisioned under (admin)/users.
+        expect(screen.queryByText(/Register Now/i)).toBeNull();
+        expect(screen.queryByText(/New member\?/i)).toBeNull();
     });
 });
 

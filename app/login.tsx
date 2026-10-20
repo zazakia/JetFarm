@@ -466,13 +466,6 @@ export default function LoginScreen() {
                                         )}
                                     </LinearGradient>
                                 </AnimatedPressable>
-
-                                <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 20 }}>
-                                    <Text style={{ color: '#64748B', fontWeight: '700', fontSize: 12 }}>New member?</Text>
-                                    <AnimatedPressable onPress={() => router.push('/register')} style={{ marginLeft: 8 }}>
-                                        <Text style={{ color: '#10B981', fontWeight: '900', fontSize: 12 }}>Register Now</Text>
-                                    </AnimatedPressable>
-                                </View>
                             </Animated.View>
 
                             {/* Quick Login Card */}

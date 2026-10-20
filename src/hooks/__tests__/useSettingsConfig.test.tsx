@@ -1,120 +1,19 @@
 import { renderHook, act, waitFor } from '@testing-library/react-native';
 
-import { useLoanProductPresets, useFeatureFlags, useRolePermissions } from '../useSettingsConfig';
+import { useFeatureFlags, useRolePermissions } from '../useSettingsConfig';
 import { SettingsService } from '../../services/SettingsService';
-import { LOAN_PRODUCT_PRESETS } from '../../utils/loanProducts';
 
 // Mock SettingsService
 jest.mock('../../services/SettingsService', () => ({
     SettingsService: {
-        getLoanProductPresetMap: jest.fn(),
         getFeatureFlagMap: jest.fn(),
         getRolePermissionMap: jest.fn(),
     },
 }));
 
 // Helper to get typed mock for any SettingsService method
-const mockPresetMap = () => SettingsService.getLoanProductPresetMap as jest.Mock;
 const mockFeatureMap = () => SettingsService.getFeatureFlagMap as jest.Mock;
 const mockPermMap = () => SettingsService.getRolePermissionMap as jest.Mock;
-
-// ---------------------------------------------------------------------------
-// useLoanProductPresets
-// ---------------------------------------------------------------------------
-describe('useLoanProductPresets', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
-        mockPresetMap().mockResolvedValue(LOAN_PRODUCT_PRESETS);
-    });
-
-    it('starts with loading=true and built-in presets', () => {
-        const { result } = renderHook(() => useLoanProductPresets());
-
-        expect(result.current.loading).toBe(true);
-        expect(result.current.presets).toEqual(LOAN_PRODUCT_PRESETS);
-    });
-
-    it('fetches presets from SettingsService and sets loading=false', async () => {
-        const customPresets = {
-            ...LOAN_PRODUCT_PRESETS,
-            standard: { ...LOAN_PRODUCT_PRESETS.standard, label: 'Custom Standard' },
-        };
-        mockPresetMap().mockResolvedValue(customPresets);
-
-        const { result } = renderHook(() => useLoanProductPresets());
-
-        await waitFor(() => {
-            expect(result.current.loading).toBe(false);
-        });
-
-        expect(result.current.presets).toEqual(customPresets);
-        expect(mockPresetMap()).toHaveBeenCalledTimes(1);
-    });
-
-    it('falls back to built-in presets on fetch error', async () => {
-        mockPresetMap().mockRejectedValue(new Error('DB connection lost'));
-        const warnSpy = jest.spyOn(console, 'warn').mockImplementation();
-
-        const { result } = renderHook(() => useLoanProductPresets());
-
-        await waitFor(() => {
-            expect(result.current.loading).toBe(false);
-        });
-
-        expect(result.current.presets).toEqual(LOAN_PRODUCT_PRESETS);
-        expect(warnSpy).toHaveBeenCalledWith(
-            expect.stringContaining('[useLoanProductPresets]'),
-            expect.any(Error)
-        );
-        warnSpy.mockRestore();
-    });
-
-    it('reload function refetches presets', async () => {
-        const firstPresets = { ...LOAN_PRODUCT_PRESETS };
-        const secondPresets = {
-            ...LOAN_PRODUCT_PRESETS,
-            standard: { ...LOAN_PRODUCT_PRESETS.standard, label: 'Updated' },
-        };
-        mockPresetMap()
-            .mockResolvedValueOnce(firstPresets)
-            .mockResolvedValueOnce(secondPresets);
-
-        const { result } = renderHook(() => useLoanProductPresets());
-
-        await waitFor(() => {
-            expect(result.current.loading).toBe(false);
-        });
-        expect(result.current.presets).toEqual(firstPresets);
-
-        await act(async () => {
-            await result.current.reload();
-        });
-
-        expect(result.current.presets).toEqual(secondPresets);
-        expect(mockPresetMap()).toHaveBeenCalledTimes(2);
-    });
-
-    it('reload sets loading back to false after error', async () => {
-        mockPresetMap()
-            .mockResolvedValueOnce(LOAN_PRODUCT_PRESETS)
-            .mockRejectedValueOnce(new Error('Fail on reload'));
-
-        const warnSpy = jest.spyOn(console, 'warn').mockImplementation();
-        const { result } = renderHook(() => useLoanProductPresets());
-
-        await waitFor(() => {
-            expect(result.current.loading).toBe(false);
-        });
-
-        await act(async () => {
-            await result.current.reload();
-        });
-
-        expect(result.current.loading).toBe(false);
-        expect(result.current.presets).toEqual(LOAN_PRODUCT_PRESETS);
-        warnSpy.mockRestore();
-    });
-});
 
 // ---------------------------------------------------------------------------
 // useFeatureFlags
