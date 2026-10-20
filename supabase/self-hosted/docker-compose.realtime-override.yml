@@ -1,0 +1,33 @@
+# Additive compose override for the self-hosted Supabase Realtime node (JetFarm / Hetzner).
+#
+# WHY THIS FILE EXISTS
+# The realtime service block already exists in /home/deploy/apps/supabase/docker-compose.yml
+# (service `realtime`, image supabase/realtime:v2.76.5, container_name
+# realtime-dev.supabase-realtime) and was simply never started. Kong already routes
+# /realtime/v1/ to it and Caddy already upgrades websockets, so no route authoring is needed.
+# This override only adds the two operational guards that the stock block lacks:
+#   1. a hard failure instead of the stock DB_ENC_KEY default, and
+#   2. a memory ceiling, because the box runs 22 containers with ~1.1 GB available and is
+#      already using swap.
+#
+# PLAN + evidence + the human-run command sequence: docs/REALTIME-SELF-HOSTED-DEPLOYMENT-PLAN.md
+# Nothing in this repository applies it. Copy it next to the production compose file and run:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.realtime-override.yml \
+#     up -d --no-deps realtime
+#
+# Rollback: docker compose stop realtime && docker compose rm -f realtime
+name: supabase-realtime-override
+
+services:
+  realtime:
+    # BEAM node: give it headroom but never let it take the shared database down with it.
+    mem_limit: 512m
+    mem_reservation: 128m
+    cpus: 1.0
+    restart: unless-stopped
+    environment:
+      # The base file uses ${REALTIME_DB_ENC_KEY:-supabaserealtime}. That default is the public
+      # stock value, and rotating the key after the first boot means re-seeding the tenant row,
+      # so refuse to start rather than silently encrypt tenant config with a known key.
+      DB_ENC_KEY: ${REALTIME_DB_ENC_KEY:?set REALTIME_DB_ENC_KEY in the production .env before starting realtime}
