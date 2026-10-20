@@ -1,7 +1,7 @@
 import { Database } from '@nozbe/watermelondb';
 import { createTestDatabase, closeTestDatabase } from '../../__tests__/test-utils';
 import { SettingsServiceClass } from '../SettingsService';
-import { DEFAULT_FEATURE_FLAGS, DEFAULT_ROLE_PERMISSIONS } from '../../constants/configDefaults';
+import { DEFAULT_COOP_SETTINGS, DEFAULT_FEATURE_FLAGS, DEFAULT_ROLE_PERMISSIONS } from '../../constants/configDefaults';
 
 describe('SettingsService', () => {
     let db: Database;
@@ -16,23 +16,43 @@ describe('SettingsService', () => {
         await closeTestDatabase(db);
     });
 
+    // Post-teardown config set: the lending `loan_products` table is retired, so the bootstrap
+    // contract is asserted over the surviving configuration tables. SettingsService.ensureDefaults
+    // owns app_settings / feature_flags / role_permissions; the other surviving config tables
+    // belong to their own services and must stay untouched by bootstrap.
+    const OWNED_CONFIG_TABLES = ['app_settings', 'feature_flags', 'role_permissions'];
+    const FOREIGN_CONFIG_TABLES = ['statutory_rates', 'financial_period_settings', 'statutory_fund_allocations'];
+
     it('bootstraps configurable defaults into the local database', async () => {
+        expect(OWNED_CONFIG_TABLES).toHaveLength(3);
+        expect(FOREIGN_CONFIG_TABLES).toHaveLength(3);
+        // Positive control: the expectation lists below come from real default sets, not empty arrays.
+        expect(DEFAULT_COOP_SETTINGS.length).toBeGreaterThan(0);
+        expect(DEFAULT_FEATURE_FLAGS.length).toBeGreaterThan(0);
+        expect(DEFAULT_ROLE_PERMISSIONS.length).toBeGreaterThan(0);
+
         await service.ensureDefaults();
 
-        const [loanProducts, featureFlags, rolePermissions] = await Promise.all([
-            db.get('loan_products').query().fetch(),
-            db.get('feature_flags').query().fetch(),
-            db.get('role_permissions').query().fetch(),
-        ]);
+        const [appSettings, featureFlags, rolePermissions] = await Promise.all(
+            OWNED_CONFIG_TABLES.map(table => db.get(table).query().fetch())
+        );
 
-        expect(loanProducts).toHaveLength(0);
+        expect(appSettings).toHaveLength(DEFAULT_COOP_SETTINGS.length);
         expect(featureFlags).toHaveLength(DEFAULT_FEATURE_FLAGS.length);
         expect(rolePermissions).toHaveLength(DEFAULT_ROLE_PERMISSIONS.length);
-        expect([
-            ...loanProducts,
-            ...featureFlags,
-            ...rolePermissions,
-        ].every(record => (record as any)._raw._status === 'synced' && (record as any)._raw._changed === '')).toBe(true);
+
+        const bootstrapped = [...appSettings, ...featureFlags, ...rolePermissions];
+        expect(bootstrapped).toHaveLength(
+            DEFAULT_COOP_SETTINGS.length + DEFAULT_FEATURE_FLAGS.length + DEFAULT_ROLE_PERMISSIONS.length
+        );
+        expect(bootstrapped.every(record =>
+            (record as any)._raw._status === 'synced' && (record as any)._raw._changed === '')).toBe(true);
+
+        // Bootstrap must not seed configuration owned elsewhere (was the `loan_products` guard).
+        const foreignCounts = await Promise.all(
+            FOREIGN_CONFIG_TABLES.map(table => db.get(table).query().fetchCount())
+        );
+        expect(foreignCounts).toEqual([0, 0, 0]);
     });
 
     it('exposes feature and role permission maps', async () => {

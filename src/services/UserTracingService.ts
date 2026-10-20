@@ -2,13 +2,8 @@ import { database as globalDatabase } from '../database';
 import { Database, Q } from '@nozbe/watermelondb';
 import ActionLog from '../database/models/ActionLog';
 import UserProfile from '../database/models/UserProfile';
-import Borrower from '../database/models/Borrower';
-import Loan from '../database/models/Loan';
-import Payment from '../database/models/Payment';
-import Remittance from '../database/models/Remittance';
 import JournalEntry from '../database/models/JournalEntry';
 import StockMovement from '../database/models/StockMovement';
-import SalesReturn from '../database/models/SalesReturn';
 import BusinessUnit from '../database/models/BusinessUnit';
 import Area from '../database/models/Area';
 import {
@@ -47,7 +42,7 @@ export interface UserActivityEvent {
 
 export interface UserRelationshipNode {
     id: string;
-    type: 'branch' | 'area' | 'borrower' | 'loan' | 'payment' | 'remittance' | 'journal_entry' | 'stock_movement' | 'sales_return';
+    type: 'branch' | 'area' | 'journal_entry' | 'stock_movement';
     title: string;
     subtitle?: string;
     badge?: string;
@@ -75,26 +70,12 @@ export interface UserDataRelationships {
         areaId?: string;
         areaName?: string;
     };
-    linkedBorrower?: {
-        id: string;
-        fullName: string;
-        memberId?: string;
-        contactNumber?: string;
-        address?: string;
-    } | null;
     counts: {
         actionsLogged: number;
-        loansApproved: number;
-        loansManaged: number;
-        paymentsCollected: number;
-        remittancesHandled: number;
         journalEntriesPosted: number;
         stockMovements: number;
-        salesReturns: number;
     };
     totals: {
-        loansVolume: number;
-        paymentsVolume: number;
         journalEntriesVolume: number;
     };
     recentRelatedEntities: UserRelationshipNode[];
@@ -248,45 +229,15 @@ export class UserTracingServiceClass {
                 }
             }
 
-            // 3. Resolve Linked Borrower Profile
-            let linkedBorrower: UserDataRelationships['linkedBorrower'] = null;
-            try {
-                const borrowersColl = db.get<Borrower>('borrowers');
-                if (borrowersColl) {
-                    const linked = await borrowersColl.query(
-                        Q.or(
-                            Q.where('auth_id', userId),
-                            Q.where('id', userId)
-                        )
-                    ).fetch();
-                    if (linked.length > 0) {
-                        const b = linked[0];
-                        linkedBorrower = {
-                            id: b.id,
-                            fullName: b.fullName,
-                            memberId: b.memberId || undefined,
-                            contactNumber: b.phone || b.contactNo || undefined,
-                            address: b.address || undefined,
-                        };
-                    }
-                }
-            } catch {}
 
-            // 4. Query Related Operational Entities
+            // 3. Query Related Operational Entities
             const recentNodes: UserRelationshipNode[] = [];
             const counts = {
                 actionsLogged: 0,
-                loansApproved: 0,
-                loansManaged: 0,
-                paymentsCollected: 0,
-                remittancesHandled: 0,
                 journalEntriesPosted: 0,
                 stockMovements: 0,
-                salesReturns: 0,
             };
             const totals = {
-                loansVolume: 0,
-                paymentsVolume: 0,
                 journalEntriesVolume: 0,
             };
             const activityByModule: Record<string, number> = {};
@@ -313,86 +264,8 @@ export class UserTracingServiceClass {
                 }
             } catch {}
 
-            // Query Loans (Approved or Collector)
-            try {
-                const loansColl = db.get<Loan>('loans');
-                if (loansColl) {
-                    const approvedLoans = await loansColl.query(
-                        Q.where('approved_by', Q.oneOf(userAliases)),
-                        Q.where('deleted_at', Q.eq(null))
-                    ).fetch();
-                    counts.loansApproved = approvedLoans.length;
 
-                    for (const l of approvedLoans) {
-                        totals.loansVolume += (l.principalAmount || l.totalAmount || 0);
-                        if (recentNodes.length < 15) {
-                            recentNodes.push({
-                                id: l.id,
-                                type: 'loan',
-                                title: `Loan #${l.loanNumber || l.id.substring(0, 8)}`,
-                                subtitle: `Approved principal: ₱${(l.principalAmount || 0).toLocaleString()}`,
-                                badge: 'Approved',
-                                date: l.releaseDate ? Number(l.releaseDate) : undefined,
-                                amount: l.principalAmount || l.totalAmount,
-                                roleInRelation: 'approved',
-                                linkRoute: `/(admin)/loans/${l.id}`,
-                            });
-                        }
-                    }
 
-                    const managedLoans = await loansColl.query(
-                        Q.where('collector_id', Q.oneOf(userAliases)),
-                        Q.where('deleted_at', Q.eq(null))
-                    ).fetch();
-                    counts.loansManaged = managedLoans.length;
-                }
-            } catch {}
-
-            // Query Payments collected
-            try {
-                const paymentsColl = db.get<Payment>('payments');
-                if (paymentsColl) {
-                    const payments = await paymentsColl.query(
-                        Q.where('collector_id', Q.oneOf(userAliases)),
-                        Q.where('deleted_at', Q.eq(null)),
-                        Q.sortBy('payment_date', Q.desc),
-                        Q.take(50)
-                    ).fetch();
-                    counts.paymentsCollected = payments.length;
-                    for (const p of payments) {
-                        totals.paymentsVolume += (p.amount || 0);
-                        if (recentNodes.length < 15) {
-                            recentNodes.push({
-                                id: p.id,
-                                type: 'payment',
-                                title: `Payment Receipt #${p.receiptNumber || p.id.substring(0, 8)}`,
-                                subtitle: `Collected: ₱${(p.amount || 0).toLocaleString()}`,
-                                badge: 'Collected',
-                                date: p.paymentDate ? Number(p.paymentDate) : undefined,
-                                amount: p.amount,
-                                roleInRelation: 'collected',
-                                linkRoute: '/(admin)/payments',
-                            });
-                        }
-                    }
-                }
-            } catch {}
-
-            // Query Remittances
-            try {
-                const remittancesColl = db.get<Remittance>('remittances');
-                if (remittancesColl) {
-                    const remittances = await remittancesColl.query(
-                        Q.or(
-                            Q.where('collector_id', Q.oneOf(userAliases)),
-                            Q.where('approved_by', Q.oneOf(userAliases))
-                        ),
-                        Q.where('deleted_at', Q.eq(null)),
-                        Q.take(20)
-                    ).fetch();
-                    counts.remittancesHandled = remittances.length;
-                }
-            } catch {}
 
             // Query Journal Entries posted
             try {
@@ -435,20 +308,6 @@ export class UserTracingServiceClass {
                 }
             } catch {}
 
-            // Query Sales Returns
-            try {
-                const srColl = db.get<SalesReturn>('sales_returns');
-                if (srColl) {
-                    const returns = await srColl.query(
-                        Q.or(
-                            Q.where('created_by', Q.oneOf(userAliases)),
-                            Q.where('approved_by', Q.oneOf(userAliases))
-                        ),
-                        Q.where('deleted_at', Q.eq(null))
-                    ).fetch();
-                    counts.salesReturns = returns.length;
-                }
-            } catch {}
 
             // Organization Node
             if (user.branchId) {
@@ -462,17 +321,6 @@ export class UserTracingServiceClass {
                 });
             }
 
-            if (linkedBorrower) {
-                recentNodes.unshift({
-                    id: linkedBorrower.id,
-                    type: 'borrower',
-                    title: `Member: ${linkedBorrower.fullName}`,
-                    subtitle: linkedBorrower.memberId ? `Member ID: ${linkedBorrower.memberId}` : 'Linked Member Account',
-                    badge: 'Member',
-                    roleInRelation: 'linked',
-                    linkRoute: `/(admin)/borrowers/${linkedBorrower.id}`,
-                });
-            }
 
             return {
                 user: {
@@ -492,7 +340,6 @@ export class UserTracingServiceClass {
                     areaId: user.areaId,
                     areaName,
                 },
-                linkedBorrower,
                 counts,
                 totals,
                 recentRelatedEntities: recentNodes,

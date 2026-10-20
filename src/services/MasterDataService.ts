@@ -2,7 +2,6 @@ import { Database, Q } from '@nozbe/watermelondb';
 import { database as globalDatabase } from '../database';
 import Branch from '../database/models/Branch';
 import Warehouse from '../database/models/Warehouse';
-import MarketplaceCategory from '../database/models/MarketplaceCategory';
 import StatutoryRate from '../database/models/StatutoryRate';
 import Supplier from '../database/models/Supplier';
 import uuid from 'react-native-uuid';
@@ -126,62 +125,6 @@ export class MasterDataServiceClass {
     async toggleWarehouseActive(id: string): Promise<Warehouse> {
         const wh = await this.db.get<Warehouse>('warehouses').find(id);
         return this.updateWarehouse(id, { isActive: !wh.isActive });
-    }
-
-    // =========================================================================
-    // MARKETPLACE & PRODUCT CATEGORIES
-    // =========================================================================
-    async getCategories(includeInactive = true): Promise<MarketplaceCategory[]> {
-        const clauses: Q.Clause[] = [Q.where('deleted_at', null)];
-        if (!includeInactive) {
-            clauses.push(Q.where('is_active', true));
-        }
-        clauses.push(Q.sortBy('name', Q.asc));
-        return this.db.get<MarketplaceCategory>('marketplace_categories').query(...clauses).fetch();
-    }
-
-    async createCategory(input: {
-        name: string;
-        slug?: string;
-        icon?: string;
-        isActive?: boolean;
-    }): Promise<MarketplaceCategory> {
-        let cat!: MarketplaceCategory;
-        const now = Date.now();
-        await this.db.write(async () => {
-            cat = await this.db.get<MarketplaceCategory>('marketplace_categories').create(c => {
-                (c as any)._raw.id = uuid.v4().toString();
-                c.name = input.name.trim();
-                c.slug = input.slug?.trim() || input.name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-');
-                c.icon = input.icon || 'category';
-                c.parentId = null;
-                c.isActive = input.isActive ?? true;
-                (c as any).deletedAt = null;
-            });
-        });
-        return cat;
-    }
-
-    async updateCategory(
-        id: string,
-        input: { name?: string; slug?: string; icon?: string; isActive?: boolean }
-    ): Promise<MarketplaceCategory> {
-        const cat = await this.db.get<MarketplaceCategory>('marketplace_categories').find(id);
-        const now = Date.now();
-        await this.db.write(async () => {
-            await cat.update(c => {
-                if (input.name !== undefined) c.name = input.name.trim();
-                if (input.slug !== undefined) c.slug = input.slug.trim();
-                if (input.icon !== undefined) c.icon = input.icon;
-                if (input.isActive !== undefined) c.isActive = input.isActive;
-            });
-        });
-        return cat;
-    }
-
-    async toggleCategoryActive(id: string): Promise<MarketplaceCategory> {
-        const cat = await this.db.get<MarketplaceCategory>('marketplace_categories').find(id);
-        return this.updateCategory(id, { isActive: !cat.isActive });
     }
 
     // =========================================================================

@@ -1,3 +1,5 @@
+import * as fs from 'fs';
+import * as path from 'path';
 import { Database, Q } from '@nozbe/watermelondb';
 import { createTestDatabase, closeTestDatabase } from '../../__tests__/test-utils';
 import AgriParcel from '../../database/models/AgriParcel';
@@ -23,6 +25,11 @@ const SAMPLE_TABLES = [
 async function countActive(db: Database, table: string) {
     const rows = await db.get(table as any).query(Q.where('deleted_at', Q.eq(null))).fetch();
     return rows.length;
+}
+
+/** Total rows including soft-deleted ones: a swept table must never be written at all. */
+async function countRows(db: Database, table: string) {
+    return db.get(table as any).query().fetchCount();
 }
 
 describe('SampleDataService', () => {
@@ -102,17 +109,60 @@ describe('SampleDataService', () => {
         }
     });
 
-    it('seeds nothing into the credit, marketplace, water-station or payroll tables', async () => {
+    // Post-teardown equivalent of the old "seeds nothing into the credit, marketplace,
+    // water-station or payroll tables" sweep: those tables no longer exist in schema v50, so the
+    // sweep now covers the SURVIVING tables sample data must never write -- operational master
+    // configuration (users, expense categories, statutory/period settings), the finance-shell
+    // cash/bank/snapshot rails, and the parcel block-layout history.
+    const UNTOUCHED_TABLES = [
+        'user_profiles', 'user_branch_roles', 'expense_categories', 'bank_transactions',
+        'financial_snapshots', 'statutory_rates', 'financial_period_settings', 'stock_movements',
+        'app_settings', 'feature_flags', 'role_permissions', 'action_logs',
+        'agri_parcel_blocks', 'agri_block_assignments', 'agri_block_progress',
+        'agri_pending_layout_operations',
+    ];
+
+    it('seeds nothing into the surviving configuration, cash-rail or block-layout tables', async () => {
         await SampleDataService.enable(database);
 
-        const untouched = [
-            'borrowers', 'loans', 'payments', 'payment_schedules', 'file_cases', 'collectors',
-            'marketplace_products', 'marketplace_orders', 'ws_customers', 'ws_deliveries',
-            'sales_returns', 'pos_sessions', 'payroll_runs', 'employees',
-            'share_capital_transactions', 'savings_transactions', 'loan_applications',
-        ];
-        const counts = await Promise.all(untouched.map(table => countActive(database, table)));
+        expect(UNTOUCHED_TABLES.length).toBeGreaterThanOrEqual(15);
+        // Positive control: every swept table is a real v50 collection (a retired name would
+        // resolve to null and silently drop out of the sweep).
+        for (const table of UNTOUCHED_TABLES) {
+            expect(database.get(table as any)).not.toBeNull();
+        }
+
+        const counts = await Promise.all(UNTOUCHED_TABLES.map(table => countRows(database, table)));
         expect(counts.reduce((sum, n) => sum + n, 0)).toBe(0);
+
+        // And the sweep is not measuring an idle database: the tables sample data DOES seed
+        // (including the credit-adjacent ledger rails) are populated.
+        const seeded = await Promise.all(
+            ['agri_parcels', 'agri_crop_cycles', 'journal_entries', 'chart_of_accounts', 'cash_transactions']
+                .map(table => countActive(database, table))
+        );
+        expect(seeded).toHaveLength(5);
+        expect(seeded.every(n => n > 0)).toBe(true);
+    });
+
+    it('imports no retired model into the sample seeder', () => {
+        const source = fs.readFileSync(
+            path.join(process.cwd(), 'src', 'services', 'SampleDataService.ts'),
+            'utf8'
+        );
+        const modelImports = [...source.matchAll(/from '\.\.\/database\/models\/([A-Za-z0-9_]+)'/g)]
+            .map(match => match[1]);
+
+        // Positive control: the seeder is still model-driven, so an empty import list cannot
+        // make the retired-name assertion pass by accident.
+        expect(modelImports.length).toBeGreaterThanOrEqual(20);
+        expect(modelImports).toEqual(expect.arrayContaining([
+            'AgriParcel', 'AgriCropCycle', 'AgriLandOwner', 'Expense', 'JournalEntry',
+        ]));
+
+        const retiredFamilies = /^(Borrower|Loan|Payment|Collector|Collection|FileCase|Saving|ShareCapital|Dependent|Child|Committee|BoardResolution|Meeting|Remittance|Employee|Payroll|Royalty|Franchise|Pos|SalesReturn|Commissary|Waste|StoreAudit|Ws|Marketplace|Module|DeviceRegistry|Cic)/;
+        const offenders = modelImports.filter(name => retiredFamilies.test(name));
+        expect(offenders).toEqual([]);
     });
 
     it('can hide, restore, and purge sample data without touching real records', async () => {

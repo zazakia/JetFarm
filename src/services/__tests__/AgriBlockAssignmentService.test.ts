@@ -295,15 +295,36 @@ describe('AgriBlockAssignmentService LOCAL persistence', () => {
         expect(await reopened.get('action_logs').query().fetchCount()).toBe(count + 2);
     });
 
-    it('does not create wages, cash, journal, payroll or modify crop history', async () => {
+    // The payroll/wage tables (`payrolls`, `payroll_runs`, `payroll_lines`) were retired with the
+    // payroll teardown, so the "nothing else was written" sweep now covers only SURVIVING money,
+    // wage and movement tables. Assigning work and recording progress must not mint labour pay,
+    // farm expenses, settlements, cash, journal or stock rows, and must not touch crop history.
+    const SIDE_EFFECT_TABLES = [
+        'agri_labor_logs', 'agri_farm_expenses', 'agri_weekly_settlements', 'agri_investor_ledgers',
+        'expenses', 'cash_transactions', 'journal_entries', 'journal_entry_lines',
+        'bank_transactions', 'stock_movements',
+    ];
+
+    it('does not create wages, cash, journal or modify crop history', async () => {
+        expect(SIDE_EFFECT_TABLES.length).toBeGreaterThanOrEqual(8);
         const cycle = await db.write(() => db.get<AgriCropCycle>('agri_crop_cycles').create(c => { c.parcelId = parcelId; c.status = 'growing'; }));
         const raw = { ...cycle._raw };
         const records = await AgriBlockAssignmentService.assignWorkers({ ...input, cropCycleId: cycle.id }, db);
         await AgriBlockAssignmentService.recordProgress(progress(records[0].id), db);
         expect(cycle._raw).toEqual(raw);
-        for (const table of ['agri_labor_logs', 'cash_transactions', 'journal_entries', 'journal_entry_lines', 'payrolls', 'payroll_runs', 'payroll_lines']) {
-            expect(await db.get(table).query().fetchCount()).toBe(0);
+
+        // Positive control: every swept table is a real surviving collection AND this very
+        // operation did persist rows, so the zero counts below cannot be a vacuous pass.
+        for (const table of SIDE_EFFECT_TABLES) {
+            expect(db.get(table)).not.toBeNull();
         }
+        expect(await db.get('agri_block_assignments').query().fetchCount()).toBe(2);
+        expect(await db.get('agri_block_progress').query().fetchCount()).toBe(1);
+        expect(await db.get('agri_crop_cycles').query().fetchCount()).toBe(1);
+
+        const counts = await Promise.all(SIDE_EFFECT_TABLES.map(table => db.get(table).query().fetchCount()));
+        expect(counts).toEqual(SIDE_EFFECT_TABLES.map(() => 0));
+        expect(counts.reduce((sum, n) => sum + n, 0)).toBe(0);
         expect(workers.map(w => w.dailyRate)).toEqual([123, 123]);
     });
 });

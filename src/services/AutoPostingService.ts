@@ -2,25 +2,23 @@
  * AutoPostingService
  *
  * Automatically generates double-entry journal entries when financial transactions
- * are created in POSCursor. This service bridges the existing transaction
- * tables (payments, expenses, savings, cash, bank) with the formal accounting layer.
+ * are created in Agri-One. This service bridges the operational transaction
+ * tables (expenses, cash, bank, agri farm/labour/settlement records) with the
+ * formal accounting layer.
  *
- * Auto-posting rules (Philippine cooperative standard):
+ * Auto-posting rules:
  * ┌──────────────────────────────┬───────────────────────┬───────────────────────┐
  * │ Transaction                  │ Debit                 │ Credit                │
  * ├──────────────────────────────┼───────────────────────┼───────────────────────┤
- * │ Loan disbursed               │ 1100 Loans Receivable │ 1010 Cash on Hand     │
- * │ Payment — principal          │ 1010 Cash on Hand     │ 1100 Loans Receivable │
- * │ Payment — interest/charges   │ 1010 Cash on Hand     │ 4010 Interest Income  │
- * │ Payment — penalty            │ 1010 Cash on Hand     │ 4040 Penalties        │
  * │ Expense recorded             │ 5xxx [category acct]  │ 1010 Cash on Hand     │
- * │ Savings deposit              │ 1010 Cash on Hand     │ 2010 Savings Payable  │
- * │ Savings withdrawal           │ 2010 Savings Payable  │ 1010 Cash on Hand     │
- * │ Share capital paid           │ 1010 Cash on Hand     │ 3010 Share Capital    │
  * │ Cash in                      │ 1010 Cash on Hand     │ 4060 Other Income     │
  * │ Cash out                     │ 5100 Other Expenses   │ 1010 Cash on Hand     │
  * │ Bank deposit                 │ 1020 Cash in Bank     │ 1010 Cash on Hand     │
  * │ Bank withdrawal              │ 1010 Cash on Hand     │ 1020 Cash in Bank     │
+ * │ Farm expense paid            │ 5xxx Farm expense     │ 1010 Cash on Hand     │
+ * │ Labour / settlement paid     │ 5xxx Labour            │ 1010 Cash on Hand     │
+ * │ Harvest sale                 │ 1010 Cash on Hand      │ 4xxx Harvest revenue  │
+ * │ Investor contribution        │ 1010 Cash on Hand      │ 2xxx Investor payable │
  * └──────────────────────────────┴───────────────────────┴───────────────────────┘
  *
  * Expense category → account code mapping is configurable.
@@ -33,11 +31,7 @@ import { database as globalDatabase } from '../database';
 import { JournalEntryServiceClass } from './JournalEntryService';
 import JournalEntry from '../database/models/JournalEntry';
 import JournalEntryLine from '../database/models/JournalEntryLine';
-import Payment from '../database/models/Payment';
-import Loan from '../database/models/Loan';
 import Expense from '../database/models/Expense';
-import SavingsTransaction from '../database/models/SavingsTransaction';
-import ShareCapitalTransaction from '../database/models/ShareCapitalTransaction';
 import CashTransaction from '../database/models/CashTransaction';
 import BankTransaction from '../database/models/BankTransaction';
 import AgriFarmExpense from '../database/models/AgriFarmExpense';
@@ -168,124 +162,6 @@ export class AutoPostingServiceClass {
     }
 
     /**
-     * Post a loan disbursement.
-     * DR: Loans Receivable (1100)
-     * CR: Cash on Hand (1010)
-     */
-    async postLoanDisbursement(opts: {
-        loanId: string;
-        amount: number;
-        entryDate: Date;
-        borrowerName?: string;
-        postedBy?: string;
-    }): Promise<void> {
-        await this.journalEntryService.createEntry({
-            entryDate: opts.entryDate,
-            description: `Loan disbursed to ${opts.borrowerName ?? 'borrower'}`,
-            entryType: 'auto',
-            sourceTable: 'loans',
-            sourceId: opts.loanId,
-            postedBy: opts.postedBy,
-            lines: [
-                {
-                    accountCode: ACCT.LOANS_RECEIVABLE,
-                    accountName: 'Loans Receivable',
-                    debitAmount: opts.amount,
-                    description: `Loan principal — ${opts.borrowerName ?? ''}`,
-                },
-                {
-                    accountCode: ACCT.CASH_ON_HAND,
-                    accountName: 'Cash on Hand',
-                    creditAmount: opts.amount,
-                    description: 'Cash released',
-                },
-            ],
-        }, opts.postedBy);
-    }
-
-    /**
-     * Post a loan payment.
-     * Splits principal and interest into separate lines.
-     *
-     * DR: Cash on Hand (1010) — for total amount received
-     * CR: Loans Receivable (1100) — for principal portion
-     * CR: Interest on Loans (4010) — for interest portion
-     * CR: Penalties & Fines (4040) — for penalty portion (if any)
-     */
-    async postPayment(opts: {
-        paymentId: string;
-        principal: number;
-        interest: number;
-        penalty?: number;
-        serviceCharge?: number;
-        entryDate: Date;
-        borrowerName?: string;
-        postedBy?: string;
-    }): Promise<void> {
-        const penalty = opts.penalty ?? 0;
-        const serviceCharge = opts.serviceCharge ?? 0;
-        const totalReceived = opts.principal + opts.interest + penalty + serviceCharge;
-
-        if (totalReceived <= 0) return;
-
-        const creditLines = [];
-
-        if (opts.principal > 0) {
-            creditLines.push({
-                accountCode: ACCT.LOANS_RECEIVABLE,
-                accountName: 'Loans Receivable',
-                creditAmount: opts.principal,
-                description: 'Principal repayment',
-            });
-        }
-
-        if (opts.interest > 0) {
-            creditLines.push({
-                accountCode: ACCT.INTEREST_ON_LOANS,
-                accountName: 'Interest on Loans',
-                creditAmount: opts.interest,
-                description: 'Interest income',
-            });
-        }
-
-        if (serviceCharge > 0) {
-            creditLines.push({
-                accountCode: ACCT.SERVICE_CHARGES,
-                accountName: 'Service Charges',
-                creditAmount: serviceCharge,
-                description: 'Service charge',
-            });
-        }
-
-        if (penalty > 0) {
-            creditLines.push({
-                accountCode: ACCT.PENALTIES_AND_FINES,
-                accountName: 'Penalties & Fines',
-                creditAmount: penalty,
-                description: 'Penalty charge',
-            });
-        }
-
-        await this.journalEntryService.createEntry({
-            entryDate: opts.entryDate,
-            description: `Payment received from ${opts.borrowerName ?? 'borrower'}`,
-            entryType: 'auto',
-            sourceTable: 'payments',
-            sourceId: opts.paymentId,
-            postedBy: opts.postedBy,
-            lines: [
-                {
-                    accountCode: ACCT.CASH_ON_HAND,
-                    accountName: 'Cash on Hand',
-                    debitAmount: totalReceived,
-                    description: 'Cash collected',
-                },
-                ...creditLines,
-            ],
-        }, opts.postedBy);
-    }
-
-    /**
      * Post an expense record.
      * DR: Expense Account (5xxx based on category)
      * CR: Cash on Hand (1010)
@@ -324,89 +200,10 @@ export class AutoPostingServiceClass {
     }
 
     /**
-     * Post a savings transaction.
-     * Deposit: DR Cash on Hand (1010) / CR Savings Deposits Payable (2010)
-     * Withdrawal: DR Savings Deposits Payable (2010) / CR Cash on Hand (1010)
-     */
-    async postSavingsTransaction(opts: {
-        transactionId: string;
-        type: 'deposit' | 'withdrawal';
-        amount: number;
-        entryDate: Date;
-        borrowerName?: string;
-        postedBy?: string;
-    }): Promise<void> {
-        const isDeposit = opts.type === 'deposit';
-        const label = opts.borrowerName ?? 'member';
-
-        await this.journalEntryService.createEntry({
-            entryDate: opts.entryDate,
-            description: `Savings ${opts.type} — ${label}`,
-            entryType: 'auto',
-            sourceTable: 'savings_transactions',
-            sourceId: opts.transactionId,
-            postedBy: opts.postedBy,
-            lines: [
-                {
-                    accountCode: isDeposit ? ACCT.CASH_ON_HAND : ACCT.SAVINGS_DEPOSITS_PAYABLE,
-                    accountName: isDeposit ? 'Cash on Hand' : 'Savings Deposits Payable',
-                    debitAmount: opts.amount,
-                    description: isDeposit ? 'Cash received' : 'Savings released',
-                },
-                {
-                    accountCode: isDeposit ? ACCT.SAVINGS_DEPOSITS_PAYABLE : ACCT.CASH_ON_HAND,
-                    accountName: isDeposit ? 'Savings Deposits Payable' : 'Cash on Hand',
-                    creditAmount: opts.amount,
-                    description: isDeposit ? 'Savings deposit recorded' : 'Cash paid out',
-                },
-            ],
-        }, opts.postedBy);
-    }
-
-    /**
-     * Post a share capital / CBU transaction.
-     * Deposit/Contribution: DR Cash on Hand (1010) / CR Share Capital (3010)
-     * Withdrawal/Refund: DR Share Capital (3010) / CR Cash on Hand (1010)
-     */
-    async postShareCapital(opts: {
-        transactionId: string;
-        type?: string;
-        amount: number;
-        entryDate: Date;
-        memberName?: string;
-        postedBy?: string;
-    }): Promise<void> {
-        const isWithdrawal = !!opts.type && ['WITHDRAWAL', 'REDEMPTION', 'DEBIT', 'REFUND'].includes(opts.type.toUpperCase());
-        const label = opts.memberName ?? 'member';
-
-        await this.journalEntryService.createEntry({
-            entryDate: opts.entryDate,
-            description: `Share capital ${isWithdrawal ? 'withdrawal' : 'payment'} — ${label}`,
-            entryType: 'auto',
-            sourceTable: 'share_capital_transactions',
-            sourceId: opts.transactionId,
-            postedBy: opts.postedBy,
-            lines: [
-                {
-                    accountCode: isWithdrawal ? ACCT.SHARE_CAPITAL : ACCT.CASH_ON_HAND,
-                    accountName: isWithdrawal ? 'Share Capital' : 'Cash on Hand',
-                    debitAmount: opts.amount,
-                    description: isWithdrawal ? 'Share capital refund' : 'Cash received',
-                },
-                {
-                    accountCode: isWithdrawal ? ACCT.CASH_ON_HAND : ACCT.SHARE_CAPITAL,
-                    accountName: isWithdrawal ? 'Cash on Hand' : 'Share Capital',
-                    creditAmount: opts.amount,
-                    description: isWithdrawal ? 'Cash paid out' : 'Share capital contribution',
-                },
-            ],
-        }, opts.postedBy);
-    }
-
-    /**
      * Post a cash transaction (cash on hand in/out).
-     * Automatically identifies CBU / Share Capital (Equity 3010), Savings (Liability 2010),
-     * Loan migration (Receivables 1100), or general income/expense.
+     * The CBU, savings and loan-migration heuristics that used to sit here are gone:
+     * those cooperative tables are retired on this branch, so every manual cash
+     * movement posts straight to Other Income / Other Operating Expenses.
      */
     async postCashTransaction(opts: {
         transactionId: string;
@@ -417,143 +214,8 @@ export class AutoPostingServiceClass {
         postedBy?: string;
     }): Promise<void> {
         const isIn = opts.type === 'in';
-        const rawParticulars = opts.particulars ?? '';
-        const particularsLower = rawParticulars.toLowerCase();
 
-        // 1. Compound CBU and Savings migration detection
-        const isCbuAndSavings = particularsLower.includes('cbu and savings') ||
-            particularsLower.includes('cbu & savings') ||
-            particularsLower.includes('total cbu and savings migration');
-
-        if (isCbuAndSavings && isIn) {
-            // Audited CBU is 454,836.15 and Savings is 179,132.62 (total 633,968.78)
-            const cbuPortion = opts.amount >= 633960 && opts.amount <= 633975
-                ? 454836.15
-                : Math.round(opts.amount * 0.71744 * 100) / 100;
-            const savingsPortion = Math.round((opts.amount - cbuPortion) * 100) / 100;
-
-            await this.journalEntryService.createEntry({
-                entryDate: opts.entryDate,
-                description: rawParticulars || 'Total CBU and Savings Migration',
-                entryType: 'auto',
-                sourceTable: 'cash_transactions',
-                sourceId: opts.transactionId,
-                postedBy: opts.postedBy,
-                lines: [
-                    {
-                        accountCode: ACCT.CASH_ON_HAND,
-                        accountName: 'Cash on Hand',
-                        debitAmount: opts.amount,
-                        description: 'Cash received from member CBU & Savings',
-                    },
-                    {
-                        accountCode: ACCT.SHARE_CAPITAL,
-                        accountName: 'Share Capital',
-                        creditAmount: cbuPortion,
-                        description: 'Capital Build-Up (Share Capital) contribution',
-                    },
-                    {
-                        accountCode: ACCT.SAVINGS_DEPOSITS_PAYABLE,
-                        accountName: 'Savings Deposits Payable',
-                        creditAmount: savingsPortion,
-                        description: 'Member savings deposits recorded',
-                    },
-                ],
-            }, opts.postedBy);
-            return;
-        }
-
-        // 2. CBU / Share Capital detection (Equity - Account 3010)
-        const isCbu = particularsLower.includes('cbu') ||
-            particularsLower.includes('share capital') ||
-            particularsLower.includes('capital build') ||
-            particularsLower.includes('capital contribution');
-
-        if (isCbu) {
-            await this.journalEntryService.createEntry({
-                entryDate: opts.entryDate,
-                description: rawParticulars || `Share Capital ${isIn ? 'contribution' : 'refund'}`,
-                entryType: 'auto',
-                sourceTable: 'cash_transactions',
-                sourceId: opts.transactionId,
-                postedBy: opts.postedBy,
-                lines: [
-                    {
-                        accountCode: isIn ? ACCT.CASH_ON_HAND : ACCT.SHARE_CAPITAL,
-                        accountName: isIn ? 'Cash on Hand' : 'Share Capital',
-                        debitAmount: opts.amount,
-                        description: isIn ? 'Cash received for Share Capital' : 'Share Capital refund/withdrawal',
-                    },
-                    {
-                        accountCode: isIn ? ACCT.SHARE_CAPITAL : ACCT.CASH_ON_HAND,
-                        accountName: isIn ? 'Share Capital' : 'Cash on Hand',
-                        creditAmount: opts.amount,
-                        description: isIn ? 'Share Capital contribution' : 'Cash paid out',
-                    },
-                ],
-            }, opts.postedBy);
-            return;
-        }
-
-        // 3. Savings detection (Liability - Account 2010)
-        const isSavings = particularsLower.includes('saving');
-        if (isSavings) {
-            await this.journalEntryService.createEntry({
-                entryDate: opts.entryDate,
-                description: rawParticulars || `Savings ${isIn ? 'deposit' : 'withdrawal'}`,
-                entryType: 'auto',
-                sourceTable: 'cash_transactions',
-                sourceId: opts.transactionId,
-                postedBy: opts.postedBy,
-                lines: [
-                    {
-                        accountCode: isIn ? ACCT.CASH_ON_HAND : ACCT.SAVINGS_DEPOSITS_PAYABLE,
-                        accountName: isIn ? 'Cash on Hand' : 'Savings Deposits Payable',
-                        debitAmount: opts.amount,
-                        description: isIn ? 'Cash received for Savings' : 'Savings released',
-                    },
-                    {
-                        accountCode: isIn ? ACCT.SAVINGS_DEPOSITS_PAYABLE : ACCT.CASH_ON_HAND,
-                        accountName: isIn ? 'Savings Deposits Payable' : 'Cash on Hand',
-                        creditAmount: opts.amount,
-                        description: isIn ? 'Savings deposit recorded' : 'Cash paid out',
-                    },
-                ],
-            }, opts.postedBy);
-            return;
-        }
-
-        // 4. Loan Migration detection (Loans Receivable - Account 1100)
-        const isLoanMigration = particularsLower.includes('unpaid loans') ||
-            particularsLower.includes('loan balance migration') ||
-            particularsLower.includes('loan migration');
-        if (isLoanMigration) {
-            await this.journalEntryService.createEntry({
-                entryDate: opts.entryDate,
-                description: rawParticulars || `Loan Migration ${isIn ? 'repayment' : 'disbursement'}`,
-                entryType: 'auto',
-                sourceTable: 'cash_transactions',
-                sourceId: opts.transactionId,
-                postedBy: opts.postedBy,
-                lines: [
-                    {
-                        accountCode: !isIn ? ACCT.LOANS_RECEIVABLE : ACCT.CASH_ON_HAND,
-                        accountName: !isIn ? 'Loans Receivable' : 'Cash on Hand',
-                        debitAmount: opts.amount,
-                        description: !isIn ? 'Migrated loan portfolio balance' : 'Loan repayment',
-                    },
-                    {
-                        accountCode: !isIn ? ACCT.CASH_ON_HAND : ACCT.LOANS_RECEIVABLE,
-                        accountName: !isIn ? 'Cash on Hand' : 'Loans Receivable',
-                        creditAmount: opts.amount,
-                        description: !isIn ? 'Cash disbursed' : 'Loan balance reduction',
-                    },
-                ],
-            }, opts.postedBy);
-            return;
-        }
-
-        // 5. Default Regular Cash In/Out
+        // Regular cash in / out
         await this.journalEntryService.createEntry({
             entryDate: opts.entryDate,
             description: opts.particulars ?? `Cash ${opts.type === 'in' ? 'receipt' : 'disbursement'}`,
@@ -614,42 +276,6 @@ export class AutoPostingServiceClass {
                     accountName: isDeposit ? 'Cash on Hand' : 'Cash in Bank',
                     creditAmount: opts.amount,
                     description: opts.particulars ?? '',
-                },
-            ],
-        }, opts.postedBy);
-    }
-
-    /**
-     * Post a fee collection (membership fee, passbook fee, system fee).
-     * DR: Cash on Hand (1010)
-     * CR: Miscellaneous Income (4070)
-     */
-    async postMembershipFee(opts: {
-        sourceId: string;
-        amount: number;
-        memberName?: string;
-        entryDate: Date;
-        postedBy?: string;
-        feeType?: string;
-    }): Promise<void> {
-        const feeTitle = opts.feeType ? opts.feeType.replace('_', ' ') : 'Membership fee';
-        await this.journalEntryService.createEntry({
-            entryDate: opts.entryDate,
-            description: `${feeTitle} — ${opts.memberName ?? 'member'}`,
-            entryType: 'auto',
-            sourceTable: 'borrowers',
-            sourceId: opts.sourceId,
-            postedBy: opts.postedBy,
-            lines: [
-                {
-                    accountCode: ACCT.CASH_ON_HAND,
-                    accountName: 'Cash on Hand',
-                    debitAmount: opts.amount,
-                },
-                {
-                    accountCode: ACCT.MISCELLANEOUS_INCOME,
-                    accountName: 'Miscellaneous Income',
-                    creditAmount: opts.amount,
                 },
             ],
         }, opts.postedBy);
@@ -1095,100 +721,6 @@ export class AutoPostingServiceClass {
     }
 
     /**
-     * Reclassifies any previously created journal entries for CBU or Savings migration
-     * that were incorrectly credited to Other Income (4060) or Miscellaneous Income (4070),
-     * moving them to Share Capital (3010) and Savings Deposits Payable (2010).
-     */
-    async reclassifyLegacyCbuEntries(): Promise<number> {
-        let fixedCount = 0;
-        try {
-            const entries = await this.db.collections
-                .get<JournalEntry>('journal_entries')
-                .query(Q.where('deleted_at', Q.eq(null)))
-                .fetch();
-
-            for (const entry of entries) {
-                const desc = (entry.description || '').toLowerCase();
-                const isCbuAndSavings = desc.includes('cbu and savings') ||
-                    desc.includes('cbu & savings') ||
-                    desc.includes('total cbu and savings migration');
-                const isCbuOnly = !isCbuAndSavings && (
-                    desc.includes('cbu') ||
-                    desc.includes('share capital') ||
-                    desc.includes('capital build') ||
-                    desc.includes('capital contribution')
-                );
-                const isSavingsOnly = !isCbuAndSavings && desc.includes('saving');
-
-                if (!isCbuAndSavings && !isCbuOnly && !isSavingsOnly) continue;
-
-                const lines = await this.db.collections
-                    .get<JournalEntryLine>('journal_entry_lines')
-                    .query(
-                        Q.where('journal_entry_id', entry.id),
-                        Q.where('deleted_at', Q.eq(null))
-                    )
-                    .fetch();
-
-                const wrongIncomeLine = lines.find(l => l.accountCode === '4060' || l.accountCode === '4070');
-                if (wrongIncomeLine) {
-                    if (isCbuAndSavings) {
-                        const totalCr = wrongIncomeLine.creditAmount || entry.totalCredit || 0;
-                        const cbuPortion = totalCr >= 633960 && totalCr <= 633975
-                            ? 454836.15
-                            : Math.round(totalCr * 0.71744 * 100) / 100;
-                        const savingsPortion = Math.round((totalCr - cbuPortion) * 100) / 100;
-
-                        await this.db.write(async () => {
-                            // Update the existing line to Share Capital (Equity 3010)
-                            await wrongIncomeLine.update(l => {
-                                l.accountCode = ACCT.SHARE_CAPITAL;
-                                l.accountName = 'Share Capital';
-                                l.creditAmount = cbuPortion;
-                                l.description = 'CBU (Share Capital) portion';
-                            });
-
-                            // Create a new line for Savings Deposits Payable (Liability 2010)
-                            await this.db.collections
-                                .get<JournalEntryLine>('journal_entry_lines')
-                                .create(l => {
-                                    l.journalEntryId = entry.id;
-                                    l.accountCode = ACCT.SAVINGS_DEPOSITS_PAYABLE;
-                                    l.accountName = 'Savings Deposits Payable';
-                                    l.debitAmount = 0;
-                                    l.creditAmount = savingsPortion;
-                                    l.description = 'Savings deposits portion';
-                                });
-                        });
-                        fixedCount++;
-                    } else if (isCbuOnly) {
-                        await this.db.write(async () => {
-                            await wrongIncomeLine.update(l => {
-                                l.accountCode = ACCT.SHARE_CAPITAL;
-                                l.accountName = 'Share Capital';
-                                l.description = 'Share Capital / CBU';
-                            });
-                        });
-                        fixedCount++;
-                    } else if (isSavingsOnly) {
-                        await this.db.write(async () => {
-                            await wrongIncomeLine.update(l => {
-                                l.accountCode = ACCT.SAVINGS_DEPOSITS_PAYABLE;
-                                l.accountName = 'Savings Deposits Payable';
-                                l.description = 'Savings deposit';
-                            });
-                        });
-                        fixedCount++;
-                    }
-                }
-            }
-        } catch (err) {
-            console.warn('[AutoPostingService] reclassifyLegacyCbuEntries error:', err);
-        }
-        return fixedCount;
-    }
-
-    /**
      * Scans operational tables and automatically creates double-entry journal entries
      * for any transactions that do not currently have a corresponding journal entry.
      * Prevents duplicates by matching source_table + source_id.
@@ -1199,9 +731,6 @@ export class AutoPostingServiceClass {
     }> {
         let postedCount = 0;
         const errors: string[] = [];
-
-        // 0. Reclassify any legacy journal entries where CBU/Savings was placed in Other Income
-        await this.reclassifyLegacyCbuEntries();
 
         try {
             // 1. Load existing posted journal entry source references
@@ -1216,60 +745,7 @@ export class AutoPostingServiceClass {
                 }
             }
 
-            // 2. Backfill Payments
-            try {
-                const payments = await this.db.get<Payment>('payments')
-                    .query(Q.where('deleted_at', null))
-                    .fetch();
-                for (const p of payments) {
-                    if (!postedSourceSet.has(`payments:${p.id}`)) {
-                        const amount = p.amount ?? 0;
-                        if (amount > 0) {
-                            await this.postPayment({
-                                paymentId: p.id,
-                                principal: amount,
-                                interest: 0,
-                                entryDate: new Date(p.paymentDate || p.createdAt || Date.now()),
-                                postedBy: p.collectorId || 'system',
-                            });
-                            postedCount++;
-                            postedSourceSet.add(`payments:${p.id}`);
-                        }
-                    }
-                }
-            } catch (err: any) {
-                errors.push(`Payments backfill error: ${err.message}`);
-            }
-
-            // 3. Backfill Disbursed Loans
-            try {
-                const loans = await this.db.get<Loan>('loans')
-                    .query(Q.where('deleted_at', null))
-                    .fetch();
-                for (const loan of loans) {
-                    const status = (loan.status || '').toLowerCase();
-                    if (['disbursed', 'active', 'paid', 'completed'].includes(status)) {
-                        if (!postedSourceSet.has(`loans:${loan.id}`)) {
-                            const amount = loan.principalAmount ?? loan.totalAmount ?? 0;
-                            if (amount > 0) {
-                                const releaseDateMs = typeof loan.releaseDate === 'number' ? loan.releaseDate : (loan.releaseDate instanceof Date ? loan.releaseDate.getTime() : Date.now());
-                                await this.postLoanDisbursement({
-                                    loanId: loan.id,
-                                    amount,
-                                    entryDate: new Date(releaseDateMs || loan.createdAt || Date.now()),
-                                    postedBy: loan.encodedBy || 'system',
-                                });
-                                postedCount++;
-                                postedSourceSet.add(`loans:${loan.id}`);
-                            }
-                        }
-                    }
-                }
-            } catch (err: any) {
-                errors.push(`Loans backfill error: ${err.message}`);
-            }
-
-            // 4. Backfill Expenses
+            // 2. Backfill Expenses
             try {
                 const expenses = await this.db.get<Expense>('expenses')
                     .query(Q.where('deleted_at', null))
@@ -1295,71 +771,8 @@ export class AutoPostingServiceClass {
                 errors.push(`Expenses backfill error: ${err.message}`);
             }
 
-            // 5. Backfill Savings / CBU Transactions
-            try {
-                const savings = await this.db.get<SavingsTransaction>('savings_transactions')
-                    .query(Q.where('deleted_at', null))
-                    .fetch();
-                for (const st of savings) {
-                    if (!postedSourceSet.has(`savings_transactions:${st.id}`)) {
-                        const amount = st.amount ?? 0;
-                        if (amount > 0) {
-                            const isDeposit = !['WITHDRAWAL', 'WITHDRAW', 'WITHDRAW_CASH', 'WITHDRAW_LOAN', 'REDEMPTION', 'REVERSAL'].includes((st.type || '').toUpperCase());
-                            const stTypeLower = (st.type || '').toLowerCase();
-                            const isCbuType = stTypeLower === 'cbu' || stTypeLower.includes('cbu') || stTypeLower.includes('capital') || stTypeLower.includes('share');
 
-                            if (isCbuType) {
-                                await this.postShareCapital({
-                                    transactionId: st.id,
-                                    type: isDeposit ? 'deposit' : 'withdrawal',
-                                    amount,
-                                    entryDate: new Date(st.date || st.createdAt || Date.now()),
-                                    postedBy: 'system',
-                                });
-                            } else {
-                                await this.postSavingsTransaction({
-                                    transactionId: st.id,
-                                    type: isDeposit ? 'deposit' : 'withdrawal',
-                                    amount,
-                                    entryDate: new Date(st.date || st.createdAt || Date.now()),
-                                    postedBy: 'system',
-                                });
-                            }
-                            postedCount++;
-                            postedSourceSet.add(`savings_transactions:${st.id}`);
-                        }
-                    }
-                }
-            } catch (err: any) {
-                errors.push(`Savings backfill error: ${err.message}`);
-            }
-
-            // 6. Backfill Share Capital Transactions
-            try {
-                const shareCap = await this.db.get<ShareCapitalTransaction>('share_capital_transactions')
-                    .query(Q.where('deleted_at', null))
-                    .fetch();
-                for (const sc of shareCap) {
-                    if (!postedSourceSet.has(`share_capital_transactions:${sc.id}`)) {
-                        const amount = sc.amount ?? 0;
-                        if (amount > 0) {
-                            await this.postShareCapital({
-                                transactionId: sc.id,
-                                type: sc.transactionType,
-                                amount,
-                                entryDate: new Date(sc.transactionDate || sc.createdAt || Date.now()),
-                                postedBy: sc.recordedBy || 'system',
-                            });
-                            postedCount++;
-                            postedSourceSet.add(`share_capital_transactions:${sc.id}`);
-                        }
-                    }
-                }
-            } catch (err: any) {
-                errors.push(`Share capital backfill error: ${err.message}`);
-            }
-
-            // 7. Backfill Cash Transactions
+            // 3. Backfill Cash Transactions
             try {
                 const cashTxns = await this.db.get<CashTransaction>('cash_transactions')
                     .query(Q.where('deleted_at', null))
@@ -1385,7 +798,7 @@ export class AutoPostingServiceClass {
                 errors.push(`Cash transactions backfill error: ${err.message}`);
             }
 
-            // 8. Backfill Bank Transactions
+            // 4. Backfill Bank Transactions
             try {
                 const bankTxns = await this.db.get<BankTransaction>('bank_transactions')
                     .query(Q.where('deleted_at', null))
@@ -1412,7 +825,7 @@ export class AutoPostingServiceClass {
                 errors.push(`Bank transactions backfill error: ${err.message}`);
             }
 
-            // 9. Backfill Agri Farm Expenses
+            // 5. Backfill Agri Farm Expenses
             try {
                 const farmExpenses = await this.db.get<AgriFarmExpense>('agri_farm_expenses')
                     .query(Q.where('deleted_at', null))
@@ -1440,7 +853,7 @@ export class AutoPostingServiceClass {
                 errors.push(`Agri farm expenses backfill error: ${err.message}`);
             }
 
-            // 10. Backfill Agri Weekly Settlements
+            // 6. Backfill Agri Weekly Settlements
             try {
                 const settlements = await this.db.get<AgriWeeklySettlement>('agri_weekly_settlements')
                     .query(Q.where('deleted_at', null))
@@ -1468,7 +881,7 @@ export class AutoPostingServiceClass {
                 errors.push(`Agri weekly settlements backfill error: ${err.message}`);
             }
 
-            // 11. Backfill Agri Labor Logs
+            // 7. Backfill Agri Labor Logs
             try {
                 const laborLogs = await this.db.get<AgriLaborLog>('agri_labor_logs')
                     .query(Q.where('deleted_at', null))
@@ -1496,7 +909,7 @@ export class AutoPostingServiceClass {
                 errors.push(`Agri labor logs backfill error: ${err.message}`);
             }
 
-            // 12. Backfill Agri Investor Ledgers
+            // 8. Backfill Agri Investor Ledgers
             try {
                 const investorLedgers = await this.db.get<AgriInvestorLedger>('agri_investor_ledgers')
                     .query(Q.where('deleted_at', null))

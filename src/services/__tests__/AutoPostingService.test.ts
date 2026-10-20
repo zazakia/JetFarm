@@ -22,63 +22,6 @@ describe('AutoPostingService', () => {
         await closeTestDatabase(database);
     });
 
-    it('should auto-post loan disbursements correctly', async () => {
-        await AutoPostingService.postLoanDisbursement({
-            loanId: 'loan-123',
-            amount: 15000,
-            entryDate: new Date(),
-            borrowerName: 'Juan Dela Cruz',
-            postedBy: 'TestUser',
-        });
-
-        const entry = await JournalEntryService.getEntryBySource('loans', 'loan-123');
-        expect(entry).toBeDefined();
-        expect(entry?.totalDebit).toBe(15000);
-        expect(entry?.totalCredit).toBe(15000);
-
-        const lines = await JournalEntryService.getLinesForEntry(entry!.id);
-        const drLine = lines.find(l => l.debitAmount === 15000);
-        const crLine = lines.find(l => l.creditAmount === 15000);
-
-        expect(drLine?.accountCode).toBe('1100'); // Loans Receivable
-        expect(crLine?.accountCode).toBe('1010'); // Cash on Hand
-    });
-
-    it('should auto-post payments with splits (principal + interest + penalty)', async () => {
-        await AutoPostingService.postPayment({
-            paymentId: 'pay-456',
-            principal: 800,
-            interest: 200,
-            penalty: 50,
-            serviceCharge: 10,
-            entryDate: new Date(),
-            borrowerName: 'Maria Clara',
-            postedBy: 'TestUser',
-        });
-
-        const entry = await JournalEntryService.getEntryBySource('payments', 'pay-456');
-        expect(entry).toBeDefined();
-        expect(entry?.totalDebit).toBe(1060); // 800 + 200 + 50 + 10 = 1060
-
-        const lines = await JournalEntryService.getLinesForEntry(entry!.id);
-        
-        // DR Cash on Hand
-        const cashLine = lines.find(l => l.accountCode === '1010');
-        expect(cashLine?.debitAmount).toBe(1060);
-
-        // CR Loans Receivable
-        const principalLine = lines.find(l => l.accountCode === '1100');
-        expect(principalLine?.creditAmount).toBe(800);
-
-        // CR Interest Income
-        const interestLine = lines.find(l => l.accountCode === '4010');
-        expect(interestLine?.creditAmount).toBe(200);
-
-        // CR Penalties
-        const penaltyLine = lines.find(l => l.accountCode === '4040');
-        expect(penaltyLine?.creditAmount).toBe(50);
-    });
-
     it('should auto-post expenses and map category correctly', async () => {
         // Test matching "payroll" keyword -> Salaries & Wages (5010)
         await AutoPostingService.postExpense({
@@ -109,76 +52,6 @@ describe('AutoPostingService', () => {
         const fallbackLines = await JournalEntryService.getLinesForEntry(fallbackEntry!.id);
         const fallbackExpLine = fallbackLines.find(l => l.debitAmount === 500);
         expect(fallbackExpLine?.accountCode).toBe('5100'); // Other Operating Expenses
-    });
-
-    it('should auto-post savings transactions', async () => {
-        // Deposit
-        await AutoPostingService.postSavingsTransaction({
-            transactionId: 'sav-dep',
-            type: 'deposit',
-            amount: 1500,
-            entryDate: new Date(),
-            borrowerName: 'Juan',
-        });
-
-        const depEntry = await JournalEntryService.getEntryBySource('savings_transactions', 'sav-dep');
-        const depLines = await JournalEntryService.getLinesForEntry(depEntry!.id);
-        expect(depLines.find(l => l.accountCode === '1010')?.debitAmount).toBe(1500);
-        expect(depLines.find(l => l.accountCode === '2010')?.creditAmount).toBe(1500);
-
-        // Withdrawal
-        await AutoPostingService.postSavingsTransaction({
-            transactionId: 'sav-wdr',
-            type: 'withdrawal',
-            amount: 500,
-            entryDate: new Date(),
-            borrowerName: 'Juan',
-        });
-
-        const wdrEntry = await JournalEntryService.getEntryBySource('savings_transactions', 'sav-wdr');
-        const wdrLines = await JournalEntryService.getLinesForEntry(wdrEntry!.id);
-        expect(wdrLines.find(l => l.accountCode === '2010')?.debitAmount).toBe(500);
-        expect(wdrLines.find(l => l.accountCode === '1010')?.creditAmount).toBe(500);
-    });
-
-    it('should auto-post share capital transactions correctly', async () => {
-        await AutoPostingService.postShareCapital({
-            transactionId: 'sc-123',
-            amount: 12000,
-            entryDate: new Date(),
-            memberName: 'Juan Dela Cruz',
-            postedBy: 'TestUser',
-        });
-
-        const entry = await JournalEntryService.getEntryBySource('share_capital_transactions', 'sc-123');
-        expect(entry).toBeDefined();
-        expect(entry?.totalDebit).toBe(12000);
-
-        const lines = await JournalEntryService.getLinesForEntry(entry!.id);
-        const cashLine = lines.find(l => l.accountCode === '1010');
-        const scLine = lines.find(l => l.accountCode === '3010');
-
-        expect(cashLine?.debitAmount).toBe(12000);
-        expect(scLine?.creditAmount).toBe(12000);
-    });
-    it('reverses debit and credit accounts for a share-capital withdrawal', async () => {
-        await AutoPostingService.postShareCapital({
-            transactionId: 'sc-withdrawal-1',
-            type: 'withdrawal',
-            amount: 2500,
-            entryDate: new Date(),
-            memberName: 'Juan Dela Cruz',
-            postedBy: 'TestUser',
-        });
-
-        const entry = await JournalEntryService.getEntryBySource(
-            'share_capital_transactions',
-            'sc-withdrawal-1'
-        );
-        const lines = await JournalEntryService.getLinesForEntry(entry!.id);
-
-        expect(lines.find(line => line.accountCode === '3010')?.debitAmount).toBe(2500);
-        expect(lines.find(line => line.accountCode === '1010')?.creditAmount).toBe(2500);
     });
 
     it('should auto-post cash in and out transactions correctly', async () => {
@@ -215,84 +88,6 @@ describe('AutoPostingService', () => {
         expect(outLines.find(l => l.accountCode === '1010')?.creditAmount).toBe(1200);
     });
 
-    it('should classify CBU cash transactions as Equity (3010) and NOT Other Income (4060)', async () => {
-        await AutoPostingService.postCashTransaction({
-            transactionId: 'cash-cbu-1',
-            type: 'in',
-            amount: 5000,
-            particulars: 'Member CBU Capital Build-Up Contribution',
-            entryDate: new Date(),
-            postedBy: 'TestUser',
-        });
-
-        const entry = await JournalEntryService.getEntryBySource('cash_transactions', 'cash-cbu-1');
-        expect(entry).toBeDefined();
-        const lines = await JournalEntryService.getLinesForEntry(entry!.id);
-        expect(lines.find(l => l.accountCode === '1010')?.debitAmount).toBe(5000); // DR Cash on Hand
-        expect(lines.find(l => l.accountCode === '3010')?.creditAmount).toBe(5000); // CR Share Capital
-        expect(lines.find(l => l.accountCode === '4060')).toBeUndefined(); // NOT Other Income
-    });
-
-    it('should correctly split Total CBU and Savings Migration into Equity (3010) and Liabilities (2010)', async () => {
-        await AutoPostingService.postCashTransaction({
-            transactionId: 'cash-mig-1',
-            type: 'in',
-            amount: 633968.78,
-            particulars: 'Total CBU and Savings Migration 2025',
-            entryDate: new Date(),
-            postedBy: 'TestUser',
-        });
-
-        const entry = await JournalEntryService.getEntryBySource('cash_transactions', 'cash-mig-1');
-        expect(entry).toBeDefined();
-        const lines = await JournalEntryService.getLinesForEntry(entry!.id);
-        
-        expect(lines.find(l => l.accountCode === '1010')?.debitAmount).toBe(633968.78);
-        expect(lines.find(l => l.accountCode === '3010')?.creditAmount).toBe(454836.15); // Share Capital
-        expect(lines.find(l => l.accountCode === '2010')?.creditAmount).toBe(179132.63); // Savings Deposits Payable
-        expect(lines.find(l => l.accountCode === '4060')).toBeUndefined(); // 0 to Other Income
-    });
-
-    it('reclassifyLegacyCbuEntries correctly heals legacy entries from 4060 to 3010 and 2010', async () => {
-        // Manually create an old bad entry with 4060 for CBU migration
-        const badEntry = await JournalEntryService.createEntry({
-            entryDate: new Date(),
-            description: 'Total CBU and Savings Migration 2025',
-            entryType: 'auto',
-            sourceTable: 'cash_transactions',
-            sourceId: 'legacy-cbu-bad',
-            postedBy: 'system',
-            lines: [
-                {
-                    accountCode: '1010',
-                    accountName: 'Cash on Hand',
-                    debitAmount: 633968.78,
-                    description: 'Cash received',
-                },
-                {
-                    accountCode: '4060',
-                    accountName: 'Other Income',
-                    creditAmount: 633968.78,
-                    description: 'Other income',
-                },
-            ],
-        }, 'system');
-
-        // Verify initial bad state
-        let lines = await JournalEntryService.getLinesForEntry(badEntry.id);
-        expect(lines.find(l => l.accountCode === '4060')?.creditAmount).toBe(633968.78);
-
-        // Run reclassification
-        const fixed = await AutoPostingService.reclassifyLegacyCbuEntries();
-        expect(fixed).toBeGreaterThanOrEqual(1);
-
-        // Verify corrected state
-        lines = await JournalEntryService.getLinesForEntry(badEntry.id);
-        expect(lines.find(l => l.accountCode === '4060')).toBeUndefined();
-        expect(lines.find(l => l.accountCode === '3010')?.creditAmount).toBe(454836.15);
-        expect(lines.find(l => l.accountCode === '2010')?.creditAmount).toBe(179132.63);
-    });
-
     it('should auto-post bank transactions correctly', async () => {
         // Bank Deposit (Cash -> Bank)
         await AutoPostingService.postBankTransaction({
@@ -325,22 +120,6 @@ describe('AutoPostingService', () => {
         const wdrLines = await JournalEntryService.getLinesForEntry(wdrEntry!.id);
         expect(wdrLines.find(l => l.accountCode === '1010')?.debitAmount).toBe(5000);
         expect(wdrLines.find(l => l.accountCode === '1030')?.creditAmount).toBe(5000);
-    });
-
-    it('should auto-post membership fees collection correctly', async () => {
-        await AutoPostingService.postMembershipFee({
-            sourceId: 'borrower-123',
-            amount: 500,
-            memberName: 'Maria Clara',
-            entryDate: new Date(),
-            postedBy: 'TestUser',
-        });
-
-        const entry = await JournalEntryService.getEntryBySource('borrowers', 'borrower-123');
-        expect(entry).toBeDefined();
-        const lines = await JournalEntryService.getLinesForEntry(entry!.id);
-        expect(lines.find(l => l.accountCode === '1010')?.debitAmount).toBe(500);
-        expect(lines.find(l => l.accountCode === '4070')?.creditAmount).toBe(500); // Miscellaneous Income
     });
 
     it('should auto-post fund transfer between COH and Petty Cash', async () => {
@@ -518,25 +297,25 @@ describe('AutoPostingService', () => {
         expect(lines1.find(l => l.accountCode === '3015')?.creditAmount).toBe(500000);
     });
 
-    it('should backfill unposted transactions cleanly without creating duplicates', async () => {
-        // Create an unposted payment
+
+    it('backfills unposted agri, expense and cash records without duplicates', async () => {
         await database.write(async () => {
-            await database.get('payments').create((p: any) => {
-                p._raw.id = 'unposted-pay-1';
-                p.amount = 1200;
-                p.paymentDate = Date.now();
-                p.collectorId = 'test-coll';
+            await database.get('expenses').create((e: any) => {
+                e._raw.id = 'unposted-expense-1';
+                e.amount = 1200;
+                e.category = 'office_supplies';
+                e.description = 'Bond paper';
+                e.expenseDate = Date.now();
             });
 
-            // Create an unposted savings deposit
-            await database.get('savings_transactions').create((st: any) => {
-                st._raw.id = 'unposted-sav-1';
-                st.amount = 500;
-                st.type = 'deposit';
-                st.date = Date.now();
+            await database.get('cash_transactions').create((ct: any) => {
+                ct._raw.id = 'unposted-cash-1';
+                ct.type = 'in';
+                ct.amount = 500;
+                ct.particulars = 'Field collection top-up';
+                ct.transactionDate = Date.now();
             });
 
-            // Create an unposted farm expense
             await database.get('agri_farm_expenses').create((fe: any) => {
                 fe._raw.id = 'unposted-agri-exp-1';
                 fe.amount = 4200;
@@ -547,27 +326,23 @@ describe('AutoPostingService', () => {
             });
         });
 
-        // Run backfill
         const res = await AutoPostingService.backfillUnpostedTransactions();
         expect(res.postedCount).toBeGreaterThanOrEqual(3);
         expect(res.errors.length).toBe(0);
 
-        // Verify journal entry for payment exists
-        const payEntry = await JournalEntryService.getEntryBySource('payments', 'unposted-pay-1');
-        expect(payEntry).toBeDefined();
-        expect(payEntry?.totalDebit).toBe(1200);
+        const expenseEntry = await JournalEntryService.getEntryBySource('expenses', 'unposted-expense-1');
+        expect(expenseEntry).toBeDefined();
+        expect(expenseEntry?.totalDebit).toBe(1200);
 
-        // Verify journal entry for savings exists
-        const savEntry = await JournalEntryService.getEntryBySource('savings_transactions', 'unposted-sav-1');
-        expect(savEntry).toBeDefined();
-        expect(savEntry?.totalDebit).toBe(500);
+        const cashEntry = await JournalEntryService.getEntryBySource('cash_transactions', 'unposted-cash-1');
+        expect(cashEntry).toBeDefined();
+        expect(cashEntry?.totalDebit).toBe(500);
 
-        // Verify journal entry for farm expense exists
-        const expEntry = await JournalEntryService.getEntryBySource('agri_farm_expenses', 'unposted-agri-exp-1');
-        expect(expEntry).toBeDefined();
-        expect(expEntry?.totalDebit).toBe(4200);
+        const agriEntry = await JournalEntryService.getEntryBySource('agri_farm_expenses', 'unposted-agri-exp-1');
+        expect(agriEntry).toBeDefined();
+        expect(agriEntry?.totalDebit).toBe(4200);
 
-        // Run backfill again — should post 0 new entries (idempotent)
+        // Running it again must not repost what is already on the ledger.
         const reRun = await AutoPostingService.backfillUnpostedTransactions();
         expect(reRun.postedCount).toBe(0);
     });

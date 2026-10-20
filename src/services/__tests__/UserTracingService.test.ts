@@ -22,31 +22,31 @@ describe('UserTracingService', () => {
             await database.write(async () => {
                 const logsColl = database.get('action_logs');
                 await logsColl.create((l: any) => {
-                    l.entityType = 'loans';
-                    l.entityId = 'loan-001';
+                    l.entityType = 'journal_entries';
+                    l.entityId = 'je-001';
                     l.action = 'CREATE';
                     l.performedBy = 'user-admin-1';
                     l.oldData = '';
-                    l.newData = JSON.stringify({ loan_number: 'LN-2026-001', principal_amount: 15000 });
+                    l.newData = JSON.stringify({ reference_number: 'JE-2026-001', total_debit: 15000 });
                     l.timestamp = Date.now();
                 });
                 await logsColl.create((l: any) => {
-                    l.entityType = 'payments';
-                    l.entityId = 'pay-001';
+                    l.entityType = 'expenses';
+                    l.entityId = 'exp-001';
                     l.action = 'CREATE';
                     l.performedBy = 'user-admin-1';
                     l.oldData = '';
-                    l.newData = JSON.stringify({ amount: 1500, receipt_number: 'OR-8888' });
+                    l.newData = JSON.stringify({ amount: 1500, description: 'Hauling' });
                     l.timestamp = Date.now() + 1000;
                 });
             });
 
             const timeline = await service.getUserActivityTimeline('user-admin-1');
             expect(timeline.length).toBe(2);
-            expect(timeline[0].entityType).toBe('payments');
+            expect(timeline[0].entityType).toBe('expenses');
             expect(timeline[0].action).toBe('CREATE');
             expect(timeline[0].narrative).toBeDefined();
-            expect(timeline[1].entityType).toBe('loans');
+            expect(timeline[1].entityType).toBe('journal_entries');
         });
     });
 
@@ -57,7 +57,7 @@ describe('UserTracingService', () => {
         });
 
         it('correctly aggregates data relationships, counts, and organization info', async () => {
-            // Seed user profile, business unit, action log, and loan
+            // Seed user profile, business unit, action log, and journal entry
             await database.write(async () => {
                 const buColl = database.get('business_units');
                 await buColl.create((b: any) => {
@@ -87,13 +87,16 @@ describe('UserTracingService', () => {
                     l.timestamp = Date.now();
                 });
 
-                const loansColl = database.get('loans');
-                await loansColl.create((loan: any) => {
-                    loan.borrowerId = 'borrower-1';
-                    loan.approvedBy = 'user-officer-99';
-                    loan.principalAmount = 25000;
-                    loan.totalAmount = 27500;
-                    loan.loanNumber = 'LN-9999';
+                const journalColl = database.get('journal_entries');
+                await journalColl.create((je: any) => {
+                    je.referenceNumber = 'JE-9999';
+                    je.description = 'Parcel input purchase';
+                    je.entryType = 'manual';
+                    je.postedBy = 'user-officer-99';
+                    je.isPosted = true;
+                    je.totalDebit = 25000;
+                    je.totalCredit = 25000;
+                    je.entryDate = new Date();
                 });
             });
 
@@ -102,8 +105,8 @@ describe('UserTracingService', () => {
             expect(rel?.user.fullName).toBe('Maria Santos');
             expect(rel?.organization.branchName).toBe('Bagacay Benchmark Branch');
             expect(rel?.counts.actionsLogged).toBe(1);
-            expect(rel?.counts.loansApproved).toBe(1);
-            expect(rel?.totals.loansVolume).toBe(25000);
+            expect(rel?.counts.journalEntriesPosted).toBe(1);
+            expect(rel?.totals.journalEntriesVolume).toBe(25000);
             expect(rel?.recentRelatedEntities.length).toBeGreaterThanOrEqual(1);
         });
     });

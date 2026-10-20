@@ -89,32 +89,6 @@ describe('MasterDataService', () => {
         });
     });
 
-    describe('Marketplace Categories Management', () => {
-        it('creates, reads, updates, and toggles category status', async () => {
-            const cat = await service.createCategory({
-                name: 'Fried Chicken Combos',
-                slug: 'fried-chicken-combos',
-                icon: 'restaurant',
-                isActive: true,
-            });
-
-            expect(cat.id).toBeDefined();
-            expect(cat.name).toBe('Fried Chicken Combos');
-            expect(cat.slug).toBe('fried-chicken-combos');
-
-            const list = await service.getCategories();
-            expect(list.some(c => c.id === cat.id)).toBe(true);
-
-            const updated = await service.updateCategory(cat.id, {
-                name: 'Value Meals & Combos',
-            });
-            expect(updated.name).toBe('Value Meals & Combos');
-
-            const toggled = await service.toggleCategoryActive(cat.id);
-            expect(toggled.isActive).toBe(false);
-        });
-    });
-
     describe('Statutory Contribution Rates Management', () => {
         it('creates, reads, updates, and deletes statutory rate brackets', async () => {
             const rate = await service.createStatutoryRate({

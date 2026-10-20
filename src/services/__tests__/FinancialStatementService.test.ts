@@ -11,6 +11,7 @@
  */
 
 import { FinancialStatementService } from '../FinancialStatementService';
+import { COMPANY_NAME_FULL } from '../../constants/brand';
 
 import { database } from '../../database';
 
@@ -115,10 +116,12 @@ const mockDb = database as jest.Mocked<typeof database>;
 
 // ─── Sample WatermelonDB-like records ─────────────────────────────────────────
 
-function makePayments(amounts: number[], year: number) {
+function makeCashIns(amounts: number[], year: number) {
     return amounts.map((amount, i) => ({
         amount,
-        paymentDate: new Date(year, i % 12, 1).getTime(),
+        type: 'in',
+        particulars: `Harvest cash receipt ${i + 1}`,
+        transactionDate: new Date(year, i % 12, 1).getTime(),
     }));
 }
 
@@ -130,24 +133,61 @@ function makeExpenses(amounts: number[], year: number) {
     }));
 }
 
-function makeSavingsTx(year: number) {
+function makeParcels() {
     return [
-        { type: 'deposit', amount: 200000, date: new Date(year, 2, 1).getTime() },
-        { type: 'withdraw_cash', amount: 50000, date: new Date(year, 6, 1).getTime() },
+        { id: 'p1', name: 'Linao 1', areaHectares: 2.5, status: 'planted' },
+        { id: 'p2', name: 'Linao 2', areaHectares: 3, status: 'planted' },
+        { id: 'p3', name: 'Linao 3', areaHectares: 1, status: 'fallow' },
     ];
 }
 
-function makeShareTx(year: number) {
+function makeCropCycles(year: number) {
     return [
-        { transactionType: 'DEPOSIT', amount: 100000, date: new Date(year, 0, 15).getTime(), memberId: 'member-1' },
-        { transactionType: 'SUBSCRIPTION', amount: 50000, date: new Date(year, 3, 10).getTime(), memberId: 'member-2' },
+        {
+            parcelId: 'p1', status: 'growing', areaPlantedHa: 2.5,
+            expectedYieldKg: 4000, totalActualYieldKg: 3600,
+            plantingDate: new Date(year, 1, 10).getTime(),
+        },
+        {
+            parcelId: 'p2', status: 'completed', areaPlantedHa: 3,
+            expectedYieldKg: 6000, totalActualYieldKg: 6450,
+            plantingDate: new Date(year, 3, 2).getTime(),
+        },
     ];
 }
 
-function makeLoans(year: number) {
+function makeFarmExpenses(year: number) {
     return [
-        { principalAmount: 50000, status: 'active', releaseDate: new Date(year, 1, 1).getTime() },
-        { principalAmount: 75000, status: 'active', releaseDate: new Date(year, 4, 1).getTime() },
+        { amount: 4000, expenseDate: new Date(year, 0, 20).getTime() },
+        { amount: 2500, expenseDate: new Date(year, 5, 4).getTime() },
+    ];
+}
+
+function makeLaborLogs() {
+    return [
+        { totalPay: 1800, paymentStatus: 'paid' },
+        { totalPay: 700, paymentStatus: 'pending' },
+    ];
+}
+
+function makeSettlements() {
+    return [
+        { netPayoutDueThisWeek: 3200, paymentStatus: 'paid' },
+    ];
+}
+
+function makeInvestorLedgers() {
+    return [
+        { type: 'capital_injection', amount: 50000 },
+        { type: 'harvest_offtake', amount: 20000 },
+        { type: 'payout_refund', amount: 5000 },
+    ];
+}
+
+function makeInvestors() {
+    return [
+        { id: 'inv-1', name: 'Investor One' },
+        { id: 'inv-2', name: 'Investor Two' },
     ];
 }
 
@@ -167,21 +207,24 @@ beforeEach(() => {
         const mockQuery = (records: any[]) => ({ query: jest.fn(() => makeQueryChain(records)) });
 
         switch (table) {
-            case 'payments':
-                return mockQuery(makePayments([10000, 15000, 20000, 12000], YEAR));
+            case 'cash_transactions':
+                return mockQuery(makeCashIns([10000, 15000, 20000, 12000], YEAR));
             case 'expenses':
                 return mockQuery(makeExpenses([5000, 3000, 2000], YEAR));
-            case 'savings_transactions':
-                return mockQuery(makeSavingsTx(YEAR));
-            case 'share_capital_transactions':
-                return mockQuery(makeShareTx(YEAR));
-            case 'loans':
-                return mockQuery(makeLoans(YEAR));
-            case 'borrowers':
-                return mockQuery([
-                    { id: 'b1', fullName: 'Test Borrower 1' },
-                    { id: 'b2', fullName: 'Test Borrower 2' },
-                ]);
+            case 'agri_parcels':
+                return mockQuery(makeParcels());
+            case 'agri_crop_cycles':
+                return mockQuery(makeCropCycles(YEAR));
+            case 'agri_farm_expenses':
+                return mockQuery(makeFarmExpenses(YEAR));
+            case 'agri_labor_logs':
+                return mockQuery(makeLaborLogs());
+            case 'agri_weekly_settlements':
+                return mockQuery(makeSettlements());
+            case 'agri_investor_ledgers':
+                return mockQuery(makeInvestorLedgers());
+            case 'agri_investors':
+                return mockQuery(makeInvestors());
             default:
                 return mockQuery([]);
         }
@@ -321,36 +364,77 @@ describe('FinancialStatementService', () => {
 
     describe('getNotes', () => {
 
-        it('returns organization metadata', async () => {
+        it('returns organization metadata from the brand constant', async () => {
             const result = await FinancialStatementService.getNotes(YEAR);
 
-            expect(result.organization.name).toContain('JetFarm');
+            expect(result.organization.name).toBe(COMPANY_NAME_FULL);
             expect(result.organization.address).toContain('Ormoc City');
+            expect(result.organization.primaryPurpose).toContain('crop production');
         });
 
-        it('has 8 accounting policy items', async () => {
+        it('has at least six accounting policy items', async () => {
             const result = await FinancialStatementService.getNotes(YEAR);
 
             expect(result.accountingPolicies.length).toBeGreaterThanOrEqual(6);
         });
 
-        it('loan portfolio has non-negative outstanding', async () => {
+        it('farm operations note aggregates the parcel and crop-cycle feeds', async () => {
             const result = await FinancialStatementService.getNotes(YEAR);
 
-            expect(result.loanPortfolio.totalOutstanding).toBeGreaterThanOrEqual(0);
-            expect(result.loanPortfolio.numberOfBorrowers).toBeGreaterThanOrEqual(0);
+            // 3 parcels; only the 'growing' cycle counts as active.
+            expect(result.farmOperations.numberOfParcels).toBe(3);
+            expect(result.farmOperations.totalHectares).toBeCloseTo(6.5, 2);
+            expect(result.farmOperations.activeCropCycles).toBe(1);
+            expect(result.farmOperations.totalPlantedHectares).toBeCloseTo(5.5, 2);
+            expect(result.farmOperations.expectedYieldKg).toBe(10000);
+            expect(result.farmOperations.actualYieldKg).toBe(10050);
         });
 
-        it('statutory funds sum to approximately 30% of historical surplus', async () => {
+        it('investor participation note nets off-take and refunds against injected capital', async () => {
             const result = await FinancialStatementService.getNotes(YEAR);
+
+            expect(result.investorParticipation.numberOfInvestors).toBe(2);
+            expect(result.investorParticipation.capitalInjected).toBe(50000);
+            expect(result.investorParticipation.offtakeDeductions).toBe(20000);
+            expect(result.investorParticipation.payoutsRefunded).toBe(5000);
+            expect(result.investorParticipation.netInvestorBalance).toBe(25000);
+        });
+
+        it('statutory funds sum to 30% of the historical surplus base', async () => {
+            const result = await FinancialStatementService.getNotes(YEAR);
+
+            // Cash in 57,000 − expenses 10,000 − farm inputs 6,500
+            // − labour 2,500 − settlements 3,200 = 34,800 base.
+            const base = 34800;
+            expect(result.statutoryFunds.reserveFund).toBeCloseTo(base * 0.10, 2);
+            expect(result.statutoryFunds.educationFund).toBeCloseTo(base * 0.10, 2);
+            expect(result.statutoryFunds.communityDevFund).toBeCloseTo(base * 0.03, 2);
+            expect(result.statutoryFunds.optionalFund).toBeCloseTo(base * 0.07, 2);
 
             const totalFunds = result.statutoryFunds.reserveFund
                 + result.statutoryFunds.educationFund
                 + result.statutoryFunds.communityDevFund
                 + result.statutoryFunds.optionalFund;
-
-            // All should be non-negative
             expect(totalFunds).toBeGreaterThanOrEqual(0);
+            expect(totalFunds).toBeCloseTo(base * 0.30, 1);
+        });
+
+        it('floors every statutory fund at zero in a loss year', async () => {
+            // A crop year that costs more than the receipts it produced carries
+            // no distribable surplus, so it must not disclose negative reserves.
+            (mockDb.get as jest.Mock).mockImplementation((table: string) => {
+                const chain = (records: any[]) => ({ query: jest.fn(() => makeQueryChain(records)) });
+                if (table === 'cash_transactions') return chain([{ amount: 1000, type: 'in' }]);
+                if (table === 'expenses') return chain([{ amount: 9000, expenseDate: new Date(YEAR, 0, 1).getTime() }]);
+                return chain([]);
+            });
+
+            const result = await FinancialStatementService.getNotes(YEAR);
+
+            expect(result.statutoryFunds.reserveFund).toBe(0);
+            expect(result.statutoryFunds.educationFund).toBe(0);
+            expect(result.statutoryFunds.communityDevFund).toBe(0);
+            expect(result.statutoryFunds.optionalFund).toBe(0);
         });
 
     });
