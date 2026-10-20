@@ -122,6 +122,9 @@ const moduleManifests = () => {
     const owner = new Map(); // table -> module dir
     const modules = [];
     const dir = path.join(root, 'src', 'modules');
+    // The coop module framework is retired on the agribusiness-only build, so the
+    // directory may not exist. Absence means "no module claims any table".
+    if (!existsSync(dir)) return { owner, modules };
     for (const entry of readdirSync(dir)) {
         const manifestPath = path.join(dir, entry, 'manifest.ts');
         if (!existsSync(manifestPath)) continue;

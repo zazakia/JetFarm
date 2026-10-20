@@ -1,9 +1,13 @@
 import { Q, Database } from '@nozbe/watermelondb';
 import { database as globalDatabase } from '../database';
 import BusinessUnit from '../database/models/BusinessUnit';
-import { ChartOfAccountsServiceClass } from './ChartOfAccountsService';
 import ActionLogService from './ActionLogService';
-import { CoopModule } from '../modules/core/BaseModule';
+
+export interface BusinessUnitInput {
+    name: string;
+    slug: string;
+    description?: string | null;
+}
 
 export class BusinessUnitServiceClass {
     private db: Database;
@@ -33,24 +37,16 @@ export class BusinessUnitServiceClass {
     }
 
     /**
-     * Get active business unit by module ID
+     * Create a reporting segment (business unit).
+     *
+     * The coop business-unit module framework is retired on this branch, so segments are created
+     * directly rather than registered from a module manifest that also seeded its own Chart of
+     * Accounts. Segment accounts belong in the base chart of accounts now.
      */
-    async getByModuleId(moduleId: string): Promise<BusinessUnit | null> {
-        const results = await this.db.collections.get<BusinessUnit>('business_units').query(
-            Q.where('module_id', moduleId),
-            Q.where('deleted_at', Q.eq(null))
-        ).fetch();
-        return results.length > 0 ? results[0] : null;
-    }
-
-    /**
-     * Registers and enables a business unit module
-     */
-    async registerModule(module: CoopModule, performedBy?: string): Promise<BusinessUnit> {
-        const existing = await this.getByModuleId(module.id);
+    async create(input: BusinessUnitInput, performedBy?: string): Promise<BusinessUnit> {
+        const existing = await this.getBySlug(input.slug);
         if (existing) {
             if (!existing.isActive) {
-                // Reactivate
                 await this.db.write(async () => {
                     await existing.update(record => {
                         record.isActive = true;
@@ -67,46 +63,28 @@ export class BusinessUnitServiceClass {
             return existing;
         }
 
-        // Create new record
-        let newBU!: BusinessUnit;
+        let created!: BusinessUnit;
         await this.db.write(async () => {
-            newBU = await this.db.get<BusinessUnit>('business_units').create(record => {
-                record.name = module.name;
-                record.slug = module.id;
-                record.moduleId = module.id;
+            created = await this.db.get<BusinessUnit>('business_units').create(record => {
+                record.name = input.name;
+                record.slug = input.slug;
+                // The remote column is NOT NULL and the module framework is gone, so the slug
+                // doubles as the legacy module identifier on this branch.
+                record.moduleId = input.slug;
                 record.isActive = true;
-                record.description = module.description;
+                record.description = input.description ?? null;
             });
         });
 
         await ActionLogService.logAction({
             entityType: 'business_units',
-            entityId: newBU.id,
+            entityId: created.id,
             action: 'CREATE',
-            newData: newBU._raw,
+            newData: created._raw,
             performedBy
         });
 
-        // Seed Chart of Accounts for this module
-        await this.seedModuleAccounts(module, performedBy);
-
-        return newBU;
-    }
-
-    /**
-     * Seeds the business unit module accounts if they don't already exist
-     */
-    private async seedModuleAccounts(module: CoopModule, performedBy?: string) {
-        const coaService = new ChartOfAccountsServiceClass(this.db);
-        for (const account of module.defaultCoA) {
-            try {
-                // Prefix/namespace code with the segment code if needed (manifest handles code structure)
-                await coaService.create(account, performedBy);
-            } catch (err: any) {
-                // If it already exists (e.g. re-enabling or seeded previously), skip it
-                console.warn(`[BusinessUnitService] Skipping seeding of account ${account.code}: ${err.message}`);
-            }
-        }
+        return created;
     }
 
     /**

@@ -3,33 +3,27 @@ import { createTestDatabase, closeTestDatabase } from '../../__tests__/test-util
 import { BusinessUnitServiceClass } from '../BusinessUnitService';
 import { ConsolidationServiceClass } from '../ConsolidationService';
 import { ChartOfAccountsServiceClass } from '../ChartOfAccountsService';
-import { ModuleAccountingBridge } from '../../modules/core/ModuleAccountingBridge';
-import { WaterStationModule } from '../../modules/water-station/manifest';
-import { WsCustomerServiceClass } from '../../modules/water-station/services/WsCustomerService';
-import { WsDeliveryServiceClass } from '../../modules/water-station/services/WsDeliveryService';
-import WsDelivery from '../../database/models/WsDelivery';
+import { JournalEntryServiceClass } from '../JournalEntryService';
 
-describe('MPCO Module Framework & Consolidation', () => {
+jest.mock('../ActionLogService', () => ({
+    __esModule: true,
+    default: { logAction: jest.fn().mockResolvedValue(undefined) },
+}));
+
+describe('Business-unit consolidation', () => {
     let database: Database;
     let businessUnitService: BusinessUnitServiceClass;
     let consolidationService: ConsolidationServiceClass;
     let coaService: ChartOfAccountsServiceClass;
-    let customerService: WsCustomerServiceClass;
-    let deliveryService: WsDeliveryServiceClass;
+    let journalService: JournalEntryServiceClass;
 
     beforeEach(async () => {
         database = createTestDatabase();
         businessUnitService = new BusinessUnitServiceClass(database);
         consolidationService = new ConsolidationServiceClass(database);
         coaService = new ChartOfAccountsServiceClass(database);
-        customerService = new WsCustomerServiceClass(database);
-        deliveryService = new WsDeliveryServiceClass(database);
+        journalService = new JournalEntryServiceClass(database);
 
-        // Explicitly set the database instance on the shared bridge if needed,
-        // but here the services receive database as constructor parameter.
-        (ModuleAccountingBridge as any).journalEntryService.db = database;
-
-        // Seed base Chart of Accounts
         await coaService.seed('TestAdmin');
     });
 
@@ -37,143 +31,146 @@ describe('MPCO Module Framework & Consolidation', () => {
         await closeTestDatabase(database);
     });
 
-    it('should register a module and seed its segment Chart of Accounts', async () => {
-        const bu = await businessUnitService.registerModule(WaterStationModule, 'TestAdmin');
-        expect(bu.name).toBe('Water Station');
-        expect(bu.slug).toBe('water-station');
-        expect(bu.isActive).toBe(true);
-
-        // Verify the segment accounts were seeded
-        const cashAcc = await coaService.getByCode('1015');
-        const revenueAcc = await coaService.getByCode('4100');
-        const suppliesAcc = await coaService.getByCode('5120');
-
-        expect(cashAcc?.name).toBe('Cash on Hand — Water Station');
-        expect(revenueAcc?.name).toBe('Water Sales Revenue');
-        expect(suppliesAcc?.name).toBe('Cost of Sales — Water Station Supplies');
-    });
-
     it('should aggregate ledger balances by business unit segment correctly', async () => {
-        // Register the module
-        await businessUnitService.registerModule(WaterStationModule, 'TestAdmin');
-
-        // Post a Journal Entry tagged to Water Station
-        await ModuleAccountingBridge.postModuleEntry(
-            WaterStationModule,
-            {
-                entryDate: new Date(),
-                description: 'Sales collection',
-                entryType: 'auto',
-                lines: [
-                    { accountCode: '1015', debitAmount: 500 }, // WS Cash
-                    { accountCode: '4100', creditAmount: 500 } // WS Revenue
-                ]
-            },
+        const agriStore = await businessUnitService.create(
+            { name: 'Agri-Store', slug: 'agri-store', description: 'Farm input supply' },
             'TestAdmin'
         );
 
-        // Post a Cooperative-wide (non-segment) journal entry
-        await ModuleAccountingBridge.postModuleEntry(
-            // Use dummy or base structure (Consolidation treats empty as Coop-wide)
-            { ...WaterStationModule, id: '' },
-            {
-                entryDate: new Date(),
-                description: 'General membership registration fee',
-                entryType: 'auto',
-                lines: [
-                    { accountCode: '1010', debitAmount: 150 }, // Coop Cash
-                    { accountCode: '4030', creditAmount: 150 } // Membership Fees
-                ]
-            },
+        // Segment entry: agri-store buys fertilizer inventory on account.
+        await journalService.createEntry({
+            entryDate: new Date(),
+            description: 'Agri-Store input purchase on account',
+            entryType: 'manual',
+            lines: [
+                { accountCode: '1210', debitAmount: 15000, businessUnitId: agriStore.slug },
+                { accountCode: '2030', creditAmount: 15000, businessUnitId: agriStore.slug }
+            ]
+        }, 'TestAdmin');
+
+        // Head-office (unsegmented) entry: farm labor paid from cash on hand.
+        await journalService.createEntry({
+            entryDate: new Date(),
+            description: 'Field wages from cash on hand',
+            entryType: 'manual',
+            lines: [
+                { accountCode: '5010', debitAmount: 4200 },
+                { accountCode: '1010', creditAmount: 4200 }
+            ]
+        }, 'TestAdmin');
+
+        const asOf = new Date();
+        const segmentBalances = await consolidationService.getBalances(asOf, agriStore.slug);
+        expect(segmentBalances.get('1210')).toBe(15000);
+        expect(segmentBalances.get('2030')).toBe(15000);
+        expect(segmentBalances.get('5010')).toBeUndefined();
+
+        const headOfficeBalances = await consolidationService.getBalances(asOf, 'coop-base');
+        expect(headOfficeBalances.get('5010')).toBe(4200);
+        expect(headOfficeBalances.get('1010')).toBe(-4200);
+        expect(headOfficeBalances.get('1210')).toBeUndefined();
+
+        const consolidated = await consolidationService.getBalances(asOf);
+        expect(consolidated.get('1210')).toBe(15000);
+        expect(consolidated.get('2030')).toBe(15000);
+        expect(consolidated.get('5010')).toBe(4200);
+        expect(consolidated.get('1010')).toBe(-4200);
+    });
+
+    it('should exclude unposted entries from segment and consolidated balances', async () => {
+        const agriStore = await businessUnitService.create(
+            { name: 'Agri-Store', slug: 'agri-store' },
             'TestAdmin'
         );
 
-        // Verify segment-specific balances (Water Station only)
-        const wsBalances = await consolidationService.getBalances(new Date(), 'water-station');
-        expect(wsBalances.get('1015')).toBe(500);
-        expect(wsBalances.get('4100')).toBe(500);
-        expect(wsBalances.get('1010')).toBeUndefined(); // Coop cash should not appear in WS segment
+        const entry = await journalService.createEntry({
+            entryDate: new Date(),
+            description: 'Agri-Store offtake sale',
+            entryType: 'manual',
+            lines: [
+                { accountCode: '1010', debitAmount: 8000, businessUnitId: agriStore.slug },
+                { accountCode: '4110', creditAmount: 8000, businessUnitId: agriStore.slug }
+            ]
+        }, 'TestAdmin');
 
-        // Verify Cooperative Base balances only (excluding Water Station segment)
-        const coopBaseBalances = await consolidationService.getBalances(new Date(), 'coop-base');
-        expect(coopBaseBalances.get('1010')).toBe(150);
-        expect(coopBaseBalances.get('4030')).toBe(150);
-        expect(coopBaseBalances.get('1015')).toBeUndefined(); // WS Cash should not appear in Coop Base
+        await database.write(async () => {
+            await entry.update(record => {
+                (record as any).isPosted = false;
+            });
+        });
 
-        // Verify consolidated balances (Coop + all segments combined)
-        const consolidatedBalances = await consolidationService.getBalances(new Date());
-        expect(consolidatedBalances.get('1015')).toBe(500);
-        expect(consolidatedBalances.get('4100')).toBe(500);
-        expect(consolidatedBalances.get('1010')).toBe(150);
-        expect(consolidatedBalances.get('4030')).toBe(150);
+        expect((await consolidationService.getBalances(new Date(), agriStore.slug)).size).toBe(0);
+        expect((await consolidationService.getBalances(new Date())).size).toBe(0);
     });
 
-    it('should process Water Station deliveries and post balanced double-entry journals', async () => {
-        // Register Water Station business unit
-        await businessUnitService.registerModule(WaterStationModule, 'TestAdmin');
+    it('should report segment and consolidated profit or loss for the fiscal year', async () => {
+        const agriStore = await businessUnitService.create(
+            { name: 'Agri-Store', slug: 'agri-store' },
+            'TestAdmin'
+        );
+        const now = new Date();
+        const year = now.getFullYear();
 
-        // Create a customer
-        const customer = await customerService.create({
-            name: 'Juan Dela Cruz',
-            phone: '09123456789',
-            address: 'Purok 1, Ormoc',
-            isMember: false
+        await journalService.createEntry({
+            entryDate: now,
+            description: 'Agri-Store input sale',
+            entryType: 'manual',
+            lines: [
+                { accountCode: '1010', debitAmount: 9000, businessUnitId: agriStore.slug },
+                { accountCode: '4110', creditAmount: 9000, businessUnitId: agriStore.slug }
+            ]
         }, 'TestAdmin');
 
-        // Record a Cash Sale delivery: 10 gallons @ 35 PHP
-        const delivery = await deliveryService.createDelivery({
-            customerId: customer.id,
-            deliveryDate: new Date(),
-            gallons: 10,
-            pricePerGallon: 35,
-            isPaidOnDelivery: true,
-            paymentMethod: 'cash'
+        await journalService.createEntry({
+            entryDate: now,
+            description: 'Agri-Store cost of goods sold',
+            entryType: 'manual',
+            lines: [
+                { accountCode: '5130', debitAmount: 6000, businessUnitId: agriStore.slug },
+                { accountCode: '1210', creditAmount: 6000, businessUnitId: agriStore.slug }
+            ]
         }, 'TestAdmin');
 
-        expect(delivery.totalAmount).toBe(350);
-        expect(delivery.status).toBe('delivered');
+        // Head-office harvest offtake belongs to the consolidated view only.
+        await journalService.createEntry({
+            entryDate: now,
+            description: 'Cassava offtake revenue',
+            entryType: 'manual',
+            lines: [
+                { accountCode: '1010', debitAmount: 20000 },
+                { accountCode: '4140', creditAmount: 20000 }
+            ]
+        }, 'TestAdmin');
 
-        // Verify Cash on Hand for Water Station went up
-        const wsBalances = await consolidationService.getBalances(new Date(), 'water-station');
-        expect(wsBalances.get('1015')).toBe(350); // Cash on Hand - WS
-        expect(wsBalances.get('4100')).toBe(350); // Water Sales Revenue
+        const segmentPnl = await consolidationService.getPnL(year, agriStore.slug);
+        expect(segmentPnl.totalRevenues).toBe(9000);
+        expect(segmentPnl.totalExpenses).toBe(6000);
+        expect(segmentPnl.netSurplus).toBe(3000);
+
+        const consolidatedPnl = await consolidationService.getPnL(year);
+        expect(consolidatedPnl.totalRevenues).toBe(29000);
+        expect(consolidatedPnl.netSurplus).toBe(23000);
     });
 
-    it('should support charge deliveries and post payments on account later', async () => {
-        // Register Water Station business unit
-        await businessUnitService.registerModule(WaterStationModule, 'TestAdmin');
+    it('should balance the consolidated balance sheet equation', async () => {
+        const agriStore = await businessUnitService.create(
+            { name: 'Agri-Store', slug: 'agri-store' },
+            'TestAdmin'
+        );
 
-        // Create customer
-        const customer = await customerService.create({
-            name: 'Maria Clara',
-            isMember: false
+        await journalService.createEntry({
+            entryDate: new Date(),
+            description: 'Agri-Store input purchase on account',
+            entryType: 'manual',
+            lines: [
+                { accountCode: '1210', debitAmount: 15000, businessUnitId: agriStore.slug },
+                { accountCode: '2030', creditAmount: 15000, businessUnitId: agriStore.slug }
+            ]
         }, 'TestAdmin');
 
-        // Record a charge sale delivery: 20 gallons @ 35 PHP
-        const delivery = await deliveryService.createDelivery({
-            customerId: customer.id,
-            deliveryDate: new Date(),
-            gallons: 20,
-            pricePerGallon: 35,
-            isPaidOnDelivery: false // Charge Sale
-        }, 'TestAdmin');
-
-        expect(delivery.totalAmount).toBe(700);
-        expect(delivery.status).toBe('pending');
-
-        // Verify Other Receivables went up, Cash remains 0
-        let wsBalances = await consolidationService.getBalances(new Date(), 'water-station');
-        expect(wsBalances.get('1500')).toBe(700); // Receivables
-        expect(wsBalances.get('1015')).toBeUndefined(); // Cash is 0/empty
-        expect(wsBalances.get('4100')).toBe(700); // Revenue
-
-        // Complete the delivery (collect payment later)
-        await deliveryService.completeDelivery(delivery.id, 'gcash', 'TestAdmin');
-
-        // Verify Receivables went down to 0, Cash went up to 700
-        wsBalances = await consolidationService.getBalances(new Date(), 'water-station');
-        expect(wsBalances.get('1500')).toBe(0); // Receivables cleared
-        expect(wsBalances.get('1015')).toBe(700); // Cash collected
-        expect(wsBalances.get('4100')).toBe(700); // Revenue unchanged
+        const sheet = await consolidationService.getBalanceSheet(new Date().getFullYear());
+        expect(sheet.totalAssets).toBe(15000);
+        expect(sheet.totalLiabilities).toBe(15000);
+        expect(sheet.totalAssets).toBe(sheet.totalLiabilities + sheet.totalEquity);
     });
 });

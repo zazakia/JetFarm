@@ -77,8 +77,6 @@ export const LENDING_MENU: MenuItem[] = [
 export const MAIN_MENU: MenuItem[] = [
     { icon: 'account-balance-wallet', label: 'Operating Expenses', route: '/(admin)/expenses', featureKey: 'module.expenses' },
     { icon: 'monetization-on', label: 'Staff Payroll', route: '/(admin)/payroll', featureKey: 'module.payroll' },
-    { icon: 'store', label: 'Community Marketplace', route: '/(admin)/marketplace', featureKey: 'module.marketplace' },
-    { icon: 'grid-view', label: 'Cooperative Modules Hub', route: '/(admin)/modules', featureKey: 'module.business_modules' },
 ];
 
 // ==========================================

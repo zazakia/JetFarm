@@ -93,8 +93,6 @@ export default function PurchaseJournal() {
                         {[
                             { id: 'all', label: 'All Units' },
                             { id: 'agri-store', label: 'Agri-Store' },
-                            { id: 'pharmacy', label: 'Pharmacy' },
-                            { id: 'water-station', label: 'Water Station' },
                         ].map(m => (
                             <Pressable
                                 key={m.id}

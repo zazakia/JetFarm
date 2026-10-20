@@ -59,11 +59,11 @@ describe('useFeatureFlags reactive subscription', () => {
             subscriberCallback?.({
                 'module.loans': true,
                 'module.payroll': true,
-                'feature.modules.water_station.enabled': true,
+                'module.accounting': true,
             });
         });
 
         expect(result.current.isEnabled('module.payroll')).toBe(true);
-        expect(result.current.flags['feature.modules.water_station.enabled']).toBe(true);
+        expect(result.current.flags['module.accounting']).toBe(true);
     });
 });

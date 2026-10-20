@@ -17,18 +17,24 @@ describe('getFeatureKeyForRoute', () => {
         expect(getFeatureKeyForRoute('/(admin)/payments')?.featureKey).toBe('module.payments');
         expect(getFeatureKeyForRoute('/(admin)/expenses')?.featureKey).toBe('module.expenses');
         expect(getFeatureKeyForRoute('/(admin)/payroll')?.featureKey).toBe('module.payroll');
-        expect(getFeatureKeyForRoute('/(admin)/marketplace')?.featureKey).toBe('module.marketplace');
         expect(getFeatureKeyForRoute('/(admin)/accounting')?.featureKey).toBe('module.accounting');
         expect(getFeatureKeyForRoute('/accounting/crj')?.featureKey).toBe('module.accounting');
         expect(getFeatureKeyForRoute('/(admin)/accounting/suppliers')?.featureKey).toBe('module.accounting');
     });
 
-    it('maps business units and sub-modules properly', () => {
-        expect(getFeatureKeyForRoute('/(admin)/modules')?.featureKey).toBe('module.business_modules');
-        expect(getFeatureKeyForRoute('/(admin)/modules/water-station')?.featureKey).toBe('feature.modules.water_station.enabled');
-        expect(getFeatureKeyForRoute('/(admin)/modules/agri-store')?.featureKey).toBe('feature.modules.agri_store.enabled');
-        expect(getFeatureKeyForRoute('/(admin)/modules/pharmacy')?.featureKey).toBe('feature.modules.pharmacy.enabled');
-        expect(getFeatureKeyForRoute('/(admin)/modules/transport')?.featureKey).toBe('feature.modules.transport.enabled');
+    // The coop business-unit module framework (Water Station / Agri-Store / Pharmacy /
+    // Transport consoles) and the marketplace are physically removed on this branch, so
+    // their routes carry no feature gate any more. Guard against re-introducing the mapping.
+    it('gates no retired module or marketplace route', () => {
+        expect(getFeatureKeyForRoute('/(admin)/modules')).toBeNull();
+        expect(getFeatureKeyForRoute('/(admin)/modules/agri-store')).toBeNull();
+        expect(getFeatureKeyForRoute('/(admin)/modules/water-station')).toBeNull();
+        expect(getFeatureKeyForRoute('/(admin)/marketplace')).toBeNull();
+        const keys = DEFAULT_FEATURE_FLAGS.map(f => f.key);
+        expect(keys).not.toContain('feature.modules.water_station.enabled');
+        expect(keys).not.toContain('feature.modules.agri_store.enabled');
+        expect(keys).not.toContain('feature.modules.pharmacy.enabled');
+        expect(keys).not.toContain('feature.modules.transport.enabled');
     });
 });
 

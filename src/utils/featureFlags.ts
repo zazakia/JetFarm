@@ -22,12 +22,6 @@ export function isLendingFeatureKey(key?: string): boolean {
 }
 
 export const ROUTE_FEATURE_MAPPINGS: RouteFeatureMapping[] = [
-    { prefix: '/modules/water-station', featureKey: 'feature.modules.water_station.enabled', label: 'Water Station Module' },
-    { prefix: '/modules/agri-store', featureKey: 'feature.modules.agri_store.enabled', label: 'Agri-Store Module' },
-    { prefix: '/modules/pharmacy', featureKey: 'feature.modules.pharmacy.enabled', label: 'Pharmacy Module' },
-    { prefix: '/modules/transport', featureKey: 'feature.modules.transport.enabled', label: 'Transport Module' },
-    { prefix: '/modules', featureKey: 'module.business_modules', label: 'Cooperative Business Modules' },
-    { prefix: '/marketplace', featureKey: 'module.marketplace', label: 'Marketplace' },
     { prefix: '/accounting', featureKey: 'module.accounting', label: 'Accounting & General Ledger' },
 
     // Specific Lending Reports & Tools (placed before generic /reports)

@@ -60,7 +60,7 @@ export default function InventoryJournal() {
         try {
             await InventoryJournalService.recordMovement({
                 productId: productId.trim(),
-                productSource: selectedModule === 'marketplace' ? 'marketplace_products' : `${selectedModule.replace('-', '_')}_products`,
+                productSource: `${selectedModule.replace('-', '_')}_products`,
                 moduleId: selectedModule,
                 movementType,
                 quantityIn: movementType === 'adjustment_increase' || movementType === 'beginning' ? parsedQty : undefined,
@@ -110,9 +110,6 @@ export default function InventoryJournal() {
                     <View className="flex-row">
                         {[
                             { id: 'agri-store', label: 'Agri-Store (1210)' },
-                            { id: 'pharmacy', label: 'Pharmacy (1220)' },
-                            { id: 'marketplace', label: 'Marketplace (1230)' },
-                            { id: 'water-station', label: 'Water Station' },
                         ].map(m => (
                             <Pressable
                                 key={m.id}

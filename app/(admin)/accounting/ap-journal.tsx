@@ -338,8 +338,7 @@ export default function AccountsPayableJournal() {
                                 {[
                                     { code: '5100', name: 'Other Operating Expenses' },
                                     { code: '1210', name: 'Agri-Store Inventory' },
-                                    { code: '1220', name: 'Pharmacy Inventory' },
-                                    { code: '1230', name: 'Marketplace Inventory' },
+                                    { code: '1246', name: 'Agricultural Supplies (Inputs)' },
                                     { code: '5020', name: 'Office Supplies' },
                                 ].map(a => (
                                     <Pressable

@@ -1,38 +1,22 @@
 /**
- * BusinessUnitService — Phase 1 AI-authored test suite (trial).
+ * BusinessUnitService — agribusiness-only build.
  *
- * Covers register/get/active-state flows on a LokiJS test database.
- * COA seeding and action logging are side collaborators, mocked here so
- * the suite pins BusinessUnitService's own decisions (create vs reactivate,
- * soft-delete filtering, log verbs, seed-once semantics).
+ * The coop module-manifest API (registerModule / getByModuleId / module CoA
+ * seeding) is gone: segments are created directly. This suite pins the reads,
+ * the create path (including the idempotent re-activation of an existing slug)
+ * and the active-state toggle, with ActionLogService mocked so the assertions
+ * are about this service's own decisions.
  */
 import { Database } from '@nozbe/watermelondb';
 import { createTestDatabase } from '../../__tests__/test-utils';
 import BusinessUnit from '../../database/models/BusinessUnit';
 import { BusinessUnitServiceClass } from '../BusinessUnitService';
 
-const mockCreateAccount = jest.fn();
-jest.mock('../ChartOfAccountsService', () => ({
-    ChartOfAccountsServiceClass: class {
-        create = (...args: any[]) => mockCreateAccount(...args);
-    },
-}));
-
 const mockLogAction = jest.fn().mockResolvedValue(undefined);
 jest.mock('../ActionLogService', () => ({
     __esModule: true,
     default: { logAction: (...args: any[]) => mockLogAction(...args) },
 }));
-
-const fakeModule = {
-    id: 'water-station',
-    name: 'Water Station',
-    description: 'Potable water distribution',
-    defaultCoA: [
-        { code: '1100-W', name: 'WS Cash' },
-        { code: '4100-W', name: 'WS Revenue' },
-    ],
-} as any;
 
 let database: Database;
 let service: BusinessUnitServiceClass;
@@ -48,9 +32,9 @@ interface SeedOverrides {
 async function seedUnit(overrides: SeedOverrides = {}) {
     return database.write(async () =>
         database.get<BusinessUnit>('business_units').create((rec) => {
-            rec.name = overrides.name ?? 'Water Station';
-            rec.slug = overrides.slug ?? 'water-station';
-            rec.moduleId = overrides.module_id ?? 'water-station';
+            rec.name = overrides.name ?? 'Agri-Store';
+            rec.slug = overrides.slug ?? 'agri-store';
+            rec.moduleId = overrides.module_id ?? 'agri-store';
             rec.isActive = overrides.is_active ?? true;
             rec.description = 'seeded';
             if (overrides.deleted_at != null) rec.deletedAt = new Date(overrides.deleted_at);
@@ -72,77 +56,64 @@ describe('BusinessUnitService — reads', () => {
         expect(all.map((u) => u.slug)).toEqual(['alive-1']);
     });
 
-    it('getBySlug and getByModuleId find active records and miss deleted ones', async () => {
-        await seedUnit({ slug: 'water-station', module_id: 'wm' });
+    it('getBySlug finds a live unit and misses soft-deleted or unknown slugs', async () => {
+        await seedUnit({ slug: 'agri-store', module_id: 'ag' });
         await seedUnit({ slug: 'dead', module_id: 'dm', deleted_at: Date.now() });
 
-        expect((await service.getBySlug('water-station'))?.moduleId).toBe('wm');
+        expect((await service.getBySlug('agri-store'))?.moduleId).toBe('ag');
         expect(await service.getBySlug('dead')).toBeNull();
-        expect((await service.getByModuleId('wm'))?.slug).toBe('water-station');
-        expect(await service.getByModuleId('dm')).toBeNull();
         expect(await service.getBySlug('nope')).toBeNull();
     });
 });
 
-describe('BusinessUnitService — registerModule', () => {
-    it('creates the unit, logs CREATE, and seeds each default CoA account once', async () => {
-        const bu = await service.registerModule(fakeModule, 'user-1');
-
-        expect(bu.slug).toBe('water-station');
-        expect(bu.moduleId).toBe('water-station');
-        expect(bu.isActive).toBe(true);
-        expect(bu.name).toBe('Water Station');
-
-        expect(mockCreateAccount).toHaveBeenCalledTimes(2);
-        expect(mockCreateAccount).toHaveBeenCalledWith(
-            expect.objectContaining({ code: '1100-W' }),
+describe('BusinessUnitService — create', () => {
+    it('creates the segment, logs CREATE, and leaves it active', async () => {
+        const bu = await service.create(
+            { name: 'Agribusiness Operations', slug: 'agribusiness', description: 'Outgrower operations' },
             'user-1',
         );
+
+        expect(bu.slug).toBe('agribusiness');
+        expect(bu.name).toBe('Agribusiness Operations');
+        expect(bu.description).toBe('Outgrower operations');
+        expect(bu.isActive).toBe(true);
         expect(mockLogAction).toHaveBeenCalledWith(
             expect.objectContaining({ entityType: 'business_units', action: 'CREATE', performedBy: 'user-1' }),
         );
         expect(await service.getAll()).toHaveLength(1);
     });
 
-    it('continues seeding when one account fails (already exists)', async () => {
-        mockCreateAccount
-            .mockRejectedValueOnce(new Error('duplicate code'))
-            .mockResolvedValueOnce({} as any);
-        const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
-
-        await service.registerModule(fakeModule);
-
-        expect(mockCreateAccount).toHaveBeenCalledTimes(2);
-        expect(warn).toHaveBeenCalled();
-        warn.mockRestore();
+    it('defaults description to null when the caller omits it', async () => {
+        const bu = await service.create({ name: 'Agri-Store', slug: 'agri-store' });
+        expect(bu.description).toBeNull();
     });
 
-    it('re-activates an inactive unit without duplicating or re-seeding, logging UPDATE', async () => {
-        const existing = await seedUnit({ is_active: false });
-        const bu = await service.registerModule(fakeModule, 'user-2');
+    it('re-activates an existing inactive slug instead of duplicating it, logging UPDATE', async () => {
+        const existing = await seedUnit({ slug: 'agri-store', is_active: false });
+        const bu = await service.create({ name: 'Agri-Store', slug: 'agri-store' }, 'user-2');
 
         expect(bu.id).toBe(existing.id);
         expect(bu.isActive).toBe(true);
-        expect(mockCreateAccount).not.toHaveBeenCalled();
         expect(mockLogAction).toHaveBeenCalledWith(
             expect.objectContaining({ action: 'UPDATE', entityId: existing.id, performedBy: 'user-2' }),
         );
         expect(await service.getAll()).toHaveLength(1);
     });
 
-    it('is a pure no-op when the module is already registered and active', async () => {
-        const existing = await seedUnit();
-        const bu = await service.registerModule(fakeModule);
+    it('is a pure no-op when the slug already exists and is active', async () => {
+        const existing = await seedUnit({ slug: 'agri-store' });
+        const bu = await service.create({ name: 'Agri-Store', slug: 'agri-store' });
+
         expect(bu.id).toBe(existing.id);
         expect(mockLogAction).not.toHaveBeenCalled();
-        expect(mockCreateAccount).not.toHaveBeenCalled();
+        expect(await service.getAll()).toHaveLength(1);
     });
 });
 
 describe('BusinessUnitService — setActiveState', () => {
     it('toggles a known unit and logs the UPDATE', async () => {
-        const bu = await seedUnit();
-        const updated = await service.setActiveState('water-station', false, 'user-3');
+        const bu = await seedUnit({ slug: 'agri-store' });
+        const updated = await service.setActiveState('agri-store', false, 'user-3');
         expect(updated.isActive).toBe(false);
         expect(mockLogAction).toHaveBeenCalledWith(
             expect.objectContaining({ action: 'UPDATE', entityId: bu.id, performedBy: 'user-3' }),

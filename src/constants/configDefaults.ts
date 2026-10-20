@@ -1,5 +1,4 @@
 import { ROLES, UserRole } from './roles';
-import { LOAN_PRODUCT_PRESETS, LoanProductPreset, LoanProductType } from '../utils/loanProducts';
 
 export type FeatureFlagKey =
     | 'system.lending'
@@ -18,11 +17,7 @@ export type FeatureFlagKey =
     | 'module.business_modules'
     | 'module.marketplace'
     | 'module.cic'
-    | 'module.accounting'
-    | 'feature.modules.water_station.enabled'
-    | 'feature.modules.agri_store.enabled'
-    | 'feature.modules.pharmacy.enabled'
-    | 'feature.modules.transport.enabled';
+    | 'module.accounting';
 
 export interface DefaultFeatureFlag {
     id: string;
@@ -85,17 +80,6 @@ export const DEFAULT_FEATURE_FLAGS: DefaultFeatureFlag[] = [
     feature('module.marketplace', 'Marketplace', 'Cooperative member marketplace & seller center.', 135, true),
     feature('module.cic', 'CIC Reporting', 'Credit Information Corporation (CIC) compliance reporting.', 140),
     feature('module.accounting', 'Accounting', 'General Ledger, Journal Entries, and Chart of Accounts.', 150),
-    feature('feature.modules.water_station.enabled', 'Water Station Module', 'Water refilling station tracking, refill orders, and deliveries.', 160, true, 'Coop Business Units'),
-    // Shipped dark: these three units have no tables of their own and their consoles render
-    // useState seed data, so turning them on would present sample figures as live books.
-    // Re-enable per module when it is actually wired to stock_movements / module_transactions
-    // (docs/CRUD-PERSISTENCE-AUDIT.md M3/M4, guarded by modulePersistenceGuards.test.ts).
-    // NOTE: SettingsService.ensureFeatureFlags() only seeds a row that does not exist yet, so an
-    // installation that already has these rows stays enabled until the flag is turned off in
-    // Settings > Feature Flags (or via scripts/seed). This default governs fresh databases.
-    feature('feature.modules.agri_store.enabled', 'Agri-Store Module', 'Preview: agricultural store supply inventory and member credit purchasing. Not yet wired to inventory tables.', 170, false, 'Coop Business Units'),
-    feature('feature.modules.pharmacy.enabled', 'Pharmacy Module', 'Preview: medicine inventory, prescription logs, and senior/PWD discounts. Not yet wired to inventory tables.', 180, false, 'Coop Business Units'),
-    feature('feature.modules.transport.enabled', 'Transport Module', 'Preview: cooperative transport fleet, boundary collection, and fuel logs. Not yet wired to fleet tables.', 190, false, 'Coop Business Units'),
 ];
 
 export const CONFIGURABLE_PERMISSION_KEYS = [
@@ -146,35 +130,6 @@ export const DEFAULT_ROLE_PERMISSIONS: DefaultRolePermission[] = (Object.values(
         category: permission.category,
         enabled: enabledByDefault(role, permission.key),
     })));
-
-export const DEFAULT_LOAN_PRODUCT_TYPES = Object.keys(LOAN_PRODUCT_PRESETS) as LoanProductType[];
-
-export const loanProductConfigFromPreset = (productType: LoanProductType, preset: LoanProductPreset, sortOrder: number) => ({
-    id: `loan-product-${productType}`,
-    productType,
-    label: preset.label,
-    description: preset.description,
-    defaultRatePercent: Number(preset.defaultRatePercent || 0),
-    defaultTerm: Number(preset.defaultTerm || 1),
-    defaultTermUnit: preset.defaultTermUnit,
-    defaultFrequency: preset.defaultFrequency,
-    defaultProcessingFeeRate: preset.defaultProcessingFeeRate ?? 0,
-    defaultProcessingFeeFlat: preset.defaultProcessingFeeFlat ?? 0,
-    defaultNotarialFee: Number(preset.defaultNotarialFee || 0),
-    notarialFeeThreshold: preset.notarialFeeThreshold ?? 0,
-    notarialFeeAboveThreshold: preset.notarialFeeAboveThreshold ?? 0,
-    defaultSavingsPerPayment: Number(preset.defaultSavingsPerPayment || 0),
-    defaultPrincipal: Number(preset.defaultPrincipal || 0),
-    maxPrincipal: preset.maxPrincipal ?? 0,
-    minTermMonths: preset.minTermMonths ?? 0,
-    maxTermMonths: preset.maxTermMonths ?? 0,
-    isActive: true,
-    sortOrder,
-});
-
-export const DEFAULT_LOAN_PRODUCTS = DEFAULT_LOAN_PRODUCT_TYPES.map((type, index) =>
-    loanProductConfigFromPreset(type, LOAN_PRODUCT_PRESETS[type], (index + 1) * 10)
-);
 
 export interface DefaultCoopSetting {
     id: string;

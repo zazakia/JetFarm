@@ -92,10 +92,7 @@ export default function SalesJournal() {
                     <View className="flex-row">
                         {[
                             { id: 'all', label: 'All Units' },
-                            { id: 'water-station', label: 'Water Station' },
                             { id: 'agri-store', label: 'Agri-Store' },
-                            { id: 'pharmacy', label: 'Pharmacy' },
-                            { id: 'marketplace', label: 'Marketplace' },
                         ].map(m => (
                             <Pressable
                                 key={m.id}
