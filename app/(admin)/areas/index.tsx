@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
-import { groupService } from '../../../src/services/GroupService';
+import { areaService } from '../../../src/services/AreaService';
 import Area from '../../../src/database/models/Area';
 import { Button } from '../../../src/components/Button';
 
@@ -13,7 +13,7 @@ export default function AreasScreen() {
     const fetchAreas = async () => {
         try {
             setLoading(true);
-            const data = await groupService.getAreas();
+            const data = await areaService.getAreas();
             setAreas(data);
         } catch (error) {
             console.error('Failed to load areas:', error);

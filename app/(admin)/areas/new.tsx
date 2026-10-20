@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
-import { groupService } from '../../../src/services/GroupService';
+import { areaService } from '../../../src/services/AreaService';
 import { Button } from '../../../src/components/Button';
 
 export default function NewAreaScreen() {
@@ -18,7 +18,7 @@ export default function NewAreaScreen() {
 
         try {
             setLoading(true);
-            await groupService.createArea(name, code);
+            await areaService.createArea(name, code);
             alert('Area added successfully!');
             router.back();
         } catch (error) {
