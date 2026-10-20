@@ -12,6 +12,7 @@
  *   node scripts/audit-crud-persistence.mjs            # human-readable
  *   node scripts/audit-crud-persistence.mjs --json     # machine-readable
  *   node scripts/audit-crud-persistence.mjs --domain water-station
+ *   node scripts/audit-crud-persistence.mjs --contract <path>  # audit a different contract file
  *   node scripts/audit-crud-persistence.mjs --fail-on-high   # CI gate: exit 1 if any HIGH row
  */
 import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
@@ -22,6 +23,12 @@ const args = process.argv.slice(2);
 const asJson = args.includes('--json');
 const domainFilter = args.includes('--domain') ? args[args.indexOf('--domain') + 1] : null;
 const failOnHigh = args.includes('--fail-on-high');
+// Only the contract file can be swapped (used by the mutation harness in
+// scripts/__tests__/auditCrudPersistence.test.js); every other source stays the real repo, so a
+// probe cannot make the auditor pass by having nothing to compare against.
+const contractRel = args.includes('--contract')
+    ? args[args.indexOf('--contract') + 1]
+    : 'src/services/syncTableContract.json';
 
 const read = (rel) => readFileSync(path.join(root, rel), 'utf8');
 const walk = (dir, out = []) => {
@@ -318,9 +325,14 @@ const schemaTables = parseSchemaTables();
 const modelTables = parseModelTables();
 const { owner: moduleOwner, modules: coopModules } = moduleManifests();
 const migrations = parseMigrations();
-const contract = JSON.parse(read('src/services/syncTableContract.json'));
+const contract = JSON.parse(read(contractRel));
 const remoteMap = contract.remoteTableMap || {};
 const apiOnly = new Set(contract.apiOnlyTables || []);
+// Tables intentionally kept on the device only (a local outbox whose rows are destroyed after the
+// remote ACK). They must not be pushed, so a missing remote table and a missing soft-delete column
+// are the designed state here -- but the entry itself is now audited, because a local-only table
+// that also appears in remoteTableMap, or one no longer in schema.ts, is real drift.
+const localOnlySet = new Set(contract.localOnlyTables || []);
 const requiredColumns = contract.requiredRemoteColumns || {};
 const coreSet = new Set(contract.coreTables || []);
 const configSet = new Set(contract.configTables || []);
@@ -373,7 +385,7 @@ const domainOf = (table) =>
     'other';
 
 const rows = [];
-for (const table of new Set([...schemaTables.keys(), ...modelTables.keys(), ...Object.keys(remoteMap), ...moduleOwner.keys()])) {
+for (const table of new Set([...schemaTables.keys(), ...modelTables.keys(), ...Object.keys(remoteMap), ...localOnlySet, ...moduleOwner.keys()])) {
     const schemaCols = schemaTables.get(table) || new Set();
     const model = modelTables.get(table);
     const remote = remoteMap[table];
@@ -401,21 +413,39 @@ for (const table of new Set([...schemaTables.keys(), ...modelTables.keys(), ...O
     } else {
         if (!schemaCols.size) issues.push('no-schema');
         if (!model) issues.push('no-model');
-        if (!remote && !apiOnly.has(table)) issues.push('not-in-sync-contract');
+        if (localOnlySet.has(table) && !schemaCols.size)
+            issues.push('local-only-entry-not-in-schema');
+        if (localOnlySet.has(table) && remote) issues.push('local-only-but-mapped');
+        if (!remote && !apiOnly.has(table) && !localOnlySet.has(table))
+            issues.push('not-in-sync-contract');
+        if (!remote && localOnlySet.has(table) && schemaCols.size)
+            // Visible exemption instead of silence: the row still says why it has no remote table.
+            issues.push('local-only-outbox');
     }
     if (remote && !remoteDef) issues.push('remote-table-missing');
     if (remoteDef?.duplicateIn) issues.push(`duplicate-create:${remoteDef.duplicateIn}`);
 
     const localSoftDelete = schemaCols.has('deleted_at');
     const remoteSoftDelete = remoteCols.has('deleted_at');
-    const group = coreSet.has(table) ? 'core' : configSet.has(table) ? 'config' : apiOnly.has(table) ? 'api-only' : 'unmapped';
+    const group = coreSet.has(table)
+        ? 'core'
+        : configSet.has(table)
+          ? 'config'
+          : localOnlySet.has(table)
+            ? 'local-only'
+            : apiOnly.has(table)
+              ? 'api-only'
+              : 'unmapped';
     // A mapped table that is in neither group is never pushed, so column drift there is
     // informational only.
     const pushed = group === 'core' || group === 'config';
     if (remote && group === 'unmapped') issues.push('mapped-but-not-synced');
     if (remoteDef && pushed && localSoftDelete && !remoteSoftDelete) issues.push('deleted_at-not-remote');
     if (remoteDef && pushed && !localSoftDelete && remoteSoftDelete) issues.push('deleted_at-not-local');
-    if (total.delete > 0 && !localSoftDelete) issues.push('hard-delete-no-softdelete-column');
+    // A local-only outbox destroys its rows once the remote has ACKed them, so hard-delete with no
+    // deleted_at column is the design, not a data-loss risk: nothing is ever pushed from here.
+    if (total.delete > 0 && !localSoftDelete && !localOnlySet.has(table))
+        issues.push('hard-delete-no-softdelete-column');
 
     for (const required of requiredColumns[remote] || []) {
         if (remoteDef && !remoteCols.has(required)) issues.push(`required-col-missing:${required}`);
@@ -495,7 +525,13 @@ const all = [...rows, ...orphanRemotes].sort(
 );
 
 const sev = (row) => {
-    if (row.issues.some((i) => /^(no-schema|no-model|remote-table-missing|not-in-sync-contract|required-col-missing)/.test(i)))
+    if (
+        row.issues.some((i) =>
+            /^(no-schema|no-model|remote-table-missing|not-in-sync-contract|required-col-missing|local-only-but-mapped|local-only-entry-not-in-schema)/.test(
+                i
+            )
+        )
+    )
         return 'HIGH';
     // Column-shape mismatches on a pushed table are hard failures, not warnings.
     // SyncService.sanitizeRecord strips only _status/_changed, so every local schema column
@@ -504,7 +540,9 @@ const sev = (row) => {
     // never a missing or extra column. `deleted_at` is always sent by soft-delete upserts.
     const isPushed = row.group === 'core' || row.group === 'config';
     if (isPushed && row.issues.some((i) => /^(local-only-cols|deleted_at-not-remote)/.test(i))) return 'HIGH';
-    return row.issues.length ? 'MED' : 'ok';
+    // `local-only-outbox` is a stated design fact, not a finding.
+    const actionable = row.issues.filter((i) => i !== 'local-only-outbox');
+    return actionable.length ? 'MED' : 'ok';
 };
 
 const severities = all.map(sev);
