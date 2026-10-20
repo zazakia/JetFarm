@@ -27,8 +27,8 @@ jest.mock('@expo/vector-icons', () => {
     };
 });
 
-// system.lending ships disabled by default (2026-10-04); lendingOnly cards
-// must be asserted as unreachable unless the flag is explicitly enabled.
+// Agri-One has no lending lane: the Loan Products card is deleted, not hidden. The flag mock stays
+// so a regression that reintroduces a flag-gated card is still observable.
 const mockLendingFlag = { enabled: false };
 jest.mock('../../../../src/hooks/useSettingsConfig', () => ({
     useFeatureFlags: () => ({
@@ -47,8 +47,7 @@ describe('BusinessRulesScreen', () => {
 
         expect(screen.getByText('Business Rules')).toBeTruthy();
         expect(screen.getByText('Settings-driven app behavior')).toBeTruthy();
-        
-        expect(screen.getByText('Loan Products')).toBeTruthy();
+
         expect(screen.getByText('Cooperative Computations')).toBeTruthy();
         expect(screen.getByText('Feature Flags')).toBeTruthy();
         expect(screen.getByText('Role Access')).toBeTruthy();
@@ -57,9 +56,6 @@ describe('BusinessRulesScreen', () => {
 
     it('navigates to corresponding routes on card press', () => {
         render(<BusinessRulesScreen />);
-
-        fireEvent.press(screen.getByText('Loan Products'));
-        expect(mockPush).toHaveBeenCalledWith('/(admin)/settings/loan-products');
 
         fireEvent.press(screen.getByText('Cooperative Computations'));
         expect(mockPush).toHaveBeenCalledWith('/(admin)/settings/coop-computations');
@@ -82,11 +78,12 @@ describe('BusinessRulesScreen', () => {
         expect(safeBack).toHaveBeenCalledWith(expect.any(Object), '/(admin)/settings');
     });
 
-    it('hides lending-only cards when system.lending is disabled', () => {
+    it('shows the same four cards whichever way the lending flag reads', () => {
         mockLendingFlag.enabled = false;
         render(<BusinessRulesScreen />);
 
-        expect(screen.queryByText('Loan Products')).toBeNull();
+        // count is the load-bearing assertion: reintroducing a lending card fails it
+        expect(screen.getAllByTestId(/^business-rule-card-/)).toHaveLength(4);
         expect(screen.getByText('Cooperative Computations')).toBeTruthy();
         expect(screen.getByText('Feature Flags')).toBeTruthy();
         expect(screen.getByText('Role Access')).toBeTruthy();

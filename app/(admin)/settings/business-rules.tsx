@@ -4,16 +4,8 @@ import { useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { AnimatedPressable } from '../../../src/components/AnimatedPressable';
 import { safeBack } from '../../../src/utils/navigation';
-import { useFeatureFlags } from '../../../src/hooks/useSettingsConfig';
 
 const ALL_CARDS = [
-    {
-        icon: 'receipt-long',
-        title: 'Loan Products',
-        description: 'Edit default rates, terms, fees, savings, principal caps, and active products used by new loans.',
-        route: '/(admin)/settings/loan-products',
-        lendingOnly: true,
-    },
     {
         icon: 'calculate',
         title: 'Cooperative Computations',
@@ -46,9 +38,6 @@ const ALL_CARDS = [
 
 export default function BusinessRulesScreen() {
     const router = useRouter();
-    const { isEnabled } = useFeatureFlags();
-    const isLendingEnabled = isEnabled('system.lending');
-    const cards = ALL_CARDS.filter(c => !c.lendingOnly || isLendingEnabled);
 
     return (
         <SafeAreaView className="flex-1 bg-gray-50">
@@ -70,8 +59,13 @@ export default function BusinessRulesScreen() {
                     </Text>
                 </View>
 
-                {cards.map(card => (
-                    <AnimatedPressable key={card.route} onPress={() => router.push(card.route as any)} className="mb-3">
+                {ALL_CARDS.map(card => (
+                    <AnimatedPressable
+                        key={card.route}
+                        testID={`business-rule-card-${card.route}`}
+                        onPress={() => router.push(card.route as any)}
+                        className="mb-3"
+                    >
                         <View className="bg-white rounded-3xl p-5 border border-gray-100 shadow-sm flex-row items-center">
                             <View className="w-12 h-12 rounded-2xl bg-green-50 items-center justify-center mr-4">
                                 <MaterialIcons name={card.icon as any} size={24} color="#1E3A8A" />
