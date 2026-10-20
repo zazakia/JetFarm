@@ -4,7 +4,7 @@ import { getRuntimeSupabaseUrl } from '../database/supabaseUrl';
 export const APP_VERSION = '0.1.5';
 export const APP_BUILD_NUMBER = 6;
 export const APP_RELEASE_NAME = 'v0.1.5';
-export const WATERMELONDB_SCHEMA_VERSION = 49;
+export const WATERMELONDB_SCHEMA_VERSION = 50;
 export const APP_RELEASE_DATE = '2026-10-17';
 
 /**

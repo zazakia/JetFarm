@@ -35,10 +35,10 @@ const legacyFixtures = [
         units_completed: 2, rate_per_unit: 600, total_pay: 1200, payment_status: 'pending',
         _status: 'created', _changed: '',
     } },
-    { table: 'payrolls', raw: {
-        id: 'DUMMY:payroll', employee_id: 'DUMMY:employee', period_start: timestamp,
-        period_end: timestamp + 604800000, base_salary: 1200, deductions: 100,
-        allowances: 50, net_pay: 1150, status: 'draft', _status: 'updated', _changed: 'net_pay',
+    { table: 'expenses', raw: {
+        id: 'DUMMY:expense', category: 'DUMMY:farm input', description: 'DUMMY:offline expense',
+        amount: 1200, expense_date: timestamp, payment_status: 'unpaid', status: 'draft',
+        _status: 'updated', _changed: 'amount',
     } },
     { table: 'agri_parcels', raw: {
         id: 'DUMMY:deleted-parcel', name: 'DUMMY:retired parcel', land_owner_id: 'DUMMY:owner',
@@ -47,7 +47,7 @@ const legacyFixtures = [
     } },
 ];
 
-describe('actual web database persistent identity across the v48 -> v49 upgrade', () => {
+describe('actual web database persistent identity across the v48 -> v50 upgrade', () => {
     let storage: any;
     let adapters: LokiJSAdapter[];
     let legacyRaws: { table: string; raw: Record<string, any> }[];
@@ -84,7 +84,7 @@ describe('actual web database persistent identity across the v48 -> v49 upgrade'
 
         // Reconstruct the immediately preceding schema by excluding only Task2's
         // four new tables and four parcel columns; keep every other v48 table.
-        expect(mySchema.version).toBe(49);
+        expect(mySchema.version).toBe(50);
         const tables = Object.values(mySchema.tables)
             .filter((table: any) => !layoutTables.includes(table.name))
             .map((table: any) => tableSchema({
@@ -134,10 +134,10 @@ describe('actual web database persistent identity across the v48 -> v49 upgrade'
         expect((adapter as any)._options.dbName).toBe(web.WEB_DATABASE_NAME);
         expect(adapter.schema).toBe(require('../schema').mySchema);
         expect(adapter.migrations).toBe(require('../migrations').myMigrations);
-        expect(adapter.schema.version).toBe(49);
+        expect(adapter.schema.version).toBe(50);
     });
 
-    it('reopens v48 offline history in place with v49 defaults and unchanged sync metadata', async () => {
+    it('reopens v48 offline history in place with the v50 agribusiness defaults and unchanged sync metadata', async () => {
         const { database } = loadActualWebDatabase();
         const parcels = await database.get('agri_parcels').query().fetch();
         expect(parcels.map(record => record.id)).toEqual(['DUMMY:parcel']);
@@ -158,7 +158,7 @@ describe('actual web database persistent identity across the v48 -> v49 upgrade'
             gps_exclusions: null, boundary_revision: 0, layout_revision: 0, boundary_saved_at: null,
         });
         expect(await database.localStorage.get('DUMMY:sync-checkpoint')).toEqual({ lastPulledAt: timestamp });
-        expect(await database.adapter.getLocal('_loki_schema_version')).toBe('49');
+        expect(await database.adapter.getLocal('_loki_schema_version')).toBe('50');
         for (const table of layoutTables) expect(await database.get(table).query().fetch()).toEqual([]);
         await saveAndClose(underlying(database));
         expect(Object.keys(storage.hashStore)).toEqual(['poscursor-v48']);
@@ -231,7 +231,7 @@ describe('actual web database persistent identity across the v48 -> v49 upgrade'
         const outbox: any = await reopened.get('agri_pending_layout_operations').find('DUMMY:outbox');
         expect([outbox.operationId, outbox.payloadJson, outbox.state])
             .toEqual(['DUMMY:operation', payload, 'queued']);
-        expect(await reopened.adapter.getLocal('_loki_schema_version')).toBe('49');
+        expect(await reopened.adapter.getLocal('_loki_schema_version')).toBe('50');
         expect(Object.keys(storage.hashStore)).toEqual(['poscursor-v48']);
     });
 });

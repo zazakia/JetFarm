@@ -1,5 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import { mySchema } from '../../database/schema';
 import {
     APP_VERSION,
     APP_BUILD_NUMBER,
@@ -107,7 +108,15 @@ describe('AppVersion constants and utilities', () => {
         const declared = schema.match(/appSchema\(\{\s*version:\s*(\d+)/);
 
         expect(declared).not.toBeNull();
-        expect(WATERMELONDB_SCHEMA_VERSION).toBe(Number(declared?.[1]));
+        const schemaVersion = Number(declared?.[1]);
+        expect(Number.isInteger(schemaVersion)).toBe(true);
+        expect(schemaVersion).toBeGreaterThan(0);
+
+        // The exported constant is regenerated from schema.ts by scripts/sync-version.mjs on every
+        // release; both the parsed source literal and the runtime appSchema object must agree, so
+        // bumping src/database/schema.ts without re-syncing AppVersion.ts breaks this test.
+        expect(mySchema.version).toBe(schemaVersion);
+        expect(WATERMELONDB_SCHEMA_VERSION).toBe(schemaVersion);
     });
 
     it('formats release names and full release strings correctly', () => {
