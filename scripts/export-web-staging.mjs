@@ -1,6 +1,7 @@
 import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync, unlinkSync, writeFileSync, readdirSync, statSync, renameSync, cpSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
+import { buildContentSecurityPolicy } from './lib/buildContentSecurityPolicy.js';
 
 function parseEnvFile(contents) {
   return contents
@@ -105,13 +106,18 @@ try {
 
       // Write staging _headers with staging Supabase connect-src
       const headersPath = join(distDir, '_headers');
+      const stagingSupabaseOrigin = 'https://zsrglwrscdxtyxyyyhwd.supabase.co';
       const stagingHeaders = `/*
   X-Frame-Options: DENY
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()
-  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://zsrglwrscdxtyxyyyhwd.supabase.co wss://zsrglwrscdxtyxyyyhwd.supabase.co; upgrade-insecure-requests
-`;
+  Content-Security-Policy: ${buildContentSecurityPolicy({
+        supabaseOrigin: stagingSupabaseOrigin,
+        supabaseWsOrigin: stagingSupabaseOrigin.replace(/^http/, 'ws'),
+        // Staging must never be able to talk to the production self-hosted box.
+        sameBoxHosts: false,
+      })}\n`;
       writeFileSync(headersPath, stagingHeaders, 'utf8');
       console.log('[export-web-staging] Staging _redirects and _headers generated.');
     }

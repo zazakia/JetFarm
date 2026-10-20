@@ -2,6 +2,7 @@ import { spawnSync } from 'node:child_process';
 import { writeFileSync, existsSync, readdirSync, statSync, readFileSync, renameSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { buildVersionManifest } from './lib/buildVersionManifest.js';
+import { buildContentSecurityPolicy } from './lib/buildContentSecurityPolicy.js';
 
 const distDir = 'dist';
 const redirectsPath = join(distDir, '_redirects');
@@ -315,7 +316,7 @@ const headersContent = `/*
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()
-  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ${supabaseOrigin} ${supabaseWsOrigin} https://*.818.quest wss://*.818.quest https://*.supabase.co wss://*.supabase.co; upgrade-insecure-requests\n`;
+  Content-Security-Policy: ${buildContentSecurityPolicy({ supabaseOrigin, supabaseWsOrigin })}\n`;
 writeFileSync(headersPath, headersContent, 'utf8');
 console.log('[deploy-cloudflare] Successfully wrote _headers');
 

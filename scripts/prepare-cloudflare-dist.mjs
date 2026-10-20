@@ -18,6 +18,7 @@
 
 import { writeFileSync, mkdirSync, existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { buildContentSecurityPolicy } from './lib/buildContentSecurityPolicy.js';
 
 const distDir = 'dist';
 
@@ -72,7 +73,13 @@ const headersContent =
   `  X-Content-Type-Options: nosniff\n` +
   `  Referrer-Policy: strict-origin-when-cross-origin\n` +
   `  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()\n` +
-  `  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ${supabaseOrigin} ${supabaseWsOrigin} https://*.818.quest wss://*.818.quest https://*.supabase.co wss://*.supabase.co https://github.com; upgrade-insecure-requests\n`;
+  `  Content-Security-Policy: ` +
+  buildContentSecurityPolicy({
+    supabaseOrigin,
+    supabaseWsOrigin,
+    extraConnectSrc: ['https://github.com'],
+  }) +
+  `\n`;
 
 writeFileSync(headersPath, headersContent, 'utf8');
 console.log('[prepare-cloudflare-dist] ✅ Wrote _headers');
