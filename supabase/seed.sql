@@ -1,5 +1,11 @@
 -- Local auth/profile seed for `supabase db reset`
--- Mirrors the quick-login users expected by the login screen and Playwright tests.
+-- Agribusiness-only variant: seeds the roles this build still ships (admin,
+-- expenses_encoder, main_office). The lending identities were removed with the
+-- teardown because their record tables are retired by
+-- 20261021000000_retire_non_agribusiness_tables.sql and the collector-id resolver
+-- is gone from AuthService. Do not name a retired table in this file - the
+-- supabaseMigrations regression guard asserts seed.sql stays free of them.
+-- Password is the same local-only '12345678' the login screen quick-login expects.
 
 CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions;
 
@@ -20,17 +26,8 @@ BEGIN
     VALUES
         ('00000000-0000-0000-0000-000000000001', 'admin@poscursor.com', 'Admin User', 'admin'),
         ('00000000-0000-0000-0000-000000000002', 'cybergada@gmail.com', 'Cybergada Master', 'admin'),
-        ('00000000-0000-0000-0000-000000000003', 'collector@poscursor.com', 'Master Collector', 'collector'),
-        ('00000000-0000-0000-0000-000000000004', 'loan_encoder@poscursor.com', 'Loan Encoder', 'loan_encoder'),
-        ('00000000-0000-0000-0000-000000000005', 'payment_encoder@poscursor.com', 'Payment Encoder', 'payment_encoder'),
         ('00000000-0000-0000-0000-000000000006', 'expenses_encoder@poscursor.com', 'Expenses Encoder', 'expenses_encoder'),
-        ('00000000-0000-0000-0000-000000000007', 'cresencio.junco@poscursor.com', 'Cresencio Junco', 'collector'),
-        ('00000000-0000-0000-0000-000000000008', 'gerald.gera@poscursor.com', 'Gerald Gera', 'collector'),
-        ('00000000-0000-0000-0000-000000000009', 'bernie.casera@poscursor.com', 'Bernie Casera', 'collector'),
-        ('00000000-0000-0000-0000-000000000010', 'jayson.cayanong@poscursor.com', 'Jayson Cayanong', 'collector'),
-        ('00000000-0000-0000-0000-000000000011', 'mainoffice@poscursor.com', 'Main Office', 'collector'),
-        ('00000000-0000-0000-0000-000000000012', 'member.test@poscursor.com', 'Test Member', 'borrower'),
-        ('00000000-0000-0000-0000-000000000013', 'bisayangcollector@gmail.com', 'Bisayang Collector', 'collector');
+        ('00000000-0000-0000-0000-000000000011', 'mainoffice@poscursor.com', 'Main Office', 'main_office');
 
     DELETE FROM auth.identities
     WHERE user_id IN (SELECT id FROM seed_login_users)
@@ -45,6 +42,31 @@ BEGIN
     WHERE id IN (SELECT id::text FROM seed_login_users)
        OR lower(email) IN (SELECT lower(email) FROM seed_login_users)
        OR lower(email) = 'encoder@poscursor.com';
+
+    -- Purge the lending/branch identities that APPEND-ONLY migrations still create.
+    -- Migration history cannot be rewritten (20260402102153_fix_users.sql:23,46 seeds a
+    -- 'collector' auth user + profile on every reset), so the retired roles are removed
+    -- here instead - seed.sql is the local-only surface, which keeps this deletion away
+    -- from any runner that applies supabase/migrations to a shared database.
+    CREATE TEMP TABLE IF NOT EXISTS seed_retired_profiles ON COMMIT DROP AS
+    SELECT id, email
+    FROM public.user_profiles
+    WHERE role IN (
+        'collector', 'loan_encoder', 'payment_encoder', 'borrower',
+        'branch_cashier', 'branch_manager', 'area_supervisor',
+        'commissary_keeper', 'executive'
+    );
+
+    DELETE FROM auth.identities
+    WHERE user_id IN (SELECT id FROM seed_login_users)
+       OR lower(provider_id) IN (SELECT lower(email) FROM seed_retired_profiles);
+
+    DELETE FROM auth.users
+    WHERE id IN (SELECT id FROM seed_login_users)
+       OR lower(email) IN (SELECT lower(email) FROM seed_retired_profiles);
+
+    DELETE FROM public.user_profiles
+    WHERE id IN (SELECT id FROM seed_retired_profiles);
 
     INSERT INTO auth.users (
         id,
@@ -113,33 +135,4 @@ BEGIN
     INSERT INTO public.user_profiles (id, full_name, email, role, is_active, created_at, updated_at)
     SELECT id::text, full_name, email, app_role, true, now(), now()
     FROM seed_login_users;
-
-    -- Link seeded collector auth users to collector records so collector RLS,
-    -- route filtering, and AuthService.resolveCollectorId() use the real
-    -- collector id instead of falling back to the auth user id.
-    UPDATE public.app_collectors c
-    SET auth_id = u.id,
-        is_active = true,
-        updated_at = now(),
-        deleted_at = NULL
-    FROM seed_login_users u
-    WHERE u.app_role = 'collector'
-      AND lower(c.full_name) = lower(u.full_name);
-
-    INSERT INTO public.app_collectors (id, full_name, auth_id, is_active, created_at, updated_at, deleted_at)
-    SELECT u.id::text, u.full_name, u.id, true, now(), now(), NULL
-    FROM seed_login_users u
-    WHERE u.app_role = 'collector'
-      AND NOT EXISTS (
-          SELECT 1
-          FROM public.app_collectors c
-          WHERE c.id = u.id::text
-             OR lower(c.full_name) = lower(u.full_name)
-      )
-    ON CONFLICT (id) DO UPDATE SET
-        full_name = EXCLUDED.full_name,
-        auth_id = EXCLUDED.auth_id,
-        is_active = true,
-        updated_at = now(),
-        deleted_at = NULL;
 END $$;

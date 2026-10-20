@@ -93,4 +93,107 @@ describe('Supabase migration regression guards', () => {
         expect(sql).not.toMatch(/\bDROP\s+TABLE\b/i);
         expect(sql).not.toMatch(/\bTRUNCATE\b/i);
     });
+
+    // --- agribusiness-only teardown (S9): the non-agribusiness retirement migration ---
+    const RETIRE_FILE = '20261021000000_retire_non_agribusiness_tables.sql';
+
+    const retiredDrops = (): string[] => {
+        const sql = migration(RETIRE_FILE);
+        const names = [...sql.matchAll(/^DROP TABLE IF EXISTS public\."([a-z0-9_]+)";$/gm)].map((m) => m[1]);
+        expect(names.length).toBeGreaterThan(20);
+        expect(new Set(names).size).toBe(names.length);
+        return names;
+    };
+
+    it('retires every deleted non-agribusiness table, app_borrowers last', () => {
+        const drops = retiredDrops();
+        expect(drops.length).toBe(57);
+        expect(drops[drops.length - 1]).toBe('app_borrowers');
+        for (const required of [
+            'app_loans', 'app_payments', 'app_payment_schedules', 'app_loan_products',
+            'app_collectors', 'app_file_cases', 'app_share_capital_transactions',
+            'ws_customers', 'marketplace_orders', 'payroll_runs', 'pos_sessions',
+            'employees', 'franchise_contracts', 'royalty_calculations',
+            'commissary_dispatches', 'waste_logs', 'cic_settings', 'sync_conflict_log',
+        ]) {
+            expect(drops).toContain(required);
+        }
+    });
+
+    it('drops retired tables only after the tables that referenced them', () => {
+        const drops = retiredDrops();
+        const rank = (t: string) => drops.indexOf(t);
+        for (const [dependent, referenced] of [
+            ['app_children', 'app_borrowers'], ['app_guarantors', 'app_loans'],
+            ['app_loans', 'app_loan_applications'], ['marketplace_order_items', 'marketplace_products'],
+            ['marketplace_products', 'marketplace_stores'], ['payroll_lines', 'employees'],
+            ['ws_payments', 'ws_deliveries'], ['sales_return_lines', 'sales_returns'],
+            ['employee_leaves', 'employees'], ['app_dependents', 'app_borrowers'],
+        ] as [string, string][]) {
+            expect(rank(dependent)).toBeLessThan(rank(referenced));
+        }
+    });
+
+    it('never drops a table the agribusiness sync contract still uses and never cascades', () => {
+        const sql = migration(RETIRE_FILE);
+        const contract = JSON.parse(
+            fs.readFileSync(path.join(process.cwd(), 'src', 'services', 'syncTableContract.json'), 'utf8'),
+        );
+        for (const remote of Object.values<string>(contract.remoteTableMap)) {
+            expect(sql).not.toContain(`DROP TABLE IF EXISTS public."${remote}";`);
+        }
+        expect(sql).not.toMatch(/DROP TABLE[^\n]*CASCADE/i);
+        expect(sql).not.toMatch(/\bTRUNCATE\b/i);
+        expect(sql).not.toMatch(/\bDELETE\s+FROM\s+/i);
+    });
+
+    it('aborts when retired tables still hold rows unless the operator sets the sentinel', () => {
+        const sql = migration(RETIRE_FILE);
+        expect(sql).toContain("current_setting('jetfarm.allow_non_agribusiness_data_loss', true)");
+        expect(sql).toContain('RAISE EXCEPTION');
+        expect(sql).toContain('LOCAL/VARIANT ONLY');
+        // the guard is the first executable statement - nothing destructive may precede it
+        const guard = sql.indexOf('DO $$');
+        expect(guard).toBeGreaterThan(-1);
+        expect(sql.slice(0, guard).replace(/--[^\n]*/g, '').trim()).toBe('');
+        expect(sql.indexOf('DROP TABLE')).toBeGreaterThan(sql.indexOf('$$;', guard));
+        expect(sql).toContain("NOTIFY pgrst, 'reload schema';");
+    });
+
+    it('severs the one kept to retired reference before retiring pos_sessions', () => {
+        const sql = migration(RETIRE_FILE);
+        const constraint = sql.indexOf('DROP CONSTRAINT IF EXISTS app_cash_transactions_pos_session_id_fkey');
+        const column = sql.indexOf('DROP COLUMN IF EXISTS pos_session_id');
+        const drop = sql.indexOf('DROP TABLE IF EXISTS public."pos_sessions";');
+        expect(constraint).toBeGreaterThan(-1);
+        expect(column).toBeGreaterThan(-1);
+        expect(drop).toBeGreaterThan(-1);
+        expect(constraint).toBeLessThan(drop);
+        expect(column).toBeLessThan(drop);
+    });
+
+    it('keeps seed.sql aligned with the retired schema', () => {
+        const seed = fs.readFileSync(path.join(process.cwd(), 'supabase', 'seed.sql'), 'utf8');
+        for (const retired of retiredDrops()) {
+            expect(seed).not.toContain(retired);
+        }
+
+        // seed only the identities this variant ships
+        const seeded = seed.slice(seed.indexOf('INSERT INTO seed_login_users'));
+        const values = seeded.slice(0, seeded.indexOf(';'));
+        expect(values).toContain('admin@poscursor.com');
+        for (const retiredRole of [
+            'collector', 'loan_encoder', 'payment_encoder', 'borrower', 'executive',
+            'branch_cashier', 'branch_manager', 'area_supervisor', 'commissary_keeper',
+        ]) {
+            expect(values).not.toContain(`'${retiredRole}'`);
+        }
+
+        // the retired roles may only appear in the purge that removes what the
+        // append-only migration history still creates on every reset
+        expect(seed).toContain('seed_retired_profiles');
+        expect(seed).toContain("'collector', 'loan_encoder', 'payment_encoder', 'borrower',");
+        expect(seed).toContain('DELETE FROM auth.users');
+        expect(seed).toContain('INSERT INTO public.user_profiles');
+    });
 });
