@@ -264,11 +264,40 @@ describe('SyncService', () => {
         expect(count).toBe(0);
     });
 
-    it('preserves bigint penalty_date values during pull sanitization', async () => {
+    // Retargeted 2026-10-20 from loan_penalties.penalty_date (lending domain retired).
+    // The BIGINT-preservation invariant now belongs to the block-layout tables, but
+    // agri_parcel_blocks / agri_block_assignments / agri_block_progress are in
+    // DEFERRED_LAYOUT_TABLES, so fetchTableChanges short-circuits before the row-mapping
+    // loop and they can never be pull-sanitized generically. The invariant is therefore
+    // pinned on the reachable half of the contract: the push-side sanitizer (sanitizeRecord)
+    // must leave declared BIGINT timestamps numeric instead of ISO-ifying them.
+    it('preserves bigint block-layout timestamps when preparing a push payload', () => {
+        const updateDate = 1712345678901;
+
+        const sanitized = (service as any).sanitizeRecord({
+            id: '11111111-1111-4111-8111-111111111111',
+            assignment_id: '22222222-2222-4222-8222-222222222222',
+            update_date: updateDate,
+            created_at: updateDate,
+            progress_percent: 45,
+        }, 'agri_block_progress');
+
+        expect(sanitized.update_date).toBe(updateDate);
+        expect(sanitized.created_at).toBe(updateDate);
+        expect(typeof sanitized.updated_at).toBe('number');
+        expect(sanitized.assignment_id).toBe('22222222-2222-4222-8222-222222222222');
+    });
+
+    it('converts pulled ISO timestamps to epoch milliseconds for surviving finance tables', async () => {
+        const validEncodedBy = '11111111-1111-4111-8111-111111111111';
         mockSupabase.from.mockReturnValue({
             select: jest.fn().mockReturnValue({
                 is: jest.fn(() => createQueryBuilder({
-                        data: [{ id: 'penalty-1', penalty_date: '1712345678901' }],
+                        data: [{
+                            id: 'expense-1',
+                            encoded_by: validEncodedBy,
+                            expense_date: '2026-05-11T10:00:00.000Z',
+                        }],
                         error: null,
                     })),
                 not: jest.fn(() => createQueryBuilder()),
@@ -276,10 +305,11 @@ describe('SyncService', () => {
             upsert: jest.fn().mockResolvedValue({ error: null }),
         });
 
-        const result = await (service as any).fetchTableChanges('loan_penalties', null);
+        const result = await (service as any).fetchTableChanges('expenses', null);
 
         expect(result.updated).toHaveLength(1);
-        expect(result.updated[0].penalty_date).toBe(1712345678901);
+        expect(result.updated[0].expense_date).toBe(Date.UTC(2026, 4, 11, 10, 0, 0));
+        expect(result.updated[0].encoded_by).toBe(validEncodedBy);
     });
 
     it('throws when a pull table fetch fails instead of returning empty changes', async () => {
@@ -287,15 +317,15 @@ describe('SyncService', () => {
             select: jest.fn().mockReturnValue({
                 is: jest.fn(() => createQueryBuilder({
                     data: null,
-                    error: { message: 'missing borrower_id' },
+                    error: { message: 'missing area_id' },
                 })),
                 not: jest.fn(() => createQueryBuilder()),
             }),
             upsert: jest.fn().mockResolvedValue({ error: null }),
         });
 
-        await expect((service as any).fetchTableChanges('payments', null))
-            .rejects.toThrow('Failed to fetch payments');
+        await expect((service as any).fetchTableChanges('expenses', null))
+            .rejects.toThrow('Failed to fetch expenses');
     });
 
     it('shows a user-friendly sync error when session lookup fails', async () => {
@@ -328,12 +358,12 @@ describe('SyncService', () => {
                 is: jest.fn(() => createQueryBuilder()),
                 not: jest.fn(() => createQueryBuilder()),
             }),
-            upsert: jest.fn().mockResolvedValue({ error: { message: 'schema cache missing borrower_id' } }),
+            upsert: jest.fn().mockResolvedValue({ error: { message: 'violates not-null column area_id' } }),
         });
 
         await expect((service as any).pushChangesToSupabase({
-            payments: {
-                created: [{ id: 'p1', amount: 100 }],
+            expenses: {
+                created: [{ id: 'e1', amount: 100 }],
                 updated: [],
                 deleted: [],
             },
@@ -343,7 +373,7 @@ describe('SyncService', () => {
     it('returns rejected ids for rows changed remotely after lastPulledAt', async () => {
         const conflictQuery = createQueryBuilder({
             data: [{
-                id: 'p1',
+                id: 'c1',
                 updated_at: new Date('2026-05-11T10:00:01.000Z').toISOString(),
                 deleted_at: null,
             }],
@@ -356,25 +386,26 @@ describe('SyncService', () => {
         });
 
         const rejectedIds = await (service as any).pushChangesToSupabase({
-            payments: {
+            cash_transactions: {
                 created: [],
-                updated: [{ id: 'p1', amount: 100 }],
+                updated: [{ id: 'c1', amount: 100 }],
                 deleted: [],
             },
         }, new Date('2026-05-11T10:00:00.000Z').getTime());
 
-        expect(rejectedIds).toEqual({ payments: ['p1'] });
+        expect(rejectedIds).toEqual({ cash_transactions: ['c1'] });
         expect(upsert).not.toHaveBeenCalled();
     });
-    it('pulls payments with all columns so borrower_id cannot regress out of the schema payload', async () => {
-        const validBorrowerId = '11111111-1111-4111-8111-111111111111';
+    it('pulls expenses with all columns so the local-to-remote table mapping cannot regress out of the schema payload', async () => {
+        const validEncodedBy = '11111111-1111-4111-8111-111111111111';
         const activeBuilder = createQueryBuilder({
             data: [{
-                id: 'payment-1',
-                loan_id: '22222222-2222-4222-8222-222222222222',
-                borrower_id: validBorrowerId,
+                id: 'expense-1',
+                category: 'Farm Inputs',
+                encoded_by: validEncodedBy,
+                bank_account_id: '22222222-2222-4222-8222-222222222222',
                 amount: 250,
-                payment_date: '2026-05-11T10:00:00.000Z',
+                expense_date: '2026-05-11T10:00:00.000Z',
                 deleted_at: null,
                 updated_at: '2026-05-11T10:00:00.000Z',
             }],
@@ -390,13 +421,14 @@ describe('SyncService', () => {
             upsert: jest.fn().mockResolvedValue({ error: null }),
         });
 
-        const result = await (service as any).fetchTableChanges('payments', null);
+        const result = await (service as any).fetchTableChanges('expenses', null);
 
-        expect(mockSupabase.from).toHaveBeenCalledWith('app_payments');
+        expect(mockSupabase.from).toHaveBeenCalledWith('app_expenses');
         expect(select).toHaveBeenCalledWith('*');
         expect(result.updated).toHaveLength(1);
-        expect(result.updated[0].borrower_id).toBe(validBorrowerId);
-        expect(typeof result.updated[0].payment_date).toBe('number');
+        expect(result.updated[0].encoded_by).toBe(validEncodedBy);
+        expect(result.updated[0].bank_account_id).toBe('22222222-2222-4222-8222-222222222222');
+        expect(typeof result.updated[0].expense_date).toBe('number');
     });
 
     it('skips optional settings tables when the remote migration is not applied yet', async () => {
@@ -446,21 +478,24 @@ describe('SyncService', () => {
         expect(rejectedIds).toEqual({ feature_flags: ['feature-dashboard'] });
     });
 
-    it('sanitizes invalid payment borrower_id values before pushing to Supabase', () => {
-        const validLoanId = '22222222-2222-4222-8222-222222222222';
+    // Retargeted 2026-10-20 from payments.borrower_id (retired lending table). The invariant
+    // "an invalid UUID in a FK column is nullified, not silently pushed" is carried by
+    // expenses/app_expenses, whose bank_account_id is a real UUID_FK_FIELD.
+    it('sanitizes invalid expense bank_account_id values before pushing to Supabase', () => {
+        const validEncodedBy = '11111111-1111-4111-8111-111111111111';
 
         const sanitized = (service as any).sanitizeRecord({
-            id: 'payment-1',
-            loan_id: validLoanId,
-            borrower_id: 'not-a-valid-uuid',
-            payment_date: Date.UTC(2026, 4, 11),
+            id: 'expense-1',
+            encoded_by: validEncodedBy,
+            bank_account_id: 'not-a-valid-uuid',
+            expense_date: Date.UTC(2026, 4, 11),
             _status: 'created',
-            _changed: 'borrower_id,payment_date',
-        }, 'payments');
+            _changed: 'bank_account_id,expense_date',
+        }, 'expenses');
 
-        expect(sanitized.borrower_id).toBeNull();
-        expect(sanitized.loan_id).toBe(validLoanId);
-        expect(sanitized.payment_date).toBe('2026-05-11T00:00:00.000Z');
+        expect(sanitized.bank_account_id).toBeNull();
+        expect(sanitized.encoded_by).toBe(validEncodedBy);
+        expect(sanitized.expense_date).toBe('2026-05-11T00:00:00.000Z');
         expect(sanitized).not.toHaveProperty('_status');
         expect(sanitized).not.toHaveProperty('_changed');
     });
@@ -523,16 +558,16 @@ describe('SyncService', () => {
         });
 
         await (service as any).pushChangesToSupabase({
-            payments: {
+            cash_transactions: {
                 created: [],
                 updated: [],
-                deleted: ['payment-1'],
+                deleted: ['cash-1'],
             },
         });
 
-        expect(mockSupabase.from).toHaveBeenCalledWith('app_payments');
+        expect(mockSupabase.from).toHaveBeenCalledWith('app_cash_transactions');
         expect(upsert).toHaveBeenCalledWith([expect.objectContaining({
-            id: 'payment-1',
+            id: 'cash-1',
             deleted_at: expect.any(String),
             updated_at: expect.any(String),
         })]);
@@ -541,7 +576,7 @@ describe('SyncService', () => {
     it('rejects local deletes when the remote row changed after lastPulledAt', async () => {
         const conflictQuery = createQueryBuilder({
             data: [{
-                id: 'payment-1',
+                id: 'cash-1',
                 updated_at: '2026-05-11T10:00:01.000Z',
                 deleted_at: null,
             }],
@@ -554,14 +589,14 @@ describe('SyncService', () => {
         });
 
         const rejectedIds = await (service as any).pushChangesToSupabase({
-            payments: {
+            cash_transactions: {
                 created: [],
                 updated: [],
-                deleted: ['payment-1'],
+                deleted: ['cash-1'],
             },
         }, new Date('2026-05-11T10:00:00.000Z').getTime());
 
-        expect(rejectedIds).toEqual({ payments: ['payment-1'] });
+        expect(rejectedIds).toEqual({ cash_transactions: ['cash-1'] });
         expect(upsert).not.toHaveBeenCalled();
     });
 
@@ -605,12 +640,12 @@ describe('SyncService', () => {
         expect(mockSync.mock.calls.length).toBeLessThanOrEqual(1);
     });
 
-    it('logs post-sync integrity warning when unsync\'d loan records remain', async () => {
+    it('logs post-sync integrity warning when unsync\'d journal entries remain', async () => {
         const mockSync = synchronize as jest.Mock;
         mockSync.mockResolvedValue(undefined);
         (service as any).isSyncing = false;
 
-        // Mock the loans collection to return 2 unsync'd records
+        // Mock the journal_entries collection to return 2 unsync'd records
         const mockFetchCount = jest.fn().mockResolvedValue(2);
         const mockQuery = jest.fn().mockReturnValue({ fetchCount: mockFetchCount });
         const mockGet = jest.fn().mockReturnValue({ query: mockQuery });
@@ -620,7 +655,7 @@ describe('SyncService', () => {
         await service.sync(true);
 
         expect(ErrorService.handleError).toHaveBeenCalledWith(
-            expect.objectContaining({ message: expect.stringContaining('unsync\'d loan records remain') }),
+            expect.objectContaining({ message: expect.stringContaining('unsync\'d journal entries remain') }),
             'SyncService.integrityCheck',
             expect.anything()
         );
@@ -629,22 +664,22 @@ describe('SyncService', () => {
     it('sanitizes empty string UUID and _by fields to null before pushing', () => {
         const record = {
             id: '11111111-2222-3333-4444-555555555555',
-            collector_id: '',
+            land_owner_id: '',
             area_id: '   ',
-            auth_id: 'invalid-uuid',
+            parcel_id: 'invalid-uuid',
             created_by: '',
             approved_by: '   ',
             recorded_by: 'not-a-uuid',
-            full_name: 'John Doe',
+            name: 'Parcel A',
         };
-        const sanitized = (service as any).sanitizeRecord(record, 'borrowers');
-        expect(sanitized.collector_id).toBeNull();
+        const sanitized = (service as any).sanitizeRecord(record, 'agri_parcels');
+        expect(sanitized.land_owner_id).toBeNull();
         expect(sanitized.area_id).toBeNull();
-        expect(sanitized.auth_id).toBeNull();
+        expect(sanitized.parcel_id).toBeNull();
         expect(sanitized.created_by).toBeNull();
         expect(sanitized.approved_by).toBeNull();
         expect(sanitized.recorded_by).toBeNull();
-        expect(sanitized.full_name).toBe('John Doe');
+        expect(sanitized.name).toBe('Parcel A');
     });
 
     it('uses primary key id default upsert when pushing chart_of_accounts', async () => {

@@ -50,7 +50,6 @@ const FORBIDDEN_TABLES = [
     'meeting_attendance',
     // QSR / retail / commissary
     'pos_sessions',
-    'stock_movements',
     'sales_returns',
     'sales_return_lines',
     'commissary_dispatches',
@@ -90,6 +89,37 @@ const FORBIDDEN_TABLES = [
 // areas and financial_snapshots all ride app_*. These prefixes are exclusively non-agri.
 const FORBIDDEN_REMOTE_PREFIXES = ['ws_', 'marketplace_', 'cic_'];
 
+// Documented deviations from the teardown plan: kept because a surviving agribusiness/finance
+// consumer still reads them. Each is asserted PRESENT below so a later cleanup cannot drop it by
+// accident, and the reason lives here instead of in someone's memory.
+const KEPT_DEVIATIONS: { table: string; because: string }[] = [
+    {
+        // The plan listed stock_movements under "QSR / retail / commissary", but the table is the
+        // inventory book of the kept accounting layer: src/services/InventoryJournalService.ts
+        // writes it and app/(admin)/accounting/inventory-journal.tsx renders it; UserTracingService
+        // and auditTrailFormatter read it. Retail POS (pos_sessions, sales_returns) went, the
+        // inventory ledger stayed.
+        table: 'stock_movements',
+        because: 'kept InventoryJournalService + accounting/inventory-journal screen',
+    },
+];
+
+const MIGRATIONS = ['src', 'database', 'migrations.ts'];
+
+// The v50 step is the authoritative list of retired tables: whatever it drops must be gone from the
+// schema, the model registry and the sync contract. Deriving the forbidden set from the migration
+// instead of trusting only the hand-written list is what keeps this guard honest as the teardown
+// grows -- stragglers like device_registry and any later drop are covered without a second edit.
+const retiredTables = (): string[] => {
+    const src = read(MIGRATIONS);
+    const step = src.match(/toVersion:\s*50,\s*steps:\s*\[([\s\S]*?)\n\s*\],/);
+    if (!step) throw new Error('could not parse the toVersion: 50 step from migrations.ts');
+    const names = [...step[1].matchAll(/DROP TABLE IF EXISTS ([a-z0-9_]+);/g)].map((m: RegExpMatchArray) => m[1]);
+    expect(names.length).toBeGreaterThan(20);
+    expect(new Set(names).size).toBe(names.length);
+    return names;
+};
+
 const schemaTableNames = () => [
     ...read(SCHEMA).matchAll(/tableSchema\(\{\s*name:\s*'([^']+)'/g),
 ].map((m: RegExpMatchArray) => m[1]);
@@ -122,6 +152,7 @@ const modelTableNames = () => {
 
 describe('agribusiness-only schema and sync contract', () => {
     let tables: string[];
+    let retired: string[];
     let contract: {
         coreTables: string[];
         configTables: string[];
@@ -132,16 +163,25 @@ describe('agribusiness-only schema and sync contract', () => {
 
     beforeAll(() => {
         tables = schemaTableNames();
+        retired = retiredTables();
         contract = JSON.parse(read(CONTRACT));
     });
 
     it('parses both sources before asserting anything', () => {
         expect(tables.length).toBeGreaterThan(20);
+        expect(retired.length).toBeGreaterThan(20);
         expect(Object.keys(contract.remoteTableMap).length).toBeGreaterThan(20);
     });
 
+    it('retires every table the hand-written list names', () => {
+        // A name in FORBIDDEN_TABLES that the v50 step does not drop means the local schema and the
+        // remote database would disagree, so the list is checked against the migration it claims.
+        const missing = FORBIDDEN_TABLES.filter((t) => !retired.includes(t));
+        expect(missing).toEqual([]);
+    });
+
     it('carries no non-agribusiness table', () => {
-        const present = FORBIDDEN_TABLES.filter((t) => tables.includes(t));
+        const present = retired.filter((t) => tables.includes(t));
         expect(present).toEqual([]);
     });
 
@@ -150,11 +190,23 @@ describe('agribusiness-only schema and sync contract', () => {
         // positive control: the parse is real, not an empty array matching nothing
         expect(models).toContain('agri_parcels');
         expect(models.length).toBeGreaterThan(20);
-        const present = FORBIDDEN_TABLES.filter((t) => models.includes(t));
+        const present = retired.filter((t) => models.includes(t));
         expect(present).toEqual([]);
     });
 
-    it('bumps the schema version so the deleteTable migration step runs', () => {
+    it('keeps each documented deviation and states why it survived', () => {
+        const models = modelTableNames();
+        for (const deviation of KEPT_DEVIATIONS) {
+            expect(tables).toContain(deviation.table);
+            expect(models).toContain(deviation.table);
+            expect(Object.keys(contract.remoteTableMap)).toContain(deviation.table);
+            // A deviation that also landed in the drop list would silently delete itself on upgrade.
+            expect(retired).not.toContain(deviation.table);
+            expect(deviation.because.length).toBeGreaterThan(10);
+        }
+    });
+
+    it('bumps the schema version so the v50 drop step runs', () => {
         expect(schemaVersion()).toBe(50);
     });
 
@@ -178,6 +230,7 @@ describe('agribusiness-only schema and sync contract', () => {
         // remoteTableMap is local -> remote; check both ends of every pair
         const hit = Object.entries(contract.remoteTableMap).filter(
             ([local, remote]) =>
+                retired.includes(local) ||
                 FORBIDDEN_TABLES.includes(local) ||
                 FORBIDDEN_REMOTE_PREFIXES.some((p) => remote.startsWith(p))
         );

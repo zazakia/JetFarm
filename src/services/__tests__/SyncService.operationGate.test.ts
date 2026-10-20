@@ -4,6 +4,7 @@ import { getLastPulledAt } from '@nozbe/watermelondb/sync/impl';
 import uuid from 'react-native-uuid';
 import { createTestDatabase } from '../../__tests__/test-utils';
 import { SyncService } from '../SyncService';
+import syncTableContract from '../syncTableContract.json';
 import { AgriParcelService } from '../AgriParcelService';
 import { AgriBlockService } from '../AgriBlockService';
 import { AgriBlockAssignmentService } from '../AgriBlockAssignmentService';
@@ -44,6 +45,10 @@ const geometry = { outer: [{ latitude: 0, longitude: 0 }, { latitude: 0.001, lon
     { latitude: 0.001, longitude: 0.001 }, { latitude: 0, longitude: 0.001 }], holes: [] };
 const kinds = ['layout', 'assignment', 'progress'] as const;
 type Kind = typeof kinds[number];
+// Post-teardown core carrier: `expenses` is a surviving core table (synced in the default
+// config), so it still proves that ACK holds domain writers outside db.write.
+const CORE_TABLE = 'expenses';
+const CORE_REMOTE = 'app_expenses';
 
 function deferred() {
     let resolve!: () => void;
@@ -55,7 +60,26 @@ async function flushMicrotasks() {
 }
 const outcome = <T>(promise: Promise<T>) => promise.then(value => ({ value, error: null }), error => ({ value: null, error }));
 
+// Positive control for the pruned contract: the carrier really is a synced core table,
+// so the ACK/watermark assertions below cannot be satisfied by an empty sync set.
+function assertCarrierIsSynced(): void {
+    expect(syncTableContract.coreTables.length).toBeGreaterThan(0);
+    expect(syncTableContract.coreTables).toContain(CORE_TABLE);
+    expect(CORE_REMOTE).toBe('app_expenses');
+    expect(Object.keys(syncTableContract.remoteTableMap).length)
+        .toBe(syncTableContract.coreTables.length + syncTableContract.configTables.length);
+}
+
+function createExpense(db: Database, category: string) {
+    return db.get<any>(CORE_TABLE).create((row: any) => {
+        row.category = category;
+        row.amount = 1;
+        row.expenseDate = 0;
+    });
+}
+
 async function fixture(kind: Kind = 'layout') {
+    assertCarrierIsSynced();
     const db = createTestDatabase();
     const parcel = await AgriParcelService.createParcel({ name: 'DUMMY: parcel', landOwnerId: 'DUMMY: owner',
         areaHectares: 1, gpsCoordinates: geometry.outer }, db);
@@ -74,11 +98,11 @@ async function fixture(kind: Kind = 'layout') {
             assignmentId = assignment.id;
         }
     }
-    const dirty = await db.write(() => db.get<any>('borrowers').create(row => { row.fullName = 'DUMMY: borrower'; }));
-    const tombstone = await db.write(() => db.get<any>('borrowers').create(row => { row.fullName = 'DUMMY: deleted borrower'; }));
+    const dirty = await db.write(() => createExpense(db, 'DUMMY: pending carrier'));
+    const tombstone = await db.write(() => createExpense(db, 'DUMMY: tombstoned carrier'));
     await realSynchronize({ database: db, pullChanges: async () => ({ changes: {}, timestamp: 100 }), pushChanges: async () => ({}) });
     await db.write(async () => {
-        await dirty.update(row => { row.fullName = 'DUMMY: dirty borrower'; });
+        await dirty.update(row => { row.category = 'DUMMY: dirty carrier'; });
         await tombstone.markAsDeleted();
     });
     const operationId = id();
@@ -109,9 +133,9 @@ function remoteHarness() {
                 in: jest.fn().mockResolvedValue({ data: [], error: null }),
                 range: jest.fn(async () => {
                     pullEntered.resolve(); await pullRelease.promise;
-                    return { data: table === 'app_borrowers'
+                    return { data: table === CORE_REMOTE
                         ? deleted ? remoteDeletedIds.map(id => ({ id }))
-                            : [{ id: remoteId, full_name: 'DUMMY: pulled borrower' }] : [], error: pullError };
+                            : [{ id: remoteId, category: 'DUMMY: pulled carrier' }] : [], error: pullError };
                 }),
             };
             return { select: jest.fn(() => query), upsert: jest.fn(async (rows: any[]) => {
@@ -189,7 +213,7 @@ function localFailureHarness(db: Database, point: 'apply' | 'ack', committed: bo
     let injected = false;
     jest.spyOn(db.adapter, 'batch').mockImplementation(async operations => {
         const target = point === 'apply'
-            ? operations.some(operation => operation[0] === 'create' && operation[1] === 'borrowers')
+            ? operations.some(operation => operation[0] === 'create' && operation[1] === CORE_TABLE)
             : operations.some(operation => operation[0] === 'update' && operation[2]._status === 'synced');
         if (!target || injected) return batch(operations);
         injected = true; entered.resolve(); await release.promise;
@@ -280,7 +304,7 @@ describe('public SyncService operation ownership with installed WDB synchronize'
             expect(sync.events).toEqual([]);
             expect(dirty._raw._status).toBe('updated');
             expect(await getLastPulledAt(db)).toBe(100);
-            expect(await db.adapter.getDeletedRecords('borrowers')).toEqual([tombstone.id]);
+            expect(await db.adapter.getDeletedRecords(CORE_TABLE)).toEqual([tombstone.id]);
             expect((sync.service as any).isSyncing).toBe(false);
         } finally {
             domain.release.resolve(); sync.releaseAll(); ack.releaseAll(); await Promise.all([writing, syncing]);
@@ -304,21 +328,21 @@ describe('public SyncService operation ownership with installed WDB synchronize'
             expect(await getLastPulledAt(db)).toBe(100);
             sync.pullRelease.resolve(); await sync.pushEntered.promise;
             expect(await getLastPulledAt(db)).toBe(200);
-            expect((await db.get<any>('borrowers').find(sync.remoteId)).fullName).toBe('DUMMY: pulled borrower');
-            expect(sync.writes[0].rows[0].full_name).toBe('DUMMY: dirty borrower');
+            expect((await db.get<any>(CORE_TABLE).find(sync.remoteId)).category).toBe('DUMMY: pulled carrier');
+            expect(sync.writes[0].rows[0].category).toBe('DUMMY: dirty carrier');
             expect(ack.domainWrites()).toBe(0);
             blocker = db.write(async () => { blockerEntered.resolve(); await blockerRelease.promise; }, 'DUMMY: ACK queue blocker');
             await blockerEntered.promise;
             sync.pushRelease.resolve(); await ack.ackQueued.promise;
             expect(ack.domainWrites()).toBe(0);
             blockerRelease.resolve(); await Promise.all([ack.batchEntered.promise, ack.deleteEntered.promise]);
-            expect(await db.adapter.getDeletedRecords('borrowers')).toEqual([tombstone.id]);
+            expect(await db.adapter.getDeletedRecords(CORE_TABLE)).toEqual([tombstone.id]);
             expect(ack.domainWrites()).toBe(0);
             ack.batchRelease.resolve(); await ack.batchDone.promise;
             expect(ack.domainWrites()).toBe(0);
             expect(sync.audit.completeSession).not.toHaveBeenCalled();
             ack.deleteRelease.resolve(); await countEntered.promise;
-            expect(await db.adapter.getDeletedRecords('borrowers')).toEqual([]);
+            expect(await db.adapter.getDeletedRecords(CORE_TABLE)).toEqual([]);
             expect(dirty._raw._status).toBe('synced');
             expect(ack.domainWrites()).toBe(0);
             countRelease.resolve(); await sync.auditEntered.promise;

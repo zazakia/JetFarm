@@ -36,8 +36,8 @@ export const CONFIG_SYNC_TABLES = syncTableContract.configTables;
 
 // Priority Sync Groups for future optimizations
 export const HIGH_PRIORITY_SYNC_TABLES = [
-    'payments',
-    'remittances',
+    'journal_entries',
+    'cash_transactions',
     'action_logs',
 ];
 
@@ -45,7 +45,6 @@ export const LOW_PRIORITY_SYNC_TABLES = [
     'expense_categories',
     'areas',
     'app_settings',
-    'loan_products',
 ];
 
 // These domains require verified atomic layout cloud support, not independent
@@ -264,63 +263,23 @@ export function deterministicUuid(seedStr: string): string {
 }
 
 export class SyncService {
+    // Pruned 2026-10-20 to the fields the surviving agribusiness + finance models actually declare
+    // (@date in src/database/models). The lending, payroll, franchise, commissary and marketplace
+    // names that used to sit here went with those models; an entry no model can reach is dead
+    // conversion code that makes the push contract look wider than it is.
     private static readonly DATE_FIELDS = [
         'created_at',
         'updated_at',
         'deleted_at',
-        'date_of_birth',
-        'release_date',
-        'first_payment_date',
-        'maturity_date',
         'due_date',
-        'payment_date',
         'entry_date',
-        'penalty_date',
         'expense_date',
         'transaction_date',
-        'log_date',
-        'snapshot_date',
-        'encoded_at',
-        'remittance_date',
-        'date',
         'timestamp',
-        'period_start',
-        'period_end',
-        'term_start',
-        'term_end',
-        'resolution_date',
-        'meeting_date',
-        'delivery_date',
-        'date_joined',
-        'date_accepted',
-        'pmes_date',
-        'spouse_date_of_birth',
-        'termination_date',
-        'date_of_death',
-        'approved_at',
-        'application_date',
         'cleared_at',
-        'hire_date',
-        'separation_date',
-        'posted_at',
         'start_date',
-        'end_date',
         'invoice_date',
         'movement_date',
-        'dispatched_at',
-        'received_at',
-        'verified_at',
-        'contract_start',
-        'contract_end',
-        'renewal_date',
-        'audit_date',
-        'resolved_at',
-        'wipe_completed_at',
-        'last_heartbeat',
-        'last_sync_at',
-        'registered_at',
-        'settled_at',
-        'pay_date',
         'effective_from',
         'effective_to'
     ];
@@ -330,24 +289,12 @@ export class SyncService {
      * These should NOT be converted to ISO strings.
      */
     private static readonly TABLE_BIGINT_FIELDS: Record<string, string[]> = {
-        loan_penalties: ['penalty_date'],
-        dependents: ['created_at', 'updated_at', 'deleted_at', 'date_of_birth'],
-        children: ['created_at', 'updated_at', 'deleted_at', 'date_of_birth'],
-        share_capital_transactions: ['created_at', 'updated_at', 'deleted_at', 'date'],
-        committees: ['created_at', 'updated_at', 'deleted_at'],
-        committee_members: ['created_at', 'updated_at', 'deleted_at', 'term_start', 'term_end'],
-        board_resolutions: ['created_at', 'updated_at', 'deleted_at', 'resolution_date'],
-        meeting_attendance: ['created_at', 'updated_at', 'deleted_at', 'meeting_date'],
-        file_cases: ['filed_date', 'created_at', 'updated_at', 'deleted_at'],
-        borrowers: ['date_accepted', 'pmes_date', 'spouse_date_of_birth', 'termination_date'],
-        loans: ['approved_at', 'delinquent_since'],
         agri_parcel_blocks: ['created_at', 'updated_at', 'deleted_at'],
         agri_block_assignments: ['start_date', 'due_date', 'created_at', 'updated_at', 'deleted_at'],
         agri_block_progress: ['update_date', 'created_at', 'updated_at'],
     };
 
     private static isBigIntField(tableName: string, fieldName: string): boolean {
-        if (fieldName === 'penalty_date') return true;
         const fields = this.TABLE_BIGINT_FIELDS[tableName];
         return fields ? fields.includes(fieldName) : false;
     }
@@ -357,11 +304,9 @@ export class SyncService {
      * Invalid UUIDs in these fields cause FK constraint violations on push.
      */
     public static readonly UUID_FK_FIELDS = [
-        'collector_id', 'auth_id', 'created_by', 'encoded_by', 'borrower_id',
-        'loan_id', 'schedule_id', 'previous_loan_id', 'bank_account_id',
-        'area_id', 'member_id', 'application_id', 'employee_id', 'committee_id',
-        'parent_area_id', 'customer_id', 'delivery_id', 'approved_by',
-        'recorded_by', 'posted_by', 'product_id', 'ao_id',
+        'created_by', 'encoded_by', 'bank_account_id',
+        'area_id', 'parent_area_id', 'ao_id',
+        'recorded_by', 'posted_by', 'product_id',
         'journal_entry_id', 'source_id'
     ];
 
@@ -411,39 +356,17 @@ export class SyncService {
 
     private applyBranchPartitionFilter(query: any, localTableName: string): any {
         if (!this.partitionFilter) return query;
-        const { branchId, role, accessibleBranchIds } = this.partitionFilter;
+        const { role } = this.partitionFilter;
 
         // Executive, admin, and main_office roles see all branches globally
         if (!role || role === 'admin' || role === 'main_office' || role === 'executive') {
             return query;
         }
 
-        // Branch-scoped roles: cashier, manager
-        if (role === 'branch_cashier' || role === 'branch_manager') {
-            if (!branchId) return query;
-            if (localTableName === 'commissary_dispatches') {
-                return typeof query.eq === 'function' ? query.eq('to_branch_id', branchId) : query;
-            }
-            if (localTableName === 'waste_logs' || localTableName === 'royalty_calculations') {
-                return typeof query.eq === 'function' ? query.eq('branch_id', branchId) : query;
-            }
-        }
-
-        // Area supervisor scoped to their assigned store cluster
-        if (role === 'area_supervisor') {
-            const targetBranchIds = accessibleBranchIds && accessibleBranchIds.length > 0
-                ? accessibleBranchIds
-                : (branchId ? [branchId] : []);
-            if (targetBranchIds.length === 0) return query;
-
-            if (localTableName === 'commissary_dispatches') {
-                return typeof query.in === 'function' ? query.in('to_branch_id', targetBranchIds) : query;
-            }
-            if (localTableName === 'waste_logs' || localTableName === 'royalty_calculations') {
-                return typeof query.in === 'function' ? query.in('branch_id', targetBranchIds) : query;
-            }
-        }
-
+        // The former branch_cashier / area_supervisor arms narrowed the pull for
+        // commissary_dispatches, waste_logs and royalty_calculations only. Those tables and
+        // roles are retired on this branch, so no surviving agribusiness or finance table is
+        // branch-narrowed at pull time; branch scoping stays a UI/permission concern.
         return query;
     }
 
@@ -886,15 +809,17 @@ export class SyncService {
             }));
             });
 
-            // Post-sync integrity check: warn if unsync'd loan records remain
+            // Post-sync integrity check: warn if unsync'd journal entries remain. The ledger is
+            // the integrity-critical surviving domain; it used to watch `loans`, a table this
+            // branch no longer has (the lookup threw into the catch below and warned about nothing).
             try {
                 const changedCount = await this.db.collections
-                    .get('loans')
+                    .get('journal_entries')
                     .query(Q.where('_status', Q.oneOf(['created', 'updated', 'deleted'])))
                     .fetchCount();
                 if (changedCount > 0) {
                     ErrorService.handleError(
-                        new Error(`Post-sync: ${changedCount} unsync'd loan records remain`),
+                        new Error(`Post-sync: ${changedCount} unsync'd journal entries remain`),
                         'SyncService.integrityCheck',
                         ErrorType.SYNC
                     );
@@ -1394,31 +1319,6 @@ export class SyncService {
                         });
                     }
 
-                    // Marketplace Orders & Sub-orders consistency:
-                    // Ensure a corresponding marketplace_sub_orders row exists on Supabase so that
-                    // marketplace_order_items referencing sub_order_id satisfy the FK constraint.
-                    if (localTableName === 'marketplace_orders' && toUpsert.length > 0) {
-                        const subOrderRows = toUpsert.map(order => ({
-                            id: order.id,
-                            order_id: order.id,
-                            store_id: '00000000-0000-4000-8000-0000000000c1',
-                            sub_order_number: `${order.order_number || order.id}-1`,
-                            subtotal: order.total_amount || 0,
-                            commission_amount: 0,
-                            shipping_fee: 0,
-                            net_payout: order.total_amount || 0,
-                            fulfillment_status: 'completed',
-                            payout_status: order.payment_status || 'paid',
-                            created_at: order.created_at || new Date().toISOString(),
-                            updated_at: order.updated_at || new Date().toISOString(),
-                        }));
-                        await withSyncTimeout(
-                            this.supabase.from('marketplace_sub_orders').upsert(subOrderRows, { onConflict: 'id' }),
-                            UPSERT_TIMEOUT_MS,
-                            'Ensure marketplace_sub_orders for orders'
-                        );
-                    }
-
                     auditFailureOperation = 'upsert';
                     auditFailureRecordIds = [...createdToPush, ...updatedToPush].map((record: any) => record.id);
                     if (toUpsert.length > 0) {
@@ -1814,84 +1714,6 @@ export class SyncService {
             }
         }
 
-        if (tableName === 'marketplace_orders') {
-            if (clean.buyerId !== undefined && clean.buyer_id === undefined) {
-                clean.buyer_id = clean.buyerId;
-                delete clean.buyerId;
-            }
-            if (clean.orderNumber !== undefined && clean.order_number === undefined) {
-                clean.order_number = clean.orderNumber;
-                delete clean.orderNumber;
-            }
-            if (clean.totalAmount !== undefined && clean.total_amount === undefined) {
-                clean.total_amount = clean.totalAmount;
-                delete clean.totalAmount;
-            }
-            if (clean.paymentMethod !== undefined && clean.payment_method === undefined) {
-                clean.payment_method = clean.paymentMethod;
-                delete clean.paymentMethod;
-            }
-            if (clean.paymentStatus !== undefined && clean.payment_status === undefined) {
-                clean.payment_status = clean.paymentStatus;
-                delete clean.paymentStatus;
-            }
-            if (!clean.buyer_id || typeof clean.buyer_id !== 'string' || !SyncService.UUID_REGEX.test(clean.buyer_id)) {
-                clean.buyer_id = deterministicUuid(clean.buyer_id ? `buyer-${clean.buyer_id}` : 'buyer-default');
-            }
-        }
-
-        if (tableName === 'marketplace_order_items') {
-            if (clean.subOrderId !== undefined && clean.sub_order_id === undefined) {
-                clean.sub_order_id = clean.subOrderId;
-                delete clean.subOrderId;
-            }
-            if (clean.productId !== undefined && clean.product_id === undefined) {
-                clean.product_id = clean.productId;
-                delete clean.productId;
-            }
-            if (clean.variantId !== undefined && clean.variant_id === undefined) {
-                clean.variant_id = clean.variantId;
-                delete clean.variantId;
-            }
-            if (clean.unitPrice !== undefined && clean.unit_price === undefined) {
-                clean.unit_price = clean.unitPrice;
-                delete clean.unitPrice;
-            }
-            if (clean.totalPrice !== undefined && clean.total_price === undefined) {
-                clean.total_price = clean.totalPrice;
-                delete clean.totalPrice;
-            }
-
-            const MENU_CODE_MAP: Record<string, string> = {
-                'ck-scut': 'CK-SCUT',
-                'ck-rice': 'CK-RICE',
-                'ck-sd10': 'CK-SD10',
-                'ck-sd15': 'CK-SD15',
-                'ck-neck': 'CK-NECK',
-                'ck-flt': 'CK-FLT',
-                'ck-bola': 'CK-BOLA',
-                'ck-lump': 'CK-LUMP',
-                'ck-ngoh': 'CK-NGOH',
-                'ck-atsr': 'CK-ATSR',
-                'ck-fats': 'CK-FATS',
-                'ck-skin': 'CK-SKIN',
-            };
-            if (clean.product_id && typeof clean.product_id === 'string' && !SyncService.UUID_REGEX.test(clean.product_id)) {
-                const codeKey = clean.product_id.toLowerCase();
-                const sku = MENU_CODE_MAP[codeKey] || clean.product_id.toUpperCase();
-                clean.product_id = deterministicUuid(`prod-${sku}`);
-            }
-            if (!clean.product_id || typeof clean.product_id !== 'string' || !SyncService.UUID_REGEX.test(clean.product_id)) {
-                clean.product_id = deterministicUuid(clean.product_id ? `prod-${clean.product_id}` : 'prod-default');
-            }
-            if (clean.sub_order_id && typeof clean.sub_order_id === 'string' && !SyncService.UUID_REGEX.test(clean.sub_order_id)) {
-                clean.sub_order_id = deterministicUuid(`suborder-${clean.sub_order_id}`);
-            }
-            if (!clean.sub_order_id || typeof clean.sub_order_id !== 'string' || !SyncService.UUID_REGEX.test(clean.sub_order_id)) {
-                clean.sub_order_id = deterministicUuid(clean.sub_order_id ? `suborder-${clean.sub_order_id}` : 'suborder-default');
-            }
-        }
-
         if (tableName === 'journal_entries') {
             if (clean.referenceNumber !== undefined && clean.reference_number === undefined) {
                 clean.reference_number = clean.referenceNumber;
@@ -2015,16 +1837,11 @@ export class SyncService {
                     SyncService.UUID_FK_FIELDS.includes(key);
                 if (isFkOrUuidField) {
                     if (val.trim() === '' || !SyncService.UUID_REGEX.test(val)) {
-                        // For mandatory NOT NULL foreign keys, supply a deterministic valid UUID fallback instead of null
-                        if (tableName === 'marketplace_orders' && key === 'buyer_id') {
-                            clean[key] = deterministicUuid('buyer-default');
-                        } else if (tableName === 'marketplace_order_items' && key === 'product_id') {
-                            clean[key] = deterministicUuid('prod-default');
-                        } else if (tableName === 'marketplace_order_items' && key === 'sub_order_id') {
-                            clean[key] = deterministicUuid('suborder-default');
-                        } else {
-                            clean[key] = null;
-                        }
+                        // No surviving table has a mandatory non-nullable FK to a UUID the client
+                        // must synthesize, so an invalid referent is nullified rather than replaced
+                        // with a deterministic stand-in (the marketplace orders/items fallback
+                        // existed only to satisfy deleted marketplace constraints).
+                        clean[key] = null;
                     }
                 } else if (key === 'id') {
                     if (val.trim() === '') {

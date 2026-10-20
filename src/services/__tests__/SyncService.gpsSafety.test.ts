@@ -41,6 +41,12 @@ const EMPTY = { created: [], updated: [], deleted: [] };
 const DUMMY_IDS = Array.from({ length: 8 }, (_, i) => `00000000-0000-4000-8000-${String(i + 1).padStart(12, '0')}`);
 const NEW_GEOMETRY = ['gps_exclusions', 'boundary_revision', 'layout_revision', 'boundary_saved_at'];
 const MAPPING_TABLES = ['agri_parcel_blocks', 'agri_block_assignments', 'agri_block_progress'];
+// Post-teardown core seam: `expenses` is a surviving core table (synced for both config
+// flag values) and therefore carries the "core changes still sync" half of these tests.
+const CORE_TABLE = 'expenses';
+const CORE_REMOTE = syncTableContract.remoteTableMap[CORE_TABLE];
+// Ordinary (non-mapping) audit subject used where the intent is "an unrelated log".
+const ORDINARY_ENTITY = CORE_TABLE;
 const LOCAL_AUDIT_PAYLOADS = [
     ...[...MAPPING_TABLES, ...syncTableContract.localOnlyTables].map(entity_type => ({ entity_type })),
     { entity_type: 'agri_parcels', old_data: JSON.stringify({ sync_scope: 'agri_mapping_local' }) },
@@ -109,6 +115,16 @@ async function createParcel(db: Database, id = DUMMY_IDS[0]) {
     }));
 }
 
+async function createExpenseRow(db: Database, id: string, category: string) {
+    // Runs inside an already-open write transaction (never nests db.write).
+    return db.get(CORE_TABLE).create((row: any) => {
+        row._raw.id = id;
+        row._setRaw('category', category);
+        row._setRaw('amount', 1);
+        row._setRaw('expense_date', 0);
+    });
+}
+
 async function queueLayout(db: Database, parcelId = DUMMY_IDS[0], state = 'queued') {
     return db.write(() => db.get('agri_pending_layout_operations').create((row: any) => {
         row._raw.id = DUMMY_IDS[6];
@@ -172,29 +188,37 @@ describe.each(['0', 'true'])('GPS cloud safety with config flag %s', flag => {
     }
 
     it('actual push handler rejects every disabled config kind while core changes sync', async () => {
+        // Positive controls: the pruned contract must still carry deferred config
+        // tables and the core table that proves the enabled half of the seam.
+        expect(syncTableContract.configTables.length).toBeGreaterThan(0);
+        expect(syncTableContract.coreTables).toContain(CORE_TABLE);
+        expect(CORE_REMOTE).toBe('app_expenses');
         const changes = Object.fromEntries(syncTableContract.configTables.map(table => [table, allKinds()]));
-        changes.payments = allKinds();
+        changes[CORE_TABLE] = allKinds();
         const options = await callbacks();
         remote.from.mockClear();
         const result = await options.pushChanges({ changes });
         const deferred = flag === '0' ? syncTableContract.configTables : MAPPING_TABLES;
+        expect(deferred.length).toBeGreaterThan(0);
         for (const table of deferred) {
             expect(result.experimentalRejectedIds[table]).toEqual(DUMMY_IDS.slice(0, 3));
             expect(remote.from).not.toHaveBeenCalledWith(syncTableContract.remoteTableMap[table]);
         }
-        expect(result.experimentalRejectedIds.payments).toBeUndefined();
-        expect(remote.writes.filter(write => write.table === 'app_payments')).toHaveLength(2);
+        expect(result.experimentalRejectedIds[CORE_TABLE]).toBeUndefined();
+        expect(remote.writes.filter(write => write.table === CORE_REMOTE)).toHaveLength(2);
     });
 
     it('keeps the local outbox dirty, including updates/deletions, without generic remote calls', async () => {
         const options = await callbacks();
         remote.from.mockClear();
         const result = await options.pushChanges({ changes: { agri_pending_layout_operations: allKinds() } });
+        expect(syncTableContract.localOnlyTables).toContain('agri_pending_layout_operations');
         expect(result.experimentalRejectedIds.agri_pending_layout_operations).toEqual(DUMMY_IDS.slice(0, 3));
         expect(remote.from).not.toHaveBeenCalled();
     });
 
     it('does not pull mapping domains even when schema migration requests them', async () => {
+        expect(MAPPING_TABLES.length).toBeGreaterThan(0);
         const options = await callbacks();
         remote.from.mockClear();
         const result = await options.pullChanges({ lastPulledAt: null, migration: { tables: MAPPING_TABLES, columns: [] } });
@@ -206,6 +230,7 @@ describe.each(['0', 'true'])('GPS cloud safety with config flag %s', flag => {
     });
 
     it('real WDB acknowledgement retains deferred created/updated/deleted rows and cleans core', async () => {
+        expect(syncTableContract.coreTables).toContain(CORE_TABLE);
         const rows: any[] = [];
         await db.write(async () => {
             for (const id of DUMMY_IDS.slice(0, 3)) {
@@ -217,12 +242,12 @@ describe.each(['0', 'true'])('GPS cloud safety with config flag %s', flag => {
             await rows[0].update((row: any) => { row.enabled = true; });
             await rows[1].markAsDeleted();
             await db.get('feature_flags').create((row: any) => { row._raw.id = DUMMY_IDS[3]; row.key = 'DUMMY: new'; });
-            await db.get('borrowers').create((row: any) => { row._raw.id = DUMMY_IDS[4]; row.fullName = 'DUMMY: core'; });
+            await createExpenseRow(db, DUMMY_IDS[4], 'DUMMY: core');
         });
         const options = await callbacks();
         const result = await runInMemorySync(options);
         expect(result).toBeUndefined();
-        expect((await db.get('borrowers').find(DUMMY_IDS[4]))._raw._status).toBe('synced');
+        expect((await db.get(CORE_TABLE).find(DUMMY_IDS[4]))._raw._status).toBe('synced');
         expect(rows[0]._raw._status).toBe(flag === '0' ? 'updated' : 'synced');
         expect((await db.get('feature_flags').find(DUMMY_IDS[3]))._raw._status).toBe(flag === '0' ? 'created' : 'synced');
         expect(await db.adapter.getDeletedRecords('feature_flags')).toEqual(flag === '0' ? [DUMMY_IDS[1]] : []);
@@ -237,7 +262,7 @@ describe.each(['0', 'true'])('GPS cloud safety with config flag %s', flag => {
                 return { error: null };
             }),
         }) as any);
-        await expect(service.pushChangesToSupabase({ borrowers: { ...EMPTY, created: [{ id: DUMMY_IDS[0] }] } }))
+        await expect(service.pushChangesToSupabase({ [CORE_TABLE]: { ...EMPTY, created: [{ id: DUMMY_IDS[0] }] } }))
             .rejects.toHaveProperty('code', 'AGRI_DATABASE_REOPEN_REQUIRED');
     });
 
@@ -248,14 +273,15 @@ describe.each(['0', 'true'])('GPS cloud safety with config flag %s', flag => {
         remote.from.mockClear();
         remote.rpc.mockClear();
         await expect(service.sync(true)).rejects.toHaveProperty('code', 'AGRI_DATABASE_REOPEN_REQUIRED');
-        await expect(service.pushChangesToSupabase({ borrowers: allKinds() })).rejects.toHaveProperty('code', 'AGRI_DATABASE_REOPEN_REQUIRED');
-        await expect(service.fetchTableChanges('borrowers', null)).rejects.toHaveProperty('code', 'AGRI_DATABASE_REOPEN_REQUIRED');
+        await expect(service.pushChangesToSupabase({ [CORE_TABLE]: allKinds() })).rejects.toHaveProperty('code', 'AGRI_DATABASE_REOPEN_REQUIRED');
+        await expect(service.fetchTableChanges(CORE_TABLE, null)).rejects.toHaveProperty('code', 'AGRI_DATABASE_REOPEN_REQUIRED');
         expect(remote.auth.getSession).not.toHaveBeenCalled();
         expect(remote.from).not.toHaveBeenCalled();
         expect(remote.rpc).not.toHaveBeenCalled();
     });
 
     it.each(['created', 'updated'])('actual handler rejects local mapping audit %s before any remote conflict check', async kind => {
+        expect(LOCAL_AUDIT_PAYLOADS.length).toBeGreaterThan(0);
         const options = await callbacks();
         for (const payload of LOCAL_AUDIT_PAYLOADS) {
             remote.from.mockClear();
@@ -297,15 +323,15 @@ describe.each(['0', 'true'])('GPS cloud safety with config flag %s', flag => {
             return builder;
         });
         const ordinary = [
-            { id: DUMMY_IDS[2], entity_type: 'borrowers', new_data: JSON.stringify({ geometry: null, operationId: DUMMY_IDS[5], targetRevision: 0 }) },
+            { id: DUMMY_IDS[2], entity_type: ORDINARY_ENTITY, new_data: JSON.stringify({ geometry: null, operationId: DUMMY_IDS[5], targetRevision: 0 }) },
             { id: DUMMY_IDS[3], entity_type: 'agri_parcels', new_data: JSON.stringify({ geometry: [], name: 'DUMMY: ordinary parcel metadata' }) },
-            { id: DUMMY_IDS[4], entity_type: 'borrowers', old_data: 'DUMMY: non-JSON legacy audit', new_data: JSON.stringify({ nested: { sync_scope: 'agri_mapping_local' } }) },
+            { id: DUMMY_IDS[4], entity_type: ORDINARY_ENTITY, old_data: 'DUMMY: non-JSON legacy audit', new_data: JSON.stringify({ nested: { sync_scope: 'agri_mapping_local' } }) },
         ];
         const options = await callbacks();
         const result = await options.pushChanges({ changes: { action_logs: {
             ...EMPTY,
             created: [{ id: DUMMY_IDS[0], ...LOCAL_AUDIT_PAYLOADS[0] }, ...ordinary],
-            updated: [{ id: DUMMY_IDS[1], entity_type: 'payments' }],
+            updated: [{ id: DUMMY_IDS[1], entity_type: ORDINARY_ENTITY }],
         } }, lastPulledAt: Date.now() });
         expect(result.experimentalRejectedIds.action_logs).toEqual(DUMMY_IDS.slice(0, 2));
         expect(checkedIds.flat()).not.toContain(DUMMY_IDS[0]);
@@ -316,7 +342,7 @@ describe.each(['0', 'true'])('GPS cloud safety with config flag %s', flag => {
     it.each(LOCAL_AUDIT_PAYLOADS)('real WDB retains mapping audit creates/updates/tombstones for %j and cleans unrelated audits', async payload => {
         const updated: any = await createActionLog(db, DUMMY_IDS[0], payload);
         const deleted: any = await createActionLog(db, DUMMY_IDS[1], payload);
-        const ordinaryDeleted: any = await createActionLog(db, DUMMY_IDS[3], { entity_type: 'payments' });
+        const ordinaryDeleted: any = await createActionLog(db, DUMMY_IDS[3], { entity_type: ORDINARY_ENTITY });
         await seedSynced(db);
         await db.write(async () => {
             await updated.update((row: any) => { row.action = 'RESTORE'; });
@@ -324,7 +350,7 @@ describe.each(['0', 'true'])('GPS cloud safety with config flag %s', flag => {
             await ordinaryDeleted.markAsDeleted();
         });
         const created: any = await createActionLog(db, DUMMY_IDS[2], payload);
-        const ordinary: any = await createActionLog(db, DUMMY_IDS[4], { entity_type: 'borrowers' });
+        const ordinary: any = await createActionLog(db, DUMMY_IDS[4], { entity_type: ORDINARY_ENTITY });
         // A normal query hides persisted tombstones; read raw without hydrating models.
         expect((await db.get('action_logs').query().fetch()).map(row => row.id)).not.toContain(deleted.id);
         const readRaw = jest.spyOn(db.adapter, 'unsafeQueryRaw');
@@ -344,14 +370,14 @@ describe.each(['0', 'true'])('GPS cloud safety with config flag %s', flag => {
         if (mode === 'incomplete') await createActionLog(db, DUMMY_IDS[0], { entity_type: '' });
         const options = await callbacks();
         const result = await options.pushChanges({ changes: { action_logs: {
-            ...EMPTY, created: [{ id: DUMMY_IDS[1], entity_type: 'payments' }], deleted: [DUMMY_IDS[0]],
+            ...EMPTY, created: [{ id: DUMMY_IDS[1], entity_type: ORDINARY_ENTITY }], deleted: [DUMMY_IDS[0]],
         } }, lastPulledAt: Date.now() });
         expect(result.experimentalRejectedIds.action_logs).toEqual([DUMMY_IDS[0]]);
         expect(remote.writes.flatMap(write => write.rows).map(row => row.id)).toEqual([DUMMY_IDS[1]]);
     });
 
     it('resolves persisted ordinary audit tombstones without leaving phantom records in the WDB model cache', async () => {
-        const log: any = await createActionLog(db, DUMMY_IDS[0], { entity_type: 'borrowers' });
+        const log: any = await createActionLog(db, DUMMY_IDS[0], { entity_type: ORDINARY_ENTITY });
         await seedSynced(db);
         await db.write(() => log.markAsDeleted());
         await runInMemorySync(await callbacks());
@@ -362,7 +388,7 @@ describe.each(['0', 'true'])('GPS cloud safety with config flag %s', flag => {
     });
 
     it('real WDB preserves a persisted tombstone when identity reads fail, then acknowledges an ordinary deletion after recovery', async () => {
-        const log: any = await createActionLog(db, DUMMY_IDS[0], { entity_type: 'borrowers' });
+        const log: any = await createActionLog(db, DUMMY_IDS[0], { entity_type: ORDINARY_ENTITY });
         await seedSynced(db);
         await db.write(() => log.markAsDeleted());
         const readRaw = jest.spyOn(db.adapter, 'unsafeQueryRaw').mockRejectedValue(new Error('DUMMY: storage read failure'));
@@ -508,10 +534,12 @@ describe.each(['0', 'true'])('GPS cloud safety with config flag %s', flag => {
                 if (table === 'agri_pending_layout_operations') throw new Error('DUMMY: missing optional local schema');
                 throw new Error('DUMMY: unexpected lookup');
             });
-            const result = await service.pushChangesToSupabase({ agri_parcels: allKinds(), payments: allKinds() });
+            const result = await service.pushChangesToSupabase({ agri_parcels: allKinds(), [CORE_TABLE]: allKinds() });
             expect(result.agri_parcels).toEqual(DUMMY_IDS.slice(0, 3));
             expect(remote.from).not.toHaveBeenCalledWith('agri_parcels');
-            expect(remote.writes.filter(write => write.table === 'app_payments')).toHaveLength(2);
+            // The unreadable outbox shields only the GPS-bearing parcel domain; core
+            // finance rows still publish, so a broken agri seam cannot stall the ledger.
+            expect(remote.writes.filter(write => write.table === CORE_REMOTE)).toHaveLength(2);
         });
 
         it('missing optional remote schema retains every kind, and cached missing schema makes no calls', async () => {

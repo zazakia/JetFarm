@@ -1,30 +1,6 @@
 import fs from 'fs';
 import path from 'path';
 
-// Objects declared at depth 1 of an array literal, so nested column arrays don't leak in.
-function directArrayEntries(source: string, key: string): string[] {
-    const hit = source.match(new RegExp(`${key}:\\s*\\[`));
-    if (!hit) return [];
-    const open = source.indexOf('[', hit.index);
-    let depth = 0;
-    let start = -1;
-    const entries: string[] = [];
-
-    for (let i = open + 1; i < source.length; i += 1) {
-        const ch = source[i];
-        if (ch === '{' || ch === '[' || ch === '(') depth += 1;
-        else if (ch === '}' || ch === ']' || ch === ')') depth -= 1;
-        if (ch === '{' && depth === 1) start = i;
-        if (ch === '}' && depth === 0 && start >= 0) {
-            entries.push(source.slice(start, i + 1));
-            start = -1;
-        }
-        if (ch === ']' && depth === 0) break;
-    }
-
-    return entries;
-}
-
 function tableColumns(tableName: string) {
     const schema = fs.readFileSync(path.join(process.cwd(), 'src', 'database', 'schema.ts'), 'utf8');
     const tableStart = schema.indexOf(`name: '${tableName}'`);
@@ -44,11 +20,31 @@ function tableColumns(tableName: string) {
 }
 
 describe('local/remote schema regression contracts', () => {
-    it('appends an additive v49 layout migration matching the local schema', () => {
+    it('keeps the additive v49 layout migration and the v50 retirement on top of it', () => {
         const { mySchema } = require('./schema');
         const { myMigrations } = require('./migrations');
-        expect(mySchema.version).toBe(49);
+        // v50 = v49 layout work plus the agribusiness-only retirement. The history below v50 is
+        // append-only: rewriting steps 1..49 would re-run against installed databases.
+        expect(mySchema.version).toBe(50);
         const migrations = myMigrations.sortedMigrations;
+        expect(migrations.filter((m: any) => m.toVersion === 50)).toHaveLength(1);
+        const v50 = migrations.find((m: any) => m.toVersion === 50).steps;
+        // The retirement ships as one DROP statement per retired table and nothing else: no UPDATE,
+        // no DELETE, no ALTER that could touch rows a kept screen still reads.
+        expect(v50.length).toBeGreaterThan(20);
+        const dropped = v50.map((s: any) => {
+            expect(s.type).toBe('sql');
+            const hit = /^DROP TABLE IF EXISTS ([a-z0-9_]+);$/.exec(s.sql);
+            expect(hit).not.toBeNull();
+            return hit[1];
+        });
+        expect(new Set(dropped).size).toBe(dropped.length);
+        for (const survivor of [
+            'agri_parcel_blocks', 'agri_block_assignments', 'agri_block_progress',
+            'agri_pending_layout_operations', 'journal_entries', 'agri_parcels', 'stock_movements',
+        ]) {
+            expect(dropped).not.toContain(survivor);
+        }
         expect(migrations.filter((m: any) => m.toVersion === 49)).toHaveLength(1);
         const steps = migrations.find((m: any) => m.toVersion === 49).steps;
         const added = steps.find((s: any) => s.type === 'add_columns');
@@ -76,18 +72,18 @@ describe('local/remote schema regression contracts', () => {
         const contract = JSON.parse(fs.readFileSync(contractPath, 'utf8'));
         const registeredTables = [...contract.coreTables, ...contract.configTables];
 
-        expect(registeredTables.length).toBeGreaterThan(40);
+        expect(registeredTables.length).toBeGreaterThan(30);
         expect(Object.keys(contract.remoteTableMap).sort()).toEqual(registeredTables.sort());
-        expect(contract.remoteTableMap.ws_customers).toBe('ws_customers');
-        expect(contract.remoteTableMap.ws_expenses).toBe('ws_expenses');
-        expect(contract.coreTables).toContain('file_cases');
-        expect(contract.remoteTableMap.file_cases).toBe('app_file_cases');
+        expect(contract.remoteTableMap.agri_parcels).toBe('agri_parcels');
+        expect(contract.remoteTableMap.expenses).toBe('app_expenses');
+        expect(contract.coreTables).toContain('journal_entries');
+        expect(contract.remoteTableMap.journal_entries).toBe('journal_entries');
         const syncService = fs.readFileSync(
             path.join(process.cwd(), 'src', 'services', 'SyncService.ts'),
             'utf8'
         );
         expect(syncService).toMatch(
-            /file_cases:\s*\[\s*'filed_date',\s*'created_at',\s*'updated_at',\s*'deleted_at'\s*\]/
+            /agri_block_progress:\s*\[\s*'update_date',\s*'created_at',\s*'updated_at'\s*\]/
         );
     });
 
@@ -106,33 +102,33 @@ describe('local/remote schema regression contracts', () => {
         expect(migration).toContain('ENABLE ROW LEVEL SECURITY');
     });
 
-    it('verifies CIC API-only tables even though they are not Watermelon sync tables', () => {
+    it('leaves the api-only verifier hook unused on the agribusiness branch', () => {
+        // The hook itself stays contractual -- scripts/verify-sync-integrity.mjs still has to be able
+        // to check remote tables that WatermelonDB does not own -- but this variant ships none:
+        // src/services/cic and its cic_settings / cic_submissions pair are retired here.
         const contract = JSON.parse(fs.readFileSync(
             path.join(process.cwd(), 'src', 'services', 'syncTableContract.json'),
             'utf8'
         ));
         const verifier = fs.readFileSync(path.join(process.cwd(), 'scripts', 'verify-sync-integrity.mjs'), 'utf8');
 
-        expect(contract.apiOnlyTables).toEqual(expect.arrayContaining(['cic_settings', 'cic_submissions']));
+        expect(contract.apiOnlyTables).toEqual([]);
         expect(verifier).toContain('apiOnlyTables');
         expect(verifier).toContain('verifierTables');
     });
 
-    it('verifies required remote borrower columns instead of table reachability alone', () => {
+    it('pins required remote columns only for tables this branch still syncs', () => {
         const contract = JSON.parse(fs.readFileSync(
             path.join(process.cwd(), 'src', 'services', 'syncTableContract.json'),
             'utf8'
         ));
         const verifier = fs.readFileSync(path.join(process.cwd(), 'scripts', 'verify-sync-integrity.mjs'), 'utf8');
 
-        expect(contract.requiredRemoteColumns.borrowers).toEqual(expect.arrayContaining([
-            'middle_name',
-            'name_suffix',
-            'mother_maiden_name',
-            'sss_number',
-            'gsis_number',
-            'philhealth_number',
-        ]));
+        // Every pinned column set must name a table the contract actually pushes; a stale key would
+        // make the verifier probe a retired table and report a gap that is not a gap.
+        for (const table of Object.keys(contract.requiredRemoteColumns)) {
+            expect(contract.remoteTableMap).toHaveProperty(table);
+        }
         expect(verifier).toContain('requiredRemoteColumns');
         expect(verifier).toContain('requiredColumns.join');
     });
@@ -199,7 +195,7 @@ describe('local/remote schema regression contracts', () => {
     });
 
     it('keeps configurable settings tables available locally and in sync mapping', () => {
-        for (const table of ['app_settings', 'loan_products', 'feature_flags', 'role_permissions']) {
+        for (const table of ['app_settings', 'statutory_rates', 'feature_flags', 'role_permissions']) {
             expect(Object.keys(tableColumns(table)).length).toBeGreaterThan(0);
         }
 
@@ -211,86 +207,39 @@ describe('local/remote schema regression contracts', () => {
         expect(syncService).toContain('EXPO_PUBLIC_ENABLE_CONFIG_SYNC');
         expect(syncService).toContain('CONFIG_SYNC_TABLES');
         expect(contract.configTables).toContain('app_settings');
-        expect(contract.remoteTableMap.loan_products).toBe('app_loan_products');
+        expect(contract.remoteTableMap.statutory_rates).toBe('statutory_rates');
         expect(contract.remoteTableMap.feature_flags).toBe('app_feature_flags');
         expect(contract.remoteTableMap.role_permissions).toBe('app_role_permissions');
     });
 
-    it('registers file cases in the web WatermelonDB model list', () => {
+    it('registers the agribusiness layout models in the web WatermelonDB model list', () => {
+        // Retargeted 2026-10-20: this pinned FileCase, a lending table this variant no longer has.
+        // The invariant that matters -- a model present in schema.ts must also be registered for the
+        // web adapter -- now runs against the agri layout set that the v49 step introduced.
         const webDatabase = fs.readFileSync(path.join(process.cwd(), 'src', 'database', 'index.web.ts'), 'utf8');
 
-        expect(webDatabase).toContain("import FileCase from './models/FileCase';");
-        expect(webDatabase).toMatch(/modelClasses:\s*\[[\s\S]*\bFileCase\b[\s\S]*\]/);
+        for (const model of ['AgriParcelBlock', 'AgriBlockAssignment', 'AgriBlockProgress']) {
+            expect(webDatabase).toContain(`import ${model} from`);
+            expect(webDatabase).toMatch(new RegExp(`modelClasses[\\s\\S]*\\b${model}\\b`));
+        }
+        expect(webDatabase).not.toContain("import FileCase from");
     });
 
-    it('keeps local Watermelon payments aligned with remote app_payments.borrower_id', () => {
-        const columns = tableColumns('payments');
-
-        expect(columns.borrower_id).toEqual(expect.objectContaining({
-            name: 'borrower_id',
-            type: 'string',
-            isOptional: true,
-        }));
-    });
-
-    it('keeps generated Supabase types aware of app_payments.borrower_id', () => {
-        const types = fs.readFileSync(path.join(process.cwd(), 'src', 'database', 'types.ts'), 'utf8');
-        const appPaymentsBlock = types.match(/app_payments:\s*{[\s\S]*?Relationships:\s*\[\]/)?.[0] ?? '';
-
-        expect(appPaymentsBlock).toContain('borrower_id: string');
-        expect(appPaymentsBlock).toContain('borrower_id?: string');
-    });
-
-    it('keeps the repaired push columns available locally, remotely, and in the typed sample', () => {
-        // docs/CRUD-PERSISTENCE-AUDIT.md H1-H4, repaired by the 20260927000000 migration.
-        // The general invariant lives in `pushes only columns that the remote table actually
-        // has`; this pins the specific columns so a future regeneration of types.ts or a schema
-        // rename cannot quietly drop them again.
+    it('keeps the repaired push column for the tables this branch still syncs', () => {
+        // docs/CRUD-PERSISTENCE-AUDIT.md H3/H4, repaired by the 20260927000000 migration. The
+        // general invariant lives in `pushes only columns that the remote table actually has`; this
+        // pins the one surviving H-table so a future migration cannot quietly retract it. The
+        // collectors / employees / device_registry halves of the original test went with those
+        // tables on 2026-10-20.
         const repair = fs.readFileSync(
             path.join(process.cwd(), 'supabase', 'migrations', '20260927000000_sync_push_repair_missing_remote_columns.sql'),
             'utf8'
         );
 
-        for (const [table, columns] of Object.entries({
-            collectors: ['commission_rate', 'member_id'],
-            employees: ['name', 'role', 'base_salary']
-        })) {
-            for (const column of columns) {
-                expect(tableColumns(table)).toHaveProperty(column);
-                expect(repair).toContain(`ADD COLUMN IF NOT EXISTS ${column}`);
-            }
-        }
-
-        // H3/H4 add only a soft-delete column to two remote tables that have no local schema
-        // entry of their own, so they are asserted against the migration alone.
-        for (const table of ['device_registry', 'statutory_rates']) {
-            expect(repair).toMatch(new RegExp(`ALTER TABLE public\\.${table}\\s+ADD COLUMN IF NOT EXISTS deleted_at`));
-        }
+        expect(repair).toMatch(/ALTER TABLE public\.statutory_rates\s+ADD COLUMN IF NOT EXISTS deleted_at/);
+        expect(tableColumns('statutory_rates')).toHaveProperty('deleted_at');
         expect(repair).toContain("NOTIFY pgrst, 'reload schema'");
-
-        // types.ts is a hand-maintained sample (18 of 88 tables), not a live generation, so only
-        // the tables it does declare can be pinned.
-        const types = fs.readFileSync(path.join(process.cwd(), 'src', 'database', 'types.ts'), 'utf8');
-        const appCollectorsBlock = types.match(/app_collectors:\s*{[\s\S]*?Relationships:\s*\[\]/)?.[0] ?? '';
-        expect(appCollectorsBlock).toContain('commission_rate: number | null');
-        expect(appCollectorsBlock).toContain('commission_rate?: number | null');
-        expect(appCollectorsBlock).toContain('member_id: string | null');
-        expect(appCollectorsBlock).toContain('member_id?: string | null');
-    });
-
-    it('keeps loan product computation fields available locally and remotely', () => {
-        const columns = tableColumns('loans');
-        expect(columns.loan_type).toEqual(expect.objectContaining({ type: 'string', isOptional: true }));
-        expect(columns.processing_fee).toEqual(expect.objectContaining({ type: 'number', isOptional: true }));
-        expect(columns.vat_on_interest).toEqual(expect.objectContaining({ type: 'number', isOptional: true }));
-        expect(columns.savings_per_payment).toEqual(expect.objectContaining({ type: 'number', isOptional: true }));
-
-        const migration = fs.readFileSync(
-            path.join(process.cwd(), 'supabase', 'migrations', '20260512180000_add_loan_product_computation_fields.sql'),
-            'utf8'
-        );
-        expect(migration).toContain('loan_type');
-        expect(migration).toContain('savings_per_payment');
+        expect(repair).not.toMatch(/\b(DROP TABLE|DROP COLUMN|TRUNCATE)\b/i);
     });
 
     describe('local columns must exist remotely (push payload contract)', () => {
@@ -499,33 +448,12 @@ describe('local/remote schema regression contracts', () => {
             expect(script).not.toMatch(/INSERT INTO information_schema|UPDATE information_schema/);
         });
 
-        it('keeps the coop module registry honest about the tables it claims', () => {
-            const local = new Set(Object.keys(localSchemaTables()));
-            const contract = JSON.parse(fs.readFileSync(
-                path.join(process.cwd(), 'src', 'services', 'syncTableContract.json'),
-                'utf8'
-            ));
-            const remote = remoteColumnsByTable();
-            const modulesDir = path.join(process.cwd(), 'src', 'modules');
-
-            const phantoms: string[] = [];
-            for (const entry of fs.readdirSync(modulesDir)) {
-                const manifestPath = path.join(modulesDir, entry, 'manifest.ts');
-                if (!fs.existsSync(manifestPath)) continue;
-                const source = fs.readFileSync(manifestPath, 'utf8');
-                // Only depth-1 objects of `dbTables: [...]` are tables; the nested
-                // `columns: [{ name: ... }]` entries inside them are not.
-                for (const entryBody of directArrayEntries(source, 'dbTables')) {
-                    const table = entryBody.match(/^\{\s*name:\s*'([a-z0-9_]+)'/)?.[1];
-                    if (!table) continue;
-                    const remoteName = contract.remoteTableMap[table] ?? table;
-                    if (!local.has(table) && !remote[remoteName]) {
-                        phantoms.push(`${entry}: ${table}`);
-                    }
-                }
-            }
-
-            expect(phantoms).toEqual([]);
+        it('ships no coop module framework to claim tables at all', () => {
+            // The manifest phantom-table check this replaced was the water-station registry's guard.
+            // src/modules is retired on the agribusiness branch, so the stronger invariant is that
+            // the directory does not come back: a reintroduced registry would have to reinstate the
+            // dbTables honesty check with it.
+            expect(fs.existsSync(path.join(process.cwd(), 'src', 'modules'))).toBe(false);
         });
     });
 
@@ -627,6 +555,11 @@ describe('local/remote schema regression contracts', () => {
             // Anything the client can pull or push, plus what it never touches at all, is reachable
             // only through remoteTableMap values -- that is the set SyncService can keep referents in.
             const reachable = new Set<string>(Object.values(contract.remoteTableMap) as string[]);
+            // Scope note for the agribusiness branch: constraints owned by a retired table die with
+            // that table when the retirement migration runs, so only foreign keys on a table this
+            // variant still syncs are checked. A kept table pointing at something unreachable is
+            // still a hard failure -- that is exactly the app_payrolls.employee_id class of bug.
+            const inScope = (table: string) => reachable.has(table);
 
             type ForeignKey = {
                 file: string;
@@ -675,6 +608,7 @@ describe('local/remote schema regression contracts', () => {
             });
 
             const orphaned = created
+                .filter((fk) => inScope(fk.table))
                 .filter((fk) => !reachable.has(fk.referenced))
                 .filter((fk) => !dropped.has(`${fk.table}::${fk.constraint}`))
                 .map((fk) => `${fk.file}: ${fk.table}.${fk.constraint} -> ${fk.referenced}`);
