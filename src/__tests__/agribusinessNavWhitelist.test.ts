@@ -47,8 +47,9 @@ const FORBIDDEN_SEGMENTS = [
 ];
 
 // Everything a kept route may resolve to. Anything outside this is a non-agribusiness entry point.
+// help + member-manual are agri-neutral operator docs, not lending screens.
 const ALLOWED =
-    /^(app\/)?(\(admin\)\/(agribusiness|accounting|reports|settings|users|areas|cash-on-hand|bank-accounts|expenses|transfers|returns|index|_layout)|\(expenses-encoder\)|login|register|select-branch|loading|sync-center|index|_layout)/;
+    /^(app\/)?(\(admin\)\/(agribusiness|accounting|reports|settings|users|areas|cash-on-hand|bank-accounts|expenses|transfers|returns|help|member-manual|index|_layout)|\(expenses-encoder\)|login|register|select-branch|loading|sync-center|index|_layout)/;
 
 const routeCandidates = (route: string): string[] => {
     const bare = route.replace(/^\/+/, '').replace(/\/+$/, '');
