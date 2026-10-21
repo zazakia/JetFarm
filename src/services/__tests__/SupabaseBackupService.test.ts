@@ -5,6 +5,7 @@ import { supabase } from '../../database/supabase';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import * as DocumentPicker from 'expo-document-picker';
+import syncTableContract from '../syncTableContract.json';
 
 // Mock all external dependencies
 jest.mock('../../database/supabase', () => {
@@ -125,6 +126,39 @@ describe('SupabaseBackupService', () => {
 
             Object.defineProperty(Platform, 'OS', { value: originalOS, writable: true });
             jest.useRealTimers();
+        });
+
+        it('fetches only tables that still exist in the sync contract', async () => {
+            // The lending remote tables are retired on this variant. A stale hard-coded list
+            // makes the whole export throw on the first missing relation, because every fetch
+            // error is rethrown by exportBackup.
+            const originalOS = Platform.OS;
+            Object.defineProperty(Platform, 'OS', { value: 'ios', writable: true });
+
+            await SupabaseBackupService.exportBackup(true);
+
+            const remote = new Set<string>(Object.values(syncTableContract.remoteTableMap));
+            const called = (mockFrom.mock.calls as any[]).map((c) => c[0]);
+            const stale = called.filter((t) => !remote.has(t));
+
+            expect(stale).toEqual([]);
+
+            Object.defineProperty(Platform, 'OS', { value: originalOS, writable: true });
+        });
+
+        it('excludes the retired lending remote tables from the backup scope', async () => {
+            const originalOS = Platform.OS;
+            Object.defineProperty(Platform, 'OS', { value: 'ios', writable: true });
+
+            await SupabaseBackupService.exportBackup(true);
+
+            const called = (mockFrom.mock.calls as any[]).map((c) => c[0]);
+            expect(called).not.toContain('app_borrowers');
+            expect(called).not.toContain('app_loans');
+            expect(called).not.toContain('app_payments');
+            expect(called).not.toContain('app_loan_products');
+
+            Object.defineProperty(Platform, 'OS', { value: originalOS, writable: true });
         });
 
         it('skips download side effects for silent web exports', async () => {

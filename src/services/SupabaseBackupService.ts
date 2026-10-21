@@ -5,31 +5,17 @@ import * as DocumentPicker from 'expo-document-picker';
 import { supabase } from '../database/supabase';
 import Toast from '../components/AppToast';
 import { ErrorService } from "./ErrorService";
+import syncTableContract from './syncTableContract.json';
 
-const REMOTE_TABLES = [
-    'user_profiles',
-    'app_borrowers',
-    'app_loans',
-    'app_payment_schedules',
-    'app_payments',
-    'app_expenses',
-    'app_cash_transactions',
-    'app_bank_accounts',
-    'app_bank_transactions',
-    'app_collection_logs',
-    'app_financial_snapshots',
-    'app_remittances',
-    'app_savings_transactions',
-    'app_expense_categories',
-    'app_collectors',
-    'app_loan_penalties',
-    'collection_groups',
-    'app_action_logs',
-    'app_settings',
-    'app_loan_products',
-    'app_feature_flags',
-    'app_role_permissions',
-];
+/**
+ * Backup scope comes from the sync contract, not a hand-maintained list. The retired lending
+ * remote tables (app_borrowers, app_loans, app_payments, app_loan_products, ...) no longer
+ * exist on this variant, and both exportBackup and importBackup rethrow the first query error,
+ * so a stale literal list broke the Settings backup button outright.
+ */
+const REMOTE_TABLES: string[] = Array.from(
+    new Set<string>(Object.values(syncTableContract.remoteTableMap as Record<string, string>)),
+);
 
 export class SupabaseBackupService {
     /**
