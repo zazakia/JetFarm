@@ -6,9 +6,19 @@ import { fileURLToPath } from 'url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
 
+// Credentials are never hardcoded here: the operator exports the DSN. TLS verification stays on -
+// a private CA is supplied through DATABASE_CA rather than by disabling verification.
+const SUPABASE_DB_URL = process.env.SUPABASE_DB_URL;
+if (!SUPABASE_DB_URL) {
+  console.error('SUPABASE_DB_URL is not set. Export the postgres DSN before running this script.');
+  process.exit(1);
+}
+
 const client = new Client({
-  connectionString: 'postgresql://postgres:Qweasd145698%40@db.YOUR_SUPABASE_PROJECT.supabase.co:5432/postgres',
-  ssl: { rejectUnauthorized: false },
+  connectionString: SUPABASE_DB_URL,
+  ssl: process.env.DATABASE_CA
+    ? { rejectUnauthorized: true, ca: readFileSync(process.env.DATABASE_CA, 'utf8') }
+    : { rejectUnauthorized: true },
 });
 
 await client.connect();

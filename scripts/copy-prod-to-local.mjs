@@ -10,10 +10,18 @@ const contract = JSON.parse(readFileSync(join(__dirname, '../src/services/syncTa
 
 // Production Supabase Credentials
 const PROD_URL = 'https://YOUR_SUPABASE_PROJECT.supabase.co';
-const PROD_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || 'sb_secret_5M4dWlm0T7kPWuYUARk4pQ_AHFDlwAK';
+const PROD_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+if (!PROD_SERVICE_KEY) {
+    console.error('SUPABASE_SERVICE_ROLE_KEY is not set. A service key is never hardcoded in this repo - export it in the shell that runs this script.');
+    process.exit(1);
+}
 
 // Local DB Connection
-const LOCAL_PG_URI = 'postgresql://postgres:postgres@127.0.0.1:45422/postgres';
+const LOCAL_PG_URI = process.env.LOCAL_PG_URI_ENV;
+if (!LOCAL_PG_URI) {
+    console.error('LOCAL_PG_URI_ENV is not set. Connection strings are never hardcoded in this repo - export it before running this script.');
+    process.exit(1);
+}
 
 const prodClient = createClient(PROD_URL, PROD_SERVICE_KEY, {
   auth: { autoRefreshToken: false, persistSession: false }

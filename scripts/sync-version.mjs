@@ -55,8 +55,13 @@ pkg.version = newVersion;
 writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n', 'utf8');
 
 if (!appJson.expo) appJson.expo = {};
-appJson.expo.name = 'JetFarm';
-appJson.expo.slug = 'jetfarm';
+// On the agribusiness-only variant the published brand is Agri-One. Hardcoding the old brand here
+// silently reverted app.json on every version bump, so the value is read from the file and only
+// defaulted when the field is genuinely missing.
+const brandName = appJson.expo.name || 'Agri-One';
+const brandSlug = appJson.expo.slug || 'agri-one';
+appJson.expo.name = brandName;
+appJson.expo.slug = brandSlug;
 appJson.expo.version = newVersion;
 if (!appJson.expo.android) appJson.expo.android = {};
 appJson.expo.android.versionCode = newVersionCode;

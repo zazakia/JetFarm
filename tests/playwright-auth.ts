@@ -38,25 +38,15 @@ export async function dismissOnboardingTour(page: Page) {
 }
 
 export async function loginAsAdmin(page: Page) {
-  await loginWithCredentials(page, 'admin@jetfarm.com');
+  await loginWithCredentials(page, 'admin@agri-one.com');
   // Wait for the admin portal to be visible, potentially handling a redirect
   await expect(page.getByTestId('admin-portal-title')).toBeVisible({ timeout: 60000 });
   await dismissOnboardingTour(page);
 }
 
-export async function loginAsCollector(page: Page) {
-  await loginWithCredentials(page, 'collector@jetfarm.com');
-  await expect(page.getByText(/Collector Portal|Collection Sheet/i).first()).toBeVisible({ timeout: 60000 });
-}
-
-export async function loginAsLoanEncoder(page: Page) {
-  await loginWithCredentials(page, 'loan_encoder@jetfarm.com');
-  await expect(page.getByText('New Loan Entry', { exact: false })).toBeVisible({ timeout: 60000 });
-}
-
-export async function loginAsPaymentEncoder(page: Page) {
-  await loginWithCredentials(page, 'payment_encoder@jetfarm.com');
-  await expect(page.getByTestId('page-title')).toHaveText(/Record.*Payment/i, { timeout: 60000 });
+export async function loginAsExpensesEncoder(page: Page) {
+  await loginWithCredentials(page, 'expenses_encoder@agri-one.com');
+  await expect(page.getByText('Record Expense', { exact: false }).first()).toBeVisible({ timeout: 60000 });
 }
 
 export async function safeNavigate(page: Page, url: string, targetSelectorOrText?: string | RegExp) {

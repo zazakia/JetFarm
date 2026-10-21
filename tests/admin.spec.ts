@@ -7,7 +7,7 @@ test.describe('Admin Module E2E', () => {
     await loginAsAdmin(page);
   });
 
-  test('should display agribusiness admin dashboard with JetFarm Agribusiness heading', async ({ page }) => {
+  test('should display agribusiness admin dashboard with Agri-One Agribusiness heading', async ({ page }) => {
     await expect(page.getByTestId('admin-portal-title')).toBeVisible();
     await expect(page.getByText(/Agribusiness Dashboard|Operator Command Center/i).first()).toBeVisible();
   });

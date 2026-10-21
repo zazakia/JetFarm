@@ -104,7 +104,10 @@ async function injectLocalRecord(page: Page, tableName: string, record: any): Pr
 
 // ─── Test Suite ───────────────────────────────────────────────────────────────
 
-const CORE_TABLES = ['borrowers', 'loans', 'payments', 'expenses', 'collectors'];
+// Tables that survive on the agribusiness-only variant. The lending set (borrowers / loans /
+// payments / collectors) is dropped with the cooperative credit domain, so sync integrity is now
+// exercised against the general-ledger journal, expenses, parcels and the action log.
+const CORE_TABLES = ['expenses', 'journal_entries', 'journal_entry_lines', 'agri_parcels', 'action_logs'];
 
 test.describe('Bidirectional Sync Integrity', () => {
     test.setTimeout(180_000);
@@ -242,7 +245,7 @@ test.describe('Bidirectional Sync Integrity', () => {
 
         // Authenticate the test runner client so it has SELECT/INSERT permissions on app_action_logs
         const { error: loginError } = await supabase.auth.signInWithPassword({
-            email: 'admin@jetfarm.com',
+            email: 'admin@agri-one.com',
             password: '12345678'
         });
         if (loginError) {
@@ -314,7 +317,7 @@ test.describe('Bidirectional Sync Integrity', () => {
 
         // Authenticate the test runner client
         const { error: loginError } = await supabase.auth.signInWithPassword({
-            email: 'admin@jetfarm.com',
+            email: 'admin@agri-one.com',
             password: '12345678'
         });
         if (loginError) {

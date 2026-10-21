@@ -1,5 +1,7 @@
 import { test, expect } from '@playwright/test';
-import { expectLoginScreen, loginAsCollector } from './playwright-auth';
+import { expectLoginScreen, loginWithCredentials, dismissOnboardingTour } from './playwright-auth';
+
+const ADMIN_EMAIL = 'admin@agri-one.com';
 
 test.describe('Authentication Flow', () => {
   test.beforeEach(async ({ page }) => {
@@ -22,12 +24,15 @@ test.describe('Authentication Flow', () => {
     await expect(page.locator('text=Email or password is incorrect')).toBeVisible({ timeout: 15000 });
   });
 
-  test('should login successfully using quick login as collector', async ({ page }) => {
-    await loginAsCollector(page);
+  test('should login successfully as admin', async ({ page }) => {
+    await loginWithCredentials(page, ADMIN_EMAIL);
+    await dismissOnboardingTour(page);
+    await expect(page).not.toHaveURL(/.*\/login.*/, { timeout: 30000 });
   });
 
   test('should logout successfully', async ({ page }) => {
-    await loginAsCollector(page);
+    await loginWithCredentials(page, ADMIN_EMAIL);
+    await dismissOnboardingTour(page);
 
     // Find and click logout button using testID
     await page.getByTestId('logout-button').click();
@@ -35,11 +40,9 @@ test.describe('Authentication Flow', () => {
     // Should return to login page
     await expect(page.locator('input[type="email"]:not([data-testid])')).toBeVisible({ timeout: 60000 });
 
-    // Verify that navigating to a protected collector route redirects to login
-    // Use a concrete collector page path rather than the route-group alias,
-    // which is not stable on web navigation.
-    await page.goto('/collection-sheet');
+    // Verify that navigating to a protected admin route redirects to login. Use a concrete
+    // page path rather than the route-group alias, which is not stable on web navigation.
+    await page.goto('/agribusiness');
     await expect(page.locator('input[type="email"]:not([data-testid])')).toBeVisible({ timeout: 30000 });
   });
 });
-

@@ -1,5 +1,13 @@
 import { test, expect } from '@playwright/test';
-import { expectLoginScreen } from './playwright-auth';
+import { expectLoginScreen, dismissOnboardingTour } from './playwright-auth';
+
+// The seeded identities are the ones supabase/seed.sql creates and AuthService still recognises:
+// the collector/loan/payment encoder accounts went with the lending domain.
+const accountsToTest = [
+    { name: 'Admin User', email: 'admin@agri-one.com', portal: 'admin' as const },
+    { name: 'Expenses Encoder', email: 'expenses_encoder@agri-one.com', portal: 'encoder' as const },
+    { name: 'Main Office', email: 'mainoffice@agri-one.com', portal: 'admin' as const },
+];
 
 test.describe('Role Login Verification', () => {
     test.beforeEach(async ({ page }) => {
@@ -7,26 +15,21 @@ test.describe('Role Login Verification', () => {
         await expectLoginScreen(page);
     });
 
-    const collectorsToTest = [
-        { name: 'Cresencio Junco', email: 'cresencio.junco@jetfarm.com', id: 'cresencio' },
-        { name: 'Gerald Gera', email: 'gerald.gera@jetfarm.com', id: 'gerald' },
-        { name: 'Bernie Casera', email: 'bernie.casera@jetfarm.com', id: 'bernie' }
-    ];
-
-    for (const collector of collectorsToTest) {
-        test(`should login collector: ${collector.name}`, async ({ page }) => {
-            await page.locator('input[type="email"]:not([data-testid])').fill(collector.email);
+    for (const account of accountsToTest) {
+        test(`should login ${account.email.split('@')[0]}`, async ({ page }) => {
+            await page.locator('input[type="email"]:not([data-testid])').fill(account.email);
             await page.locator('input[type="password"]').fill('12345678');
             await page.getByText('Sign In', { exact: false }).click();
 
-            // Verification: Wait for the dashboard to load (Collector Portal)
-            await expect(page.getByText(/Collector Portal/i)).toBeVisible({ timeout: 60000 });
-            
-            // Wait for specific user name element just to be absolutely sure
-            await expect(page.getByText(new RegExp(collector.name.split(' ')[0], 'i'))).toBeVisible({ timeout: 10000 });
-            
-            console.log(`Login via Quick Access successful for ${collector.name}`);
+            if (account.portal === 'admin') {
+                await expect(page.getByTestId('admin-portal-title')).toBeVisible({ timeout: 60000 });
+                await dismissOnboardingTour(page);
+            } else {
+                await expect(page.getByText('Record Expense', { exact: false }).first()).toBeVisible({ timeout: 60000 });
+            }
+
+            await expect(page.getByText(new RegExp(account.name.split(' ')[0], 'i')).first()).toBeVisible({ timeout: 15000 });
+            console.log(`Login successful for ${account.name}`);
         });
     }
 });
-

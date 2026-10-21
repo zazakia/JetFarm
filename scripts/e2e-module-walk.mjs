@@ -28,19 +28,16 @@ const headed = !args.includes("--headless");
 const onlyFlag = args.find((a) => a.startsWith("--only="));
 const only = onlyFlag ? onlyFlag.slice("--only=".length) : null;
 
+// Admin surface that survives on the agribusiness-only variant. The lending routes (borrowers,
+// loans, payments, loan-approvals, collectors, file-cases, groups, cic, remittances), the coop
+// business-unit modules, marketplace/payroll/franchise and the cashier POS screens were removed
+// with the lending/food-ops teardown, so they are deliberately absent from this walk.
 const ADMIN = [
-  "/", "agribusiness", "accounting", "areas", "bank-accounts", "borrowers",
-  "cash-on-hand", "cic", "collectors", "expenses", "file-cases", "franchise",
-  "groups", "loan-approvals", "loans", "marketplace", "modules", "payments",
-  "payroll", "returns", "settings", "transfers", "users",
+  "/", "agribusiness", "accounting", "areas", "bank-accounts", "cash-on-hand",
+  "expenses", "returns", "settings", "transfers", "users", "reports",
 ];
-const MODULES = [
-  "modules", "modules/agri-store", "modules/pharmacy", "modules/transport",
-  "modules/water-station", "modules/water-station/customers",
-  "modules/water-station/deliveries", "modules/water-station/inventory",
-  "modules/water-station/history",
-];
-const CASHIER = ["pos", "shift-open", "shift-close", "cash-drop", "returns"];
+const MODULES = [];
+const CASHIER = [];
 
 const ROUTES = [...ADMIN, ...MODULES, ...CASHIER].map((r) => ({
   name: r === "/" ? "hub" : r,
@@ -108,7 +105,7 @@ const walk = async (browser) => {
     consoleErrors.push({ where: "unknown", text: `PAGEERROR ${String(err).slice(0, 300)}` });
   });
 
-  await page.goto(`${APP_URL}/login`, { waitUntil: "domcontentloaded" });
+  await page.goto(`${APP_URL}/login`, { waitUntil: "domcontentloaded", timeout: 90000 });
   await page.waitForTimeout(1000);
 
   // --- login -----------------------------------------------------------
@@ -142,7 +139,7 @@ const walk = async (browser) => {
     let status = "ok";
     let note = "";
     try {
-      await page.goto(route.url, { waitUntil: "domcontentloaded", timeout: 45000 });
+      await page.goto(route.url, { waitUntil: "domcontentloaded", timeout: 90000 });
       await page.waitForTimeout(2200);
       const view = await page.evaluate(() => {
         const text = document.body?.innerText || "";

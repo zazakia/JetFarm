@@ -7,7 +7,11 @@ const { Client } = pkg;
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const BACKUP_FILE = path.join(__dirname, '../infinity_backup_2026-04-07.json');
-const CONNECTION_STRING = 'postgresql://postgres:postgres@localhost:54322/postgres';
+const CONNECTION_STRING = process.env.LOCAL_DATABASE_URL;
+if (!CONNECTION_STRING) {
+    console.error('LOCAL_DATABASE_URL is not set. Connection strings are never hardcoded in this repo - export it before running this script.');
+    process.exit(1);
+}
 
 const TABLE_MAPPING = {
   'user_profiles': 'user_profiles',

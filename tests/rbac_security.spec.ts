@@ -1,5 +1,10 @@
 import { test, expect } from '@playwright/test';
-import { loginAsAdmin, loginAsCollector, loginAsLoanEncoder } from './playwright-auth';
+import { loginAsAdmin, loginAsExpensesEncoder } from './playwright-auth';
+
+// The deleted route groups are the point of this suite: on the agribusiness build a role must
+// never land on a blank screen when it is pushed at a group that no longer exists. Guarded at the
+// unit level by src/__tests__/agribusinessRouteManifest.test.ts; this proves it in the browser.
+const DELETED_GROUPS = ['/(collector)', '/(loan-encoder)', '/(payment-encoder)', '/(cashier)', '/(borrower)'];
 
 test.describe('Role-Based Access Control (RBAC) Security', () => {
   test.beforeEach(async ({ page }) => {
@@ -9,78 +14,37 @@ test.describe('Role-Based Access Control (RBAC) Security', () => {
         console.log(`[RBAC LOG]: ${msg.text()}`);
       }
     });
-    
+
     await page.setDefaultTimeout(90000);
   });
 
-  test('Collector should NOT be able to access Admin routes', async ({ page }) => {
-    // 1. Login as Collector
-    await loginAsCollector(page);
+  test('Expenses Encoder should NOT be able to access Admin routes', async ({ page }) => {
+    await loginAsExpensesEncoder(page);
 
-    // 2. Attempt to manually navigate to (admin) route using in-app router to simulate bug
     console.log('--- Attempting unauthorized navigate to /(admin) ---');
     await page.evaluate(() => {
-        // @ts-ignore - reaching into Expo Router's globals if available, or just mocking navigation
-         window.location.href = '/(admin)';
+      window.location.href = '/(admin)';
     });
-    
-    // 3. Verify immediate redirect back to authorized workspace or login 
-    // We already saw the logs in console, now verify UI state
-    await expect(
-      page.getByText(/Collector Portal|Sign In/i).first()
-    ).toBeVisible({ timeout: 30000 });
-    // Verify Admin specific text is NOT visible
-    await expect(page.getByText('Admin Portal', { exact: false })).not.toBeVisible();
-    console.log('--- Successfully blocked Collector from Admin area ---');
-  });
 
-  test('Collector should NOT be able to access Loan Encoder routes', async ({ page }) => {
-    // 1. Login as Collector
-    await loginAsCollector(page);
-
-    // 2. Attempt to manually navigate to (loan-encoder)
-    console.log('--- Attempting unauthorized navigate to /(loan-encoder) ---');
-    await page.evaluate(() => {
-         window.location.href = '/(loan-encoder)';
-    });
-    
-    // 3. Verify redirect back to an authorized workspace or login guard
-    await expect(page.getByText(/Collector Portal|Login to Account|Sign In/i).first()).toBeVisible({ timeout: 60000 });
-    // Verify Loan Encoder workspace content is NOT visible
-    await expect(page.getByText('New Loan Entry', { exact: false })).not.toBeVisible({ timeout: 10000 });
-  });
-
-  test('Admin should NOT be stuck in Collector routes', async ({ page }) => {
-    // 1. Login as Admin
-    await loginAsAdmin(page);
-
-    // 2. Attempt to manually navigate to (collector)
-    console.log('--- Attempting unauthorized navigate to /(collector) ---');
-    await page.evaluate(() => {
-         window.location.href = '/(collector)';
-    });
-    
-    // 3. Admin should resolve to an allowed workspace or a login guard, never a broken blank state.
-    await expect(page.getByText(/JetFarm Agribusiness|Admin|Collector Portal|Collection Sheet|Login to Account|Sign In/i).first()).toBeVisible({ timeout: 30000 });
-    console.log('--- Admin cross-role navigation resolved without a blank route ---');
-  });
-
-  test('Loan Encoder should NOT be able to access Admin routes', async ({ page }) => {
-    // 1. Login as Loan Encoder
-    // From login.tsx: normalizedRole.replace('_', ' ') -> "loan encoder" (uppercase from class)
-    await loginAsLoanEncoder(page);
-
-    // 2. Attempt to manually navigate to (admin)
-    console.log('--- Attempting unauthorized navigate to /(admin) ---');
-    await page.evaluate(() => {
-         window.location.href = '/(admin)';
-    });
-    
-    // 3. Verify redirect back to (loan-encoder) — its workspace marker is
-    // "New Loan Entry"; a login guard is also an acceptable blocked state.
-    await expect(page.getByText(/New Loan Entry|Login to Account|Sign In/i).first()).toBeVisible({ timeout: 60000 });
-    // Verify Admin workspace content is NOT visible
+    // Either its own workspace or a login guard — never admin content.
+    await expect(page.getByText(/Record Expense|Login to Account|Sign In/i).first()).toBeVisible({ timeout: 60000 });
     await expect(page.getByTestId('admin-portal-title')).not.toBeVisible();
   });
-});
 
+  test('Admin should NOT be stuck on a deleted role group', async ({ page }) => {
+    await loginAsAdmin(page);
+
+    for (const group of DELETED_GROUPS) {
+      console.log(`--- Attempting navigate to retired group ${group} ---`);
+      await page.evaluate((target) => {
+        window.location.href = target;
+      }, group);
+
+      // The app resolves to an allowed workspace or the login guard; a blank body would fail here.
+      await page.waitForTimeout(2000);
+      const text = (await page.locator('body').innerText()).trim();
+      expect(text.length, `Retired group ${group} rendered an empty screen at ${page.url()}`).toBeGreaterThan(0);
+      expect(text).not.toMatch(/New Loan Entry|Collection Sheet|Record Loan Payment|Borrower Profile/);
+    }
+  });
+});

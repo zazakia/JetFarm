@@ -52,7 +52,7 @@ export async function localAdmin(page: Page, baseURL?: string) {
     const raw = window.localStorage.getItem('jetfarm:e2e-auth-user');
     if (!raw) return false;
     const user = JSON.parse(raw);
-    return user.role === 'admin' && user.email === 'admin@jetfarm.com';
+    return user.role === 'admin' && user.email === 'admin@agri-one.com';
   })).toBe(true);
 }
 

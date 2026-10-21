@@ -2,7 +2,11 @@ import pkg from 'pg';
 const { Client } = pkg;
 
 async function main() {
-  const client = new Client({ connectionString: 'postgresql://postgres:postgres@localhost:54322/postgres' });
+const client = process.env.LOCAL_DATABASE_URL;
+if (!client) {
+    console.error('LOCAL_DATABASE_URL is not set. Connection strings are never hardcoded in this repo - export it before running this script.');
+    process.exit(1);
+}
   try {
     await client.connect();
     const res = await client.query(`

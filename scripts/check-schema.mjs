@@ -1,7 +1,13 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = 'https://YOUR_SUPABASE_PROJECT.supabase.co';
-const supabaseKey = 'sb_publishable_sVFiS9b5lWwqFlhu8pCAAg_VnSpcjIs';
+// Reads the target from the environment - this repo is public, so a key committed here is a
+// disclosed key. Nothing falls back to a literal.
+const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
+const supabaseKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+if (!supabaseUrl || !supabaseKey) {
+    console.error('Set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY before running this script.');
+    process.exit(1);
+}
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function checkSchema() {

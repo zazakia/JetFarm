@@ -20,7 +20,11 @@ import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
 
 const SUPABASE_URL = 'https://YOUR_SUPABASE_PROJECT.supabase.co';
-const SERVICE_ROLE_KEY = 'sb_secret_5M4dWlm0T7kPWuYUARk4pQ_AHFDlwAK';
+const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+if (!SERVICE_ROLE_KEY) {
+    console.error('SUPABASE_SERVICE_ROLE_KEY is not set. A service key is never hardcoded in this repo - export it in the shell that runs this script.');
+    process.exit(1);
+}
 
 const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
     auth: { persistSession: false }

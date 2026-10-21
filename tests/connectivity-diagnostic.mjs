@@ -30,11 +30,10 @@ const watermelonFiles = [
   'src/database/supabase.ts',
   'src/services/SyncService.ts',
   'src/database/models/UserProfile.ts',
-  'src/database/models/Borrower.ts',
-  'src/database/models/Loan.ts',
-  'src/database/models/Payment.ts',
-  'src/database/models/PaymentSchedule.ts',
   'src/database/models/Expense.ts',
+  'src/database/models/JournalEntry.ts',
+  'src/database/models/JournalEntryLine.ts',
+  'src/database/models/AgriParcel.ts',
 ];
 
 let filesOk = 0;
@@ -79,7 +78,7 @@ try {
   const schemaPath = path.resolve(path.join(__dirname, '..', 'src/database/schema.ts'));
   const schemaContent = fs.readFileSync(schemaPath, 'utf-8');
 
-  const tables = ['user_profiles', 'borrowers', 'loans', 'payments', 'payment_schedules', 'expenses'];
+  const tables = ['user_profiles', 'expenses', 'journal_entries', 'journal_entry_lines', 'agri_parcels'];
   let tablesFound = 0;
 
   for (const table of tables) {

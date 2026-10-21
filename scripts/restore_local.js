@@ -3,7 +3,11 @@ const fs = require('fs');
 const path = require('path');
 
 const BACKUP_DIR = path.join(__dirname, '../backups/remote_2026-04-01_19-47-21');
-const CONNECTION_STRING = 'postgresql://postgres:postgres@localhost:54322/postgres';
+const CONNECTION_STRING = process.env.LOCAL_DATABASE_URL;
+if (!CONNECTION_STRING) {
+    console.error('LOCAL_DATABASE_URL is not set. Connection strings are never hardcoded in this repo - export it before running this script.');
+    process.exit(1);
+}
 
 const tables = [
     'user_profiles',

@@ -1,5 +1,6 @@
 require('dotenv').config();
 const { Client } = require('pg');
+const { pgSslConfig } = require('./lib/pgTls.mjs');
 const fs = require('fs');
 const path = require('path');
 
@@ -47,7 +48,7 @@ async function restore() {
 
     const client = new Client({ 
         connectionString,
-        ssl: { rejectUnauthorized: false }
+        ssl: pgSslConfig()
     });
 
     try {

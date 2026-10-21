@@ -1,8 +1,9 @@
 import pg from 'pg';
+import { pgSslConfig, requireDbPassword } from './lib/pgTls.mjs';
 
 const { Client } = pg;
 const projectRef = 'YOUR_SUPABASE_PROJECT';
-const password = process.env.SUPABASE_DB_PASSWORD || process.env.EXPO_PUBLIC_SUPABASE_DB_PASSWORD || 'Qweasd145698@';
+const password = requireDbPassword();
 
 const client = new Client({
   host: 'aws-1-ap-southeast-1.pooler.supabase.com',
@@ -10,7 +11,7 @@ const client = new Client({
   database: 'postgres',
   user: `postgres.${projectRef}`,
   password,
-  ssl: { rejectUnauthorized: false },
+  ssl: pgSslConfig(),
   connectionTimeoutMillis: 5000,
 });
 

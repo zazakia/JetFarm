@@ -10,8 +10,8 @@ import { loginAsAdmin, safeNavigate } from './playwright-auth';
  * registered in the route group but nothing proved they render, so a runtime crash on
  * any of them would pass every gate in the matrix.
  *
- * Uncaught exceptions are collected per screen and asserted empty, following the
- * pageerror convention in tests/loan-form-validation.spec.ts. Console noise is
+ * Uncaught exceptions are collected per screen and asserted empty — the only
+ * pageerror convention left in the suite after the lending specs were deleted. Console noise is
  * deliberately not asserted here because Supabase Realtime fails to connect under E2E
  * (no local realtime port) and that is not an app defect.
  */

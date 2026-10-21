@@ -14,20 +14,14 @@ const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
   auth: { autoRefreshToken: false, persistSession: false }
 });
 
+// Local-only test logins for the agribusiness variant. The cooperative lending roles (collector,
+// loan_encoder, payment_encoder, borrower) went with the lending domain, so only the admin,
+// main-office and expenses-encoder accounts are seeded here.
 const usersToCreate = [
   { email: 'cybergada@gmail.com', role: 'admin', name: 'Cybergada Master' },
-  { email: 'admin@poscursor.com', role: 'admin', name: 'Admin User' },
-  { email: 'bisayangcollector@gmail.com', role: 'collector', name: 'Bisayang Collector' },
-  { email: 'collector@poscursor.com', role: 'collector', name: 'Master Collector' },
-  { email: 'mainoffice@poscursor.com', role: 'collector', name: 'Main Office' },
-  { email: 'jayson.cayanong@poscursor.com', role: 'collector', name: 'Jayson Cayanong' },
-  { email: 'cresencio.junco@poscursor.com', role: 'collector', name: 'Cresencio Junco' },
-  { email: 'gerald.gera@poscursor.com', role: 'collector', name: 'Gerald Gera' },
-  { email: 'bernie.casera@poscursor.com', role: 'collector', name: 'Bernie Casera' },
-  { email: 'loan_encoder@poscursor.com', role: 'loan_encoder', name: 'Loan Encoder' },
-  { email: 'payment_encoder@poscursor.com', role: 'payment_encoder', name: 'Payment Encoder' },
-  { email: 'expenses_encoder@poscursor.com', role: 'expenses_encoder', name: 'Expenses Encoder' },
-  { email: 'member.test@poscursor.com', role: 'borrower', name: 'Test Member' },
+  { email: 'admin@agri-one.com', role: 'admin', name: 'Admin User' },
+  { email: 'mainoffice@agri-one.com', role: 'main_office', name: 'Main Office' },
+  { email: 'expenses_encoder@agri-one.com', role: 'expenses_encoder', name: 'Expenses Encoder' },
 ];
 
 async function seedUser(u) {
@@ -65,11 +59,6 @@ async function seedUser(u) {
       console.error(`Error updating role for ${u.email}:`, profileError.message);
     } else {
       console.log(`Successfully configured ${u.email}`);
-      if (u.role === 'collector') {
-        await supabaseAdmin
-          .from('app_collectors')
-          .upsert({ id: userId, full_name: u.name, is_active: true });
-      }
     }
   } else {
     console.error(`Failed to get a user ID for ${u.email}`);

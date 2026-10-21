@@ -81,7 +81,7 @@ if (SPECIFIC_TABLE && !verifierTables.includes(SPECIFIC_TABLE)) {
 const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
 const ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
 const SERVICE_KEY = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
-const TEST_EMAIL = process.env.EXPO_PUBLIC_E2E_TEST_EMAIL || process.env.E2E_TEST_EMAIL || 'admin@poscursor.com';
+const TEST_EMAIL = process.env.EXPO_PUBLIC_E2E_TEST_EMAIL || process.env.E2E_TEST_EMAIL || 'admin@agri-one.com';
 const TEST_PASSWORD = process.env.EXPO_PUBLIC_E2E_TEST_PASSWORD || process.env.E2E_TEST_PASSWORD || '12345678';
 
 if (!SUPABASE_URL || !ANON_KEY) {

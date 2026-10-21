@@ -1,4 +1,5 @@
 import pg from 'pg';
+import { pgSslConfig, requireDbPassword } from './lib/pgTls.mjs';
 import dns from 'dns/promises';
 
 const { Client } = pg;
@@ -21,8 +22,8 @@ async function testConnection() {
     port: 5432,
     database: 'postgres',
     user: 'postgres',
-    password: process.env.SUPABASE_DB_PASSWORD || process.env.EXPO_PUBLIC_SUPABASE_DB_PASSWORD || 'Qweasd145698@',
-    ssl: { rejectUnauthorized: false },
+    password: requireDbPassword(),
+    ssl: pgSslConfig(),
     connectionTimeoutMillis: 5000,
   });
 

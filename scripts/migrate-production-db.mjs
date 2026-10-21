@@ -7,6 +7,7 @@
  */
 
 import pg from 'pg';
+import { pgSslConfig, requireDbPassword } from './lib/pgTls.mjs';
 import { readFileSync, readdirSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -33,7 +34,7 @@ if (existsSync(join(ROOT, '.env.production'))) {
 
 const { Client } = pg;
 const projectRef = 'jetfarm-placeholder-db';
-const password = process.env.SUPABASE_DB_PASSWORD || process.env.EXPO_PUBLIC_SUPABASE_DB_PASSWORD || 'Qweasd145698@';
+const password = requireDbPassword();
 
 const client = new Client({
   host: 'aws-0-ap-southeast-1.pooler.supabase.com',
@@ -41,7 +42,7 @@ const client = new Client({
   database: 'postgres',
   user: `postgres.${projectRef}`,
   password,
-  ssl: { rejectUnauthorized: false },
+  ssl: pgSslConfig(),
   connectionTimeoutMillis: 10000,
 });
 

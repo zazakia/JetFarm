@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { expectLoginScreen, loginAsAdmin, loginAsCollector } from './playwright-auth';
+import { expectLoginScreen, loginAsAdmin, loginAsExpensesEncoder } from './playwright-auth';
 
 async function expectNoBottomOverlap(page: Page) {
   const syncButton = page.getByTestId('global-sync-button');
@@ -25,13 +25,13 @@ test.describe('Global sync button', () => {
 
     // Current product design: the floating GlobalSyncButton is hidden for admin
     // roles, and no SyncStatusIndicator is rendered inside the (admin) shell
-    // (it only appears on collector/encoder/borrower portals).
+    // (it only appears on the encoder portal).
     await expect(page.getByTestId('global-sync-button')).toHaveCount(0);
     await expect(page.getByTestId('sync-status-indicator')).toHaveCount(0);
   });
 
   for (const [role, login] of [
-    ['collector', loginAsCollector],
+    ['expenses encoder', loginAsExpensesEncoder],
   ] as const) {
     test(`is available after ${role} login and can trigger manual sync`, async ({ page }) => {
       const unexpectedErrors: string[] = [];
