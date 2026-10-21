@@ -13,7 +13,7 @@ import {
     DefaultRolePermission,
     DefaultCoopSetting,
 } from '../constants/configDefaults';
-import { isLendingFeatureKey } from '../utils/featureFlags';
+import { isAgribusinessFeatureKey } from '../utils/featureFlags';
 import { ErrorService } from "./ErrorService";
 import {
     isLocalOnlyAppSettingKey,
@@ -274,14 +274,13 @@ export class SettingsServiceClass {
         return Object.fromEntries(flags.map(flag => [flag.key, flag.enabled !== false])) as Record<string, boolean>;
     }
 
-    async isFeatureEnabled(key: string, fallback = true) {
+    async isFeatureEnabled(key: string, fallback?: boolean) {
         const flags = await this.getFeatureFlags();
-        const masterFlag = flags.find(item => item.key === 'system.lending');
-        if (masterFlag && masterFlag.enabled === false && isLendingFeatureKey(key)) {
-            return false;
-        }
         const flag = flags.find(item => item.key === key);
-        return flag ? flag.enabled !== false : fallback;
+        if (flag) return flag.enabled !== false;
+        // Same rule as useFeatureFlags.isEnabled: an unseeded key is on only for the features this
+        // build ships, so a stale flag name cannot unlock a screen that no longer exists.
+        return fallback ?? isAgribusinessFeatureKey(key);
     }
 
     private featureFlagListeners = new Set<(flags: Record<string, boolean>) => void>();

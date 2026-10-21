@@ -20,7 +20,6 @@ type AuthContextType = {
     session: Session | null;
     role: string | null;
     roleResolved: boolean;
-    collectorId: string | null;
     branchId: string | null;
     areaId: string | null;
     userBranchRoles: BranchRoleAssignment[];
@@ -37,7 +36,6 @@ const AuthContext = createContext<AuthContextType>({
     session: null,
     role: null,
     roleResolved: false,
-    collectorId: null,
     branchId: null,
     areaId: null,
     userBranchRoles: [],
@@ -54,8 +52,6 @@ export const SKIP_NEXT_AUTO_SYNC_KEY = 'skip_next_auto_sync_once';
 
 const SESSION_RESTORE_TIMEOUT_MS = 15000;
 const ROLE_RESOLUTION_TIMEOUT_MS = 15000;
-const COLLECTOR_RESOLUTION_TIMEOUT_MS = 15000;
-const PUBLIC_ROUTES = new Set(['loan-calculator', 'loan-application']);
 const E2E_AUTH_STORAGE_KEY = 'jetfarm:e2e-auth-user';
 
 const readE2ESession = (): Session | null => {
@@ -89,7 +85,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [session, setSession] = useState<Session | null>(null);
     const [role, setRole] = useState<string | null>(null);
     const [roleResolved, setRoleResolved] = useState(false);
-    const [collectorId, setCollectorId] = useState<string | null>(null);
     const [branchId, setBranchId] = useState<string | null>(null);
     const [areaId, setAreaId] = useState<string | null>(null);
     const [userBranchRoles, setUserBranchRoles] = useState<BranchRoleAssignment[]>([]);
@@ -158,7 +153,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         let settlePromise: Promise<void>;
         settlePromise = (async () => {
             let resolvedRole: string | null = null;
-            let collector: string | null = null;
 
             for (let attempt = 1; attempt <= 2; attempt++) {
                 resolvedRole = await withTimeout(
@@ -183,19 +177,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 setInitializationError(null);
             }
             setRole(resolvedRole as UserRole);
-
-            if (resolvedRole === 'collector') {
-                collector = await withTimeout(
-                    AuthService.resolveCollectorId(sessionUser.id),
-                    COLLECTOR_RESOLUTION_TIMEOUT_MS,
-                    `${source} collector resolution`
-                );
-                if (roleRequestId !== roleResolutionRequestIdRef.current) return;
-                console.log(`[AuthContext] Collector ID resolved: ${collector}`);
-                setCollectorId(collector);
-            } else {
-                setCollectorId(null);
-            }
 
             try {
                 const branchAndArea = await AuthService.getUserBranchAndArea(sessionUser.id);
@@ -228,7 +209,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 console.error('[AuthContext] Role/Collector ID fetch error:', roleError);
                 setInitializationError(new Error('Unable to verify your access. Please check your connection and try again.'));
                 setRole(null);
-                setCollectorId(null);
                 setBranchId(null);
                 setAreaId(null);
             })
@@ -329,7 +309,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     setUser(null);
                     setRole(null);
                     setRoleResolved(true);
-                    setCollectorId(null);
                 }
             } catch (err: any) {
                 // If it's a refresh token error or invalid session, clear everything to allow a clean login
@@ -366,7 +345,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     setUser(null);
                     setRole(null);
                     setRoleResolved(true);
-                    setCollectorId(null);
                 } else {
                     ErrorService.handleError(err, 'AuthContext.getSession', ErrorType.AUTH);
                 }
@@ -387,7 +365,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 setUser(null);
                 setRole(null);
                 setRoleResolved(true);
-                setCollectorId(null);
                 return;
             }
 
@@ -419,7 +396,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     setUser(null);
                     setRole(null);
                     setRoleResolved(true);
-                    setCollectorId(null);
                     return;
                 }
 
@@ -474,23 +450,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const firstSegment = segments[0];
         const inAuthGroup = firstSegment === '(auth)';
         const isLoginRoute = firstSegment === 'login';
-        const isRegisterRoute = firstSegment === 'register';
         const inLoading = firstSegment === 'loading';
-        const isPublicRoute = typeof firstSegment === 'string' && PUBLIC_ROUTES.has(firstSegment);
 
-        if (user && !roleResolved && !inLoading && !isLoginRoute && !isRegisterRoute && !isPublicRoute) {
+        if (user && !roleResolved && !inLoading && !isLoginRoute) {
             console.log('[AuthContext] Waiting for role resolution before route guard redirect');
             return;
         }
 
         // 1. If not logged in and not on an auth/loading page, redirect to login
-        if (!user && !inAuthGroup && !isLoginRoute && !isRegisterRoute && !inLoading && !isPublicRoute) {
+        if (!user && !inAuthGroup && !isLoginRoute && !inLoading) {
             console.log('[AuthContext] Guest detected on protected route, redirecting to login');
             router.replace('/login');
             return;
         }
 
-        if (user && roleResolved && !role && !isLoginRoute && !isRegisterRoute && !inLoading && !isPublicRoute) {
+        if (user && roleResolved && !role && !isLoginRoute && !inLoading) {
             console.warn('[AuthContext] Authenticated user has no resolved role, redirecting to login');
             router.replace('/login');
             return;
@@ -508,10 +482,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (user && roleResolved && role && firstSegment && firstSegment.startsWith('(')) {
             const groupRoleMap: Record<string, string[]> = {
                 '(admin)': ['admin', 'main_office'],
-                '(collector)': ['collector'],
-                '(borrower)': ['borrower'],
-                '(loan-encoder)': ['loan_encoder'],
-                '(payment-encoder)': ['payment_encoder', 'collector'],
                 '(expenses-encoder)': ['expenses_encoder'],
             };
 
@@ -537,7 +507,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setSession(null);
             setRole(null);
             setRoleResolved(true);
-            setCollectorId(null);
             setBranchId(null);
             setAreaId(null);
             setInitializationError(null);
@@ -561,7 +530,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         session,
         role,
         roleResolved,
-        collectorId,
         branchId,
         areaId,
         userBranchRoles,
@@ -571,7 +539,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         initialized,
         initializationError,
         signOut,
-    }), [user, session, role, roleResolved, collectorId, branchId, areaId, userBranchRoles, sunlightMode, initialized, initializationError]);
+    }), [user, session, role, roleResolved, branchId, areaId, userBranchRoles, sunlightMode, initialized, initializationError]);
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

@@ -5,7 +5,7 @@ import { Router } from 'expo-router';
  * This prevents the "GO_BACK" action error in Expo Router.
  * 
  * @param router - The router instance from useRouter()
- * @param fallback - The fallback route to navigate to if no history exists (e.g., '/(collector)')
+ * @param fallback - The fallback route to navigate to if no history exists (e.g., '/(admin)')
  */
 export const safeBack = (router: Router, fallback: string) => {
     if (router.canGoBack()) {

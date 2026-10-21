@@ -68,7 +68,6 @@ describe('useSync', () => {
         expect(result.current).toHaveProperty('pendingChanges');
         expect(result.current).toHaveProperty('lastSyncAt');
         expect(result.current).toHaveProperty('getPendingCount');
-        expect(result.current).toHaveProperty('verifyBorrowerAssignments');
     });
 
     it('triggers SyncService.checkAndSync when sync is called', async () => {
@@ -120,45 +119,6 @@ describe('useSync', () => {
 
         expect(SyncService.updatePendingCount).toHaveBeenCalled();
         expect(count).toBe(5);
-    });
-
-    it('verifyBorrowerAssignments queries database', async () => {
-        mockFetchCount.mockResolvedValue(5);
-
-        const { result } = renderHook(() => useSync());
-
-        let hasAssignments: boolean = false;
-        await act(async () => {
-            hasAssignments = await result.current.verifyBorrowerAssignments('c-1');
-        });
-
-        expect(hasAssignments).toBe(true);
-    });
-
-    it('verifyBorrowerAssignments returns false when no borrowers', async () => {
-        mockFetchCount.mockResolvedValue(0);
-
-        const { result } = renderHook(() => useSync());
-
-        let hasAssignments: boolean = true;
-        await act(async () => {
-            hasAssignments = await result.current.verifyBorrowerAssignments('c-1');
-        });
-
-        expect(hasAssignments).toBe(false);
-    });
-
-    it('verifyBorrowerAssignments returns false on error', async () => {
-        mockFetchCount.mockRejectedValue(new Error('DB error'));
-
-        const { result } = renderHook(() => useSync());
-
-        let hasAssignments: boolean = true;
-        await act(async () => {
-            hasAssignments = await result.current.verifyBorrowerAssignments('c-1');
-        });
-
-        expect(hasAssignments).toBe(false);
     });
 
     it('isSyncing is false initially', () => {

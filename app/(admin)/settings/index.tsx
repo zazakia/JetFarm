@@ -13,13 +13,10 @@ import { AnimatedPressable } from '../../../src/components/AnimatedPressable';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { COMPANY_NAME } from '../../../src/constants/brand';
 import { SampleDataService } from '../../../src/services/SampleDataService';
-import { useFeatureFlags } from '../../../src/hooks/useSettingsConfig';
 
 export default function SettingsScreen() {
     const { user, signOut } = useAuth();
     const router = useRouter();
-    const { isEnabled } = useFeatureFlags();
-    const isLendingEnabled = isEnabled('system.lending');
     const [syncing, setSyncing] = useState(false);
     const [lastSync, setLastSync] = useState<string>('Never');
     const [restoreProgress, setRestoreProgress] = useState<string | null>(null);
@@ -398,7 +395,7 @@ export default function SettingsScreen() {
 
                     <View className="bg-gray-50 p-4 rounded-2xl border border-gray-100">
                         <Text className="text-xs text-gray-700 leading-4">
-                            Populates reversible mock data across all modules: Agribusiness (Parcels, Crop Cycles, Farm Workers, Harvest Scales), Marketplace & POS (Products, Inventory, Stock Movements, Returns), Water Station (Customers, Containers, Deliveries), Lending, Banking, and Staff Directory.
+                            Populates reversible mock data across the agribusiness and finance modules: Parcels, Crop Cycles, Harvest Settlements, Land Owners, Investors, Farm Workers, Farm Expenses, Chart of Accounts, Journal Entries and Suppliers.
                         </Text>
                     </View>
 
@@ -488,14 +485,6 @@ export default function SettingsScreen() {
                         color="#1E3A8A"
                         onPress={() => router.push('/(admin)/settings/business-rules')}
                     />
-                    {isLendingEnabled && (
-                        <SettingsItem
-                            icon="receipt-long"
-                            label="Loan Products"
-                            color="#1E3A8A"
-                            onPress={() => router.push('/(admin)/settings/loan-products')}
-                        />
-                    )}
                     <SettingsItem
                         icon="toggle-on"
                         label="Feature Flags"
@@ -530,35 +519,16 @@ export default function SettingsScreen() {
                         label="Expense Categories"
                         onPress={() => router.push('/(admin)/settings/expense-categories')}
                     />
-                    {isLendingEnabled && (
-                        <SettingsItem
-                            icon="group-work"
-                            label="Collection Groups"
-                            onPress={() => router.push('/(admin)/settings/collection-groups')}
-                        />
-                    )}
                     <SettingsItem
                         icon="lock"
                         label="Monthly Financial Closing"
                         onPress={() => router.push('/(admin)/settings/closing')}
                     />
                     <SettingsItem
-                        icon="system-update-alt"
-                        label="Excel Data Migration"
-                        color="#FF8C00"
-                        onPress={() => router.push('/(admin)/settings/migration')}
-                    />
-                    <SettingsItem
                         icon="history"
                         label="Audit Trail"
                         color="#1E3A8A"
                         onPress={() => router.push('/(admin)/settings/audit-trail')}
-                    />
-                    <SettingsItem
-                        icon="verified-user"
-                        label="Data Integrity Audit"
-                        color="#1E3A8A"
-                        onPress={() => router.push('/(admin)/settings/audit')}
                     />
                     <SettingsItem
                         icon="delete-forever"

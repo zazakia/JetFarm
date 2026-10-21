@@ -58,16 +58,16 @@ describe('RoleAccessSettingsScreen', () => {
         {
             id: 'perm-2',
             role: 'admin',
-            permissionKey: 'module.loans',
-            label: 'Loans module',
+            permissionKey: 'module.accounting',
+            label: 'Accounting module',
             category: 'Modules',
             enabled: true,
         },
         {
             id: 'perm-3',
-            role: 'collector',
-            permissionKey: 'route.(collector)',
-            label: 'Collector dashboard',
+            role: 'expenses_encoder',
+            permissionKey: 'route.(expenses-encoder)',
+            label: 'Expenses encoder dashboard',
             category: 'Route groups',
             enabled: true,
         },
@@ -83,8 +83,8 @@ describe('RoleAccessSettingsScreen', () => {
 
         await waitFor(() => {
             expect(screen.getByText('Admin dashboard')).toBeTruthy();
-            expect(screen.getByText('Loans module')).toBeTruthy();
-            expect(screen.queryByText('Collector dashboard')).toBeNull();
+            expect(screen.getByText('Accounting module')).toBeTruthy();
+            expect(screen.queryByText('Expenses encoder dashboard')).toBeNull();
         });
     });
 
@@ -105,11 +105,11 @@ describe('RoleAccessSettingsScreen', () => {
             expect(screen.getByText('Admin dashboard')).toBeTruthy();
         });
 
-        const collectorTab = screen.getByText('Collector');
-        fireEvent.press(collectorTab);
+        const encoderTab = screen.getByText('Expenses Encoder');
+        fireEvent.press(encoderTab);
 
         await waitFor(() => {
-            expect(screen.getByText('Collector dashboard')).toBeTruthy();
+            expect(screen.getByText('Expenses encoder dashboard')).toBeTruthy();
             expect(screen.queryByText('Admin dashboard')).toBeNull();
         });
     });
@@ -137,7 +137,7 @@ describe('RoleAccessSettingsScreen', () => {
         (SettingsService.setRolePermissionEnabled as jest.Mock).mockResolvedValue(undefined);
         render(<RoleAccessSettingsScreen />);
         await waitFor(() => {
-            expect(screen.getByText('Loans module')).toBeTruthy();
+            expect(screen.getByText('Accounting module')).toBeTruthy();
         });
 
         const switches = screen.UNSAFE_getAllByType(require('react-native').Switch);
@@ -159,7 +159,7 @@ describe('RoleAccessSettingsScreen', () => {
         (SettingsService.setRolePermissionEnabled as jest.Mock).mockRejectedValue(new Error('Save error'));
         render(<RoleAccessSettingsScreen />);
         await waitFor(() => {
-            expect(screen.getByText('Loans module')).toBeTruthy();
+            expect(screen.getByText('Accounting module')).toBeTruthy();
         });
 
         const switches = screen.UNSAFE_getAllByType(require('react-native').Switch);

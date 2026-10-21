@@ -230,11 +230,12 @@ export default function BalanceSheetScreen() {
                             </View>
                             {renderRow('CURRENT ASSETS', null, 0, 0, 0, true)}
                             {renderRow('Cash and cash equivalents', 5, reportData.assets.cashOnHand.current + reportData.assets.cashInBank.current, reportData.assets.cashOnHand.prior + reportData.assets.cashInBank.prior, reportData.assets.cashOnHand.variance + reportData.assets.cashInBank.variance, false, false, true)}
-                            {renderRow('Loans and Receivables', 6, reportData.assets.loanReceivable.current, reportData.assets.loanReceivable.prior, reportData.assets.loanReceivable.variance, false, false, true)}
+                            {renderRow('Standing Crops, Produce & Farm Inputs', 6, reportData.assets.farmAssets.current, reportData.assets.farmAssets.prior, reportData.assets.farmAssets.variance, false, false, true)}
+                            {renderRow('Other Receivables', 7, reportData.assets.otherReceivables.current, reportData.assets.otherReceivables.prior, reportData.assets.otherReceivables.variance, false, false, true)}
                             {renderRow('Total Current Assets', null, reportData.assets.totalCurrentAssets.current, reportData.assets.totalCurrentAssets.prior, reportData.assets.totalCurrentAssets.variance, false, true)}
 
                             {renderRow('NON-CURRENT ASSETS', null, 0, 0, 0, true)}
-                            {renderRow('Other Non-Current Assets', 7, reportData.assets.sundryAssets.current, reportData.assets.sundryAssets.prior, reportData.assets.sundryAssets.variance, false, false, true)}
+                            {renderRow('Other Non-Current Assets', 8, reportData.assets.sundryAssets.current, reportData.assets.sundryAssets.prior, reportData.assets.sundryAssets.variance, false, false, true)}
                             {renderRow('Total Non-Current Assets', null, reportData.assets.totalNonCurrentAssets.current, reportData.assets.totalNonCurrentAssets.prior, reportData.assets.totalNonCurrentAssets.variance, false, true)}
                             
                             {renderRow('TOTAL ASSETS', null, reportData.assets.totalAssets.current, reportData.assets.totalAssets.prior, reportData.assets.totalAssets.variance, true, true)}
@@ -245,10 +246,10 @@ export default function BalanceSheetScreen() {
                             </View>
                             {renderRow('LIABILITIES', null, 0, 0, 0, true)}
                             {renderRow('CURRENT LIABILITIES', null, 0, 0, 0, true)}
-                            {renderRow('Deposit Liabilities', 8, reportData.liabilities.depositLiabilities.current, reportData.liabilities.depositLiabilities.prior, reportData.liabilities.depositLiabilities.variance, false, false, true)}
-                            {renderRow('Interest on Share Capital Payable', 9, reportData.liabilities.interestShareCapitalPayable.current, reportData.liabilities.interestShareCapitalPayable.prior, reportData.liabilities.interestShareCapitalPayable.variance, false, false, true)}
-                            {renderRow('Patronage Refund Payable', 10, reportData.liabilities.patronageRefundPayable.current, reportData.liabilities.patronageRefundPayable.prior, reportData.liabilities.patronageRefundPayable.variance, false, false, true)}
-                            {renderRow('Due to Union/Federation', 11, reportData.liabilities.dueToUnion.current, reportData.liabilities.dueToUnion.prior, reportData.liabilities.dueToUnion.variance, false, false, true)}
+                            {renderRow('Land-Owner Settlements Payable', 9, reportData.liabilities.settlementsPayable.current, reportData.liabilities.settlementsPayable.prior, reportData.liabilities.settlementsPayable.variance, false, false, true)}
+                            {renderRow('Field Labor Payable', 10, reportData.liabilities.laborPayable.current, reportData.liabilities.laborPayable.prior, reportData.liabilities.laborPayable.variance, false, false, true)}
+                            {renderRow('Accounts Payable', 11, reportData.liabilities.accountsPayable.current, reportData.liabilities.accountsPayable.prior, reportData.liabilities.accountsPayable.variance, false, false, true)}
+                            {renderRow('Other Payables', null, reportData.liabilities.otherPayables.current, reportData.liabilities.otherPayables.prior, reportData.liabilities.otherPayables.variance, false, false, true)}
                             {renderRow('Total Current Liabilities', null, reportData.liabilities.totalCurrentLiabilities.current, reportData.liabilities.totalCurrentLiabilities.prior, reportData.liabilities.totalCurrentLiabilities.variance, false, true)}
                             {renderRow('TOTAL LIABILITIES', null, reportData.liabilities.totalLiabilities.current, reportData.liabilities.totalLiabilities.prior, reportData.liabilities.totalLiabilities.variance, true, true)}
 
@@ -256,7 +257,7 @@ export default function BalanceSheetScreen() {
                             <View className="bg-slate-50 px-4 py-1.5 border-b border-gray-200 border-t border-gray-200">
                                 <Text className="font-black text-[10px] uppercase text-slate-700 tracking-wider">Equity</Text>
                             </View>
-                            {renderRow('Share Capital-common', null, 0, 0, 0, true)}
+                            {renderRow('Share Capital — Common', null, 0, 0, 0, true)}
                             
                             <View className="px-4 py-1.5 border-b border-gray-100 bg-slate-50/50">
                                 <Text className="text-[10px] text-gray-500 italic">
@@ -267,7 +268,9 @@ export default function BalanceSheetScreen() {
                             {renderRow('Subscribed capital', null, reportData.equity.subscribedCapital.current, reportData.equity.subscribedCapital.prior, reportData.equity.subscribedCapital.variance, false, false, true)}
                             {renderRow('Less: Subscription Receivable', null, -reportData.equity.subscriptionReceivable.current, -reportData.equity.subscriptionReceivable.prior, -reportData.equity.subscriptionReceivable.variance, false, false, true)}
                             {renderRow('Paid up capital', null, reportData.equity.paidUpCapital.current, reportData.equity.paidUpCapital.prior, reportData.equity.paidUpCapital.variance, false, true)}
+                            {renderRow('Project & Partner Equity', null, reportData.equity.projectEquity.current, reportData.equity.projectEquity.prior, reportData.equity.projectEquity.variance, false, false, true)}
                             {renderRow('Statutory Funds', 12, reportData.equity.totalStatutoryFunds.current, reportData.equity.totalStatutoryFunds.prior, reportData.equity.totalStatutoryFunds.variance, false, false, true)}
+                            {renderRow('Retained Surplus', null, reportData.equity.retainedSurplus.current, reportData.equity.retainedSurplus.prior, reportData.equity.retainedSurplus.variance, false, false, true)}
                             {renderRow('TOTAL EQUITY', null, reportData.equity.totalEquity.current, reportData.equity.totalEquity.prior, reportData.equity.totalEquity.variance, true, true)}
                             
                             {renderRow('TOTAL LIABILITIES AND EQUITY', null, reportData.totalLiabilitiesAndEquity.current, reportData.totalLiabilitiesAndEquity.prior, reportData.totalLiabilitiesAndEquity.variance, true, true)}
@@ -329,47 +332,47 @@ export default function BalanceSheetScreen() {
 
                             {selectedNote === 6 && (
                                 <View>
-                                    <Text className="text-slate-900 font-black text-xs uppercase mb-3">Loans and Receivables</Text>
+                                    <Text className="text-slate-900 font-black text-xs uppercase mb-3">Standing Crops, Produce &amp; Farm Inputs</Text>
                                     <Text className="text-xs text-gray-600 leading-relaxed mb-4">
-                                        Outstanding credit releases to cooperative members, net of Allowance for Probable Loan Losses. Includes both regular and savings-secured loan portfolios.
+                                        Biological assets carried at the accumulated production cost of the crop cycles still in the ground, produce weighed in and not yet sold, and farm inputs issued to the parcels and not yet consumed.
                                     </Text>
                                     <View className="flex-row justify-between py-2 border-b border-gray-100">
-                                        <Text className="text-[11px] text-gray-700">Outstanding Loans Receivable</Text>
-                                        <Text className="text-[11px] font-bold text-slate-800">{formatPHP(reportData?.assets.loanReceivable.current)}</Text>
+                                        <Text className="text-[11px] text-gray-700">Account codes 1240, 1245, 1246</Text>
+                                        <Text className="text-[11px] font-bold text-slate-800">{formatPHP(reportData?.assets.farmAssets.current)}</Text>
                                     </View>
                                     <View className="flex-row justify-between py-2 border-b border-gray-100">
-                                        <Text className="text-[11px] text-gray-700">Less: Allowance for Probable Losses</Text>
-                                        <Text className="text-[11px] font-bold text-red-600">-</Text>
+                                        <Text className="text-[11px] text-gray-700">Split by cycle</Text>
+                                        <Text className="text-[11px] font-bold text-gray-500">See Notes to Financial Statements</Text>
                                     </View>
                                     <View className="flex-row justify-between py-3 bg-slate-50 px-2 rounded mt-2">
-                                        <Text className="text-xs font-bold text-slate-900">Net Loans</Text>
-                                        <Text className="text-xs font-bold text-slate-900">{formatPHP(reportData?.assets.loanReceivable.current)}</Text>
+                                        <Text className="text-xs font-bold text-slate-900">Total Farm Assets</Text>
+                                        <Text className="text-xs font-bold text-slate-900">{formatPHP(reportData?.assets.farmAssets.current)}</Text>
                                     </View>
                                 </View>
                             )}
 
                             {selectedNote === 7 && (
                                 <View>
-                                    <Text className="text-slate-900 font-black text-xs uppercase mb-3">Other Non-Current Assets</Text>
+                                    <Text className="text-slate-900 font-black text-xs uppercase mb-3">Other Receivables</Text>
                                     <Text className="text-xs text-gray-600 leading-relaxed mb-4">
-                                        This consists of various sundry assets and adjustments that are held for long-term cooperative operations.
+                                        Amounts due to the enterprise from buyers, off-takers and other counterparties that are not harvest-related, together with advances to field operations awaiting settlement.
                                     </Text>
                                     <View className="flex-row justify-between py-3 bg-slate-50 px-2 rounded">
-                                        <Text className="text-xs font-bold text-slate-900">Sundry Assets</Text>
-                                        <Text className="text-xs font-bold text-slate-900">{formatPHP(reportData?.assets.sundryAssets.current)}</Text>
+                                        <Text className="text-xs font-bold text-slate-900">Balance</Text>
+                                        <Text className="text-xs font-bold text-slate-900">{formatPHP(reportData?.assets.otherReceivables.current)}</Text>
                                     </View>
                                 </View>
                             )}
 
                             {selectedNote === 8 && (
                                 <View>
-                                    <Text className="text-slate-900 font-black text-xs uppercase mb-3">Deposit Liabilities</Text>
+                                    <Text className="text-slate-900 font-black text-xs uppercase mb-3">Other Non-Current Assets</Text>
                                     <Text className="text-xs text-gray-600 leading-relaxed mb-4">
-                                        Savings deposits by cooperative members. Interest is computed at the rate of 6% per annum on savings.
+                                        Sundry assets and adjustments held for long-term farm operations, including equipment and land-development outlays not yet expensed to a crop cycle.
                                     </Text>
                                     <View className="flex-row justify-between py-3 bg-slate-50 px-2 rounded">
-                                        <Text className="text-xs font-bold text-slate-900">Savings Deposits</Text>
-                                        <Text className="text-xs font-bold text-slate-900">{formatPHP(reportData?.liabilities.depositLiabilities.current)}</Text>
+                                        <Text className="text-xs font-bold text-slate-900">Sundry Assets</Text>
+                                        <Text className="text-xs font-bold text-slate-900">{formatPHP(reportData?.assets.sundryAssets.current)}</Text>
                                     </View>
                                 </View>
                             )}
@@ -406,20 +409,24 @@ export default function BalanceSheetScreen() {
                             {[9, 10, 11].includes(selectedNote!) && (
                                 <View>
                                     <Text className="text-slate-900 font-black text-xs uppercase mb-3">
-                                        {selectedNote === 9 ? 'Interest on Share Capital Payable' : selectedNote === 10 ? 'Patronage Refund Payable' : 'Due to Union / Federation'}
+                                        {selectedNote === 9 ? 'Land-Owner Settlements Payable' : selectedNote === 10 ? 'Field Labor Payable' : 'Accounts Payable'}
                                     </Text>
                                     <Text className="text-xs text-gray-600 leading-relaxed mb-4">
-                                        Statutory distributions allocated to members or parent apex cooperative federation.
+                                        {selectedNote === 9
+                                            ? 'The per-kilo payout due to land owners for the harvest weeks weighed in and settled, recognised at the computed payout for the week and discharged from the weekly settlement run.'
+                                            : selectedNote === 10
+                                            ? 'Wages earned by field workers for work performed and not yet disbursed at the reporting date.'
+                                            : 'Supplies, machinery and logistics invoices approved for payment to third-party suppliers.'}
                                     </Text>
                                     <View className="flex-row justify-between py-3 bg-slate-50 px-2 rounded">
                                         <Text className="text-xs font-bold text-slate-900">Balance</Text>
                                         <Text className="text-xs font-bold text-slate-900">
                                             {formatPHP(
-                                                selectedNote === 9 
-                                                    ? reportData?.liabilities.interestShareCapitalPayable.current 
-                                                    : selectedNote === 10 
-                                                    ? reportData?.liabilities.patronageRefundPayable.current 
-                                                    : reportData?.liabilities.dueToUnion.current
+                                                selectedNote === 9
+                                                    ? reportData?.liabilities.settlementsPayable.current
+                                                    : selectedNote === 10
+                                                    ? reportData?.liabilities.laborPayable.current
+                                                    : reportData?.liabilities.accountsPayable.current
                                             )}
                                         </Text>
                                     </View>

@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { View, Text, ScrollView, SafeAreaView, Pressable, Image, LayoutAnimation, Platform, UIManager, TextInput, Alert, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, ScrollView, SafeAreaView, Pressable, LayoutAnimation, Platform, UIManager, TextInput, Alert, ActivityIndicator } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { HelpStepCard } from '../../src/components/HelpStepCard';
@@ -65,12 +65,9 @@ function BulletList({ items }: { items: string[] }) {
 
 const CATEGORIES = [
     { id: 'all', label: 'All Guides', icon: 'apps' },
-    { id: 'agri', label: '🌾 Agribusiness', icon: 'eco' },
-    { id: 'market', label: '🏪 Marketplace & POS', icon: 'storefront' },
-    { id: 'water', label: '💧 Water Station', icon: 'water-drop' },
-    { id: 'lending', label: '💳 Lending & Credit', icon: 'payments' },
-    { id: 'accounting', label: '💰 Accounting & Vault', icon: 'menu-book' },
-    { id: 'hr', label: '👥 HR & Payroll', icon: 'badge' },
+    { id: 'agri', label: '🌾 Farm Operations', icon: 'eco' },
+    { id: 'settlement', label: '🧾 Harvest & Settlements', icon: 'event-note' },
+    { id: 'accounting', label: '💰 Accounting & Ledger', icon: 'menu-book' },
     { id: 'sync', label: '🔄 Offline & Sync', icon: 'sync' },
 ];
 
@@ -102,7 +99,7 @@ export default function AdminHelpScreen() {
                 Alert.alert('Demo Data Hidden', 'Mock records have been temporarily hidden. You can re-enable them anytime.');
             } else {
                 await SampleDataService.enable(database);
-                Alert.alert('Demo Data Loaded!', 'Realistic mock data across all modules (Agribusiness, Store, Water Station, Lending, Accounting, and Employees) has been seeded into your local database.');
+                Alert.alert('Demo Data Loaded!', 'Realistic mock data (parcels, crop cycles, harvest settlements, farm labor, farm expenses, chart of accounts and journal entries) has been seeded into your local database.');
             }
             await loadSampleStatus();
         } catch (err: any) {
@@ -131,7 +128,7 @@ export default function AdminHelpScreen() {
                 <Text className="text-white/90 text-xs font-bold uppercase tracking-[3px] mb-1">Interactive User Guide & Walkthrough</Text>
                 <Text className="text-white text-3xl font-black">Help & Operating Guide</Text>
                 <Text className="text-white/80 text-sm font-medium mt-2">
-                    Master all modules, field workflows, offline operations, and financial features.
+                    Master farm operations, harvest settlements, the general ledger and offline field work.
                 </Text>
 
                 {/* Real-time Search Input */}
@@ -140,7 +137,7 @@ export default function AdminHelpScreen() {
                     <TextInput
                         value={searchQuery}
                         onChangeText={setSearchQuery}
-                        placeholder="Search modules, workflows, or instructions..."
+                        placeholder="Search workflows, screens, or instructions..."
                         placeholderTextColor="#9CA3AF"
                         className="flex-1 ml-2.5 text-gray-900 text-sm font-medium"
                     />
@@ -171,7 +168,7 @@ export default function AdminHelpScreen() {
                     </View>
 
                     <Text className="text-gray-300 text-xs leading-5 mb-4">
-                        Need a refresher or onboarding a new teammate? Replay the 6-step guided walkthrough to explore Agribusiness, Touch POS, Lending, and Offline-First Sync.
+                        Need a refresher or onboarding a new teammate? Replay the guided walkthrough across the farm command center, yield analytics and the general ledger.
                     </Text>
 
                     <Pressable
@@ -197,7 +194,7 @@ export default function AdminHelpScreen() {
                                 <Text className="text-emerald-950 font-black text-base">Quick Start: Mock Data</Text>
                                 <Text className="text-emerald-800 text-xs font-semibold">
                                     {sampleStatus?.enabled
-                                        ? `Active Demo Data: ${sampleStatus.active} records populated across all modules`
+                                        ? `Active Demo Data: ${sampleStatus.active} records populated across farm and finance modules`
                                         : 'No demo data loaded yet — load with 1 tap'}
                                 </Text>
                             </View>
@@ -205,7 +202,7 @@ export default function AdminHelpScreen() {
                     </View>
 
                     <Text className="text-emerald-900/80 text-xs leading-5 mb-4">
-                        Populate the entire system with realistic Philippine agricultural parcels, crop cycles, farm harvests, store inventory, sales returns, water station orders, and loans to immediately test and explore every screen.
+                        Populate the system with realistic Philippine agricultural parcels, crop cycles, harvest logs, weekly settlements, farm labor logs, farm expenses and journal entries to immediately test and explore every screen.
                     </Text>
 
                     <View className="flex-row items-center gap-3">
@@ -220,7 +217,7 @@ export default function AdminHelpScreen() {
                                 <>
                                     <MaterialIcons name={sampleStatus?.enabled ? 'visibility-off' : 'cloud-download'} size={18} color="#FFFFFF" />
                                     <Text className="text-white font-bold text-xs ml-2">
-                                        {sampleStatus?.enabled ? 'Hide All Demo Data' : 'Load All Modules Demo Data'}
+                                        {sampleStatus?.enabled ? 'Hide All Demo Data' : 'Load Demo Data'}
                                     </Text>
                                 </>
                             )}
@@ -248,151 +245,107 @@ export default function AdminHelpScreen() {
                     </View>
                 </ScrollView>
 
-                {/* 1. Getting Started & Dashboard */}
-                {(showCategory('all') || selectedCategory === 'all') && matchesSearch(['dashboard', 'start', 'navigation', 'sidebar', 'sync'], 'Getting Started & Navigation') && (
+                {/* 1. Getting Started & Navigation */}
+                {(showCategory('all') || selectedCategory === 'all') && matchesSearch(['dashboard', 'start', 'navigation', 'sidebar', 'sync', 'roles'], 'Getting Started & Navigation') && (
                     <Accordion title="1. Getting Started & App Navigation" icon="home" defaultOpen={true}>
                         <Text className="text-gray-600 mb-4 leading-6">
-                            JetFarm is an offline-first enterprise management, POS, and agricultural operations system. It runs completely offline using local persistence and synchronizes seamlessly with the cloud when internet is available.
+                            Agri-One is an offline-first agribusiness operations and accounting system. It runs completely offline using local persistence and synchronizes with the cloud whenever internet is available.
                         </Text>
                         <HelpNote
-                            title="Multi-Role Architecture"
-                            body="Admins have full oversight across all modules. Collectors use mobile route lists. Cashiers operate the Touch POS and Till. Branch managers oversee store receiving and stock audits."
+                            title="Roles"
+                            body="Admins have full oversight of farm operations and the ledger. Main Office users work from the head-office screens. Expenses Encoders record farm expenses and their disbursements."
                         />
                         <BulletList
                             items={[
-                                'Daily Start: Pull down to refresh your dashboard metrics and trigger an instant background sync with Supabase.',
-                                'Full Navigation: Tap the Menu icon in the top left to open the sidebar with organized operational groups.',
-                                'Branch & Warehouse Switcher: Use the branch switcher chip in the header to switch active branch context.',
-                                'Sync Status Badge: Located at the top right. Green indicates fully synchronized; orange indicates pending sync; red indicates offline queue.',
-                                'Super User-Friendly: Every screen supports drill-downs and clean modal details with zero learning curve.'
+                                'Daily Start: Pull down to refresh your dashboard metrics and trigger an instant background sync.',
+                                'Full Navigation: Tap the Menu icon in the top left to open the sidebar with the farm and finance groups.',
+                                'Branch & Warehouse Switcher: Use the branch switcher chip in the header to change active branch context.',
+                                'Sync Status Badge: Top right. Green = fully synced; orange = pending; red = offline queue.',
+                                'Drill-downs: Every card opens a clean detail modal — parcels, cycles, settlements and journal entries.'
                             ]}
                         />
-                        <HelpStepCard stepNumber={1} icon="dashboard" title="Review Live Dashboard KPIs" description="Monitor outstanding balances, daily collections, crop hectarage, and cash balances before taking action." />
-                        <HelpStepCard stepNumber={2} icon="menu" title="Open the Sidebar Menu" description="Browse modules categorized into Agribusiness, Crispy King POS, Lending, Accounting, and Business Units." />
-                        <HelpStepCard stepNumber={3} icon="sync" title="Monitor Sync Convergence" description="All records created locally are encrypted, saved offline immediately, and synced automatically when connected." />
+                        <HelpStepCard stepNumber={1} icon="dashboard" title="Review Live Dashboard KPIs" description="Monitor active hectares, standing crop cycles, harvest tonnage, settlement status and cash balances before taking action." />
+                        <HelpStepCard stepNumber={2} icon="menu" title="Open the Sidebar Menu" description="Browse the modules grouped into Agribusiness, Accounting & General Ledger, Reports and Settings." />
+                        <HelpStepCard stepNumber={3} icon="sync" title="Monitor Sync Convergence" description="Records created locally are saved offline immediately and synced automatically once the device connects." />
                     </Accordion>
                 )}
 
-                {/* 2. 🌾 Agribusiness Outgrower Platform */}
-                {(showCategory('agri') || selectedCategory === 'all') && matchesSearch(['agri', 'agribusiness', 'farm', 'parcel', 'crop', 'cycle', 'harvest', 'labor', 'settlement'], 'Agribusiness & Farm Operations') && (
-                    <Accordion title="2. 🌾 Agribusiness & Farm Operations" icon="eco" defaultOpen={selectedCategory === 'agri'}>
+                {/* 2. Farm Operations */}
+                {(showCategory('agri') || selectedCategory === 'all') && matchesSearch(['agri', 'agribusiness', 'farm', 'parcel', 'crop', 'cycle', 'mapping', 'worker', 'labor', 'expense'], 'Farm Operations & Crop Cycles') && (
+                    <Accordion title="2. 🌾 Farm Operations & Crop Cycles" icon="eco" defaultOpen={selectedCategory === 'agri'}>
                         <Text className="text-gray-600 mb-4 leading-6">
-                            The JetFarm Agribusiness platform coordinates outgrower farmers, crop cycles (e.g. High-Starch Cassava KU50 and Hybrid Yellow Corn), farm inputs, labor tracking, harvest scale weigh-ins, and weekly land settlements.
+                            The Agribusiness command center coordinates land parcels, crop cycles (e.g. High-Starch Cassava KU50), farm workers, labor logs and input costs.
                         </Text>
                         <HelpNote
                             title="Core Agricultural Flow"
                             variant="emerald"
-                            body="1. Register Land Parcel -> 2. Create Crop Cycle -> 3. Record Labor & Input Expenses -> 4. Harvest Weigh-in Scale -> 5. Generate Land Owner & Investor Weekly Settlements."
+                            body="1. Register Land Parcel -> 2. Map Boundary & Blocks -> 3. Create Crop Cycle -> 4. Log Labor & Input Expenses -> 5. Record Harvest Weigh-ins -> 6. Generate Weekly Settlements."
                         />
-                        <HelpStepCard stepNumber={1} icon="landscape" title="Land Parcels Registry & Mapping" description="Register farm land parcels with total hectares, soil type (Sandy Loam, Clay Loam), land owner association, and GPS boundary markers." />
-                        <HelpStepCard stepNumber={2} icon="grass" title="Crop Cycles Management" description="Start a crop cycle with target planting date, target harvest date, variety (KU50 Cassava, Pioneer Corn), expected yield, and offtake price in ₱/kg." />
-                        <HelpStepCard stepNumber={3} icon="engineering" title="Farm Labor & Input Expenses" description="Log daily labor (weeding, plowing, spraying, transplanting) with daily rates or piece rates, and track input costs (organic fertilizer, seeds)." />
-                        <HelpStepCard stepNumber={4} icon="scale" title="Digital Harvest Scale Terminal" description="Record truck weigh-ins: gross weight, tare weight, net weight in kg, quality grade (Grade A/B), moisture levels, and truck plate number." />
-                        <HelpStepCard stepNumber={5} icon="receipt-long" title="Land Owner & Investor Settlements" description="Automatically compute net payouts using guaranteed minimums, per-kilo rate sharing, and offtake revenue with audit-ready statements." />
+                        <HelpStepCard stepNumber={1} icon="landscape" title="Land Parcels Registry" description="Register parcels with code, hectares, soil type (Sandy Loam, Clay Loam), land owner association and GPS boundary markers." />
+                        <HelpStepCard stepNumber={2} icon="map" title="Boundary Mapping & Blocks" description="Draw boundaries on the map, split large parcels into blocks and keep every boundary or layout edit as a new revision." />
+                        <HelpStepCard stepNumber={3} icon="agriculture" title="Crop Cycles" description="Open a cycle with planting date, target harvest date, variety, expected yield in kg, capital allocated and the agreed offtake price per kg." />
+                        <HelpStepCard stepNumber={4} icon="engineering" title="Farm Workers & Labor Logs" description="Keep worker profiles (specialization, daily rate) and log field tasks — plowing, weeding, spraying, harvesting — by time or piece rate." />
+                        <HelpStepCard stepNumber={5} icon="money-off" title="Farm Expenses" description="Record input costs (fertilizer, seeds, fuel, haulage) against a crop cycle and optionally a parcel so per-cycle cost of production stays accurate." />
                         <BulletList
                             items={[
-                                'Command Center: View real-time active hectares, ongoing crop cycles, total harvest yield in kg, and settlement status.',
-                                'Yield & P&L Analytics: Track cost per hectare, gross margin per crop cycle, and compare planned vs actual harvest yields.',
-                                'Offline Field Friendly: Record labor tasks and harvest weigh-ins out in rural fields with zero internet connectivity.'
+                                'Command Center: Real-time active hectares, ongoing cycles, total yield in kg and settlement status.',
+                                'Yield & P&L Analytics: Cost per hectare, gross margin per cycle, planned vs actual yield, block progress.',
+                                'Offline Field Friendly: Log labor and expenses out in rural fields with zero connectivity.'
                             ]}
                         />
                     </Accordion>
                 )}
 
-                {/* 3. 🏪 Marketplace, Retail POS & Sales Returns */}
-                {(showCategory('market') || selectedCategory === 'all') && matchesSearch(['market', 'marketplace', 'pos', 'store', 'return', 'refund', 'inventory', 'warehouse'], 'Marketplace, POS & Sales Returns') && (
-                    <Accordion title="3. 🏪 Marketplace, Retail POS & Sales Returns" icon="storefront" defaultOpen={selectedCategory === 'market'}>
+                {/* 3. Harvest & Settlements */}
+                {(showCategory('settlement') || selectedCategory === 'all') && matchesSearch(['harvest', 'weigh', 'settlement', 'land owner', 'investor', 'offtake', 'guaranteed'], 'Harvest, Settlements & Capital Partners') && (
+                    <Accordion title="3. 🧾 Harvest, Settlements & Capital Partners" icon="event-note" defaultOpen={selectedCategory === 'settlement'}>
                         <Text className="text-gray-600 mb-4 leading-6">
-                            Manage retail agricultural supplies, cooperative stores, product listings, stock inventory across warehouses, touch POS sales, and audited sales returns.
+                            Harvest weigh-ins feed the weekly settlement engine, which pays land owners by kilo and reports partner shares from the offtake.
                         </Text>
                         <HelpNote
-                            title="Sales Return Workflow (Strict 3-Step Compliance)"
-                            variant="amber"
-                            body="Step 1 (Draft): Customer gives reason and item list. Step 2 (Approve): Supervisor reviews and approves. Step 3 (Complete): Good items are restocked onto warehouse shelves with stock movement logged; Damaged items are routed to waste log; POS sale is reversed and refund issued in cash or credit."
+                            title="Settlement Computation"
+                            variant="indigo"
+                            body="Net kilos = gross − tare. Cumulative kilos × rate per kilo = raw kilo earnings. Target cumulative payout = max(raw earnings, guaranteed minimum). Net payout due this week = target − previous cumulative payout."
                         />
-                        <HelpStepCard stepNumber={1} icon="inventory-2" title="Product Catalog & Warehousing" description="Maintain inventory SKUs, categories (Seeds, Fertilizers, Produce), barcodes, base units, and stock quantities across warehouses." />
-                        <HelpStepCard stepNumber={2} icon="point-of-sale" title="Touch POS & Daily Till Register" description="Fast counter checkout with item search, discounts, official receipts, and opening/closing cash float reconciliation." />
-                        <HelpStepCard stepNumber={3} icon="assignment-return" title="Sales Returns & Restocking" description="Process customer returns safely. System verifies original receipt, checks item condition (good vs damaged), and automatically updates warehouse stock balances." />
-                        <BulletList
-                            items={[
-                                'Stock Movements: Every inbound purchase, retail sale, transfer, and return generates an unalterable stock ledger record.',
-                                'Multi-Warehouse: Support for Central Warehouse, Transit Silo, and Cold Storage with cross-warehouse transfers.',
-                                'Currency Standard: All product prices, discounts, and sales figures are strictly handled in Philippine Peso (₱ PHP).'
-                            ]}
-                        />
+                        <HelpStepCard stepNumber={1} icon="scale" title="Digital Harvest Weigh-in" description="Record truck weigh-ins: gross weight, tare weight, net kilos, quality grade, truck plate, supervisor and photo evidence." />
+                        <HelpStepCard stepNumber={2} icon="event-note" title="Weekly Land Owner Settlements" description="Generate the weekly settlement per cycle, confirm the guaranteed minimum floor, then mark it paid with a disbursement date and receipt reference." />
+                        <HelpStepCard stepNumber={3} icon="groups" title="Capital Partners & Ledgers" description="Track BioGreen partner investments, kilos received, price per kg and the running balance per cycle in the investor ledger." />
+                        <HelpStepCard stepNumber={4} icon="assessment" title="Yield & Implementation Reports" description="Produce the implementation report and yield analytics for land owners, partners and auditors." />
                     </Accordion>
                 )}
 
-                {/* 4. 💧 Water Refilling Station Module */}
-                {(showCategory('water') || selectedCategory === 'all') && matchesSearch(['water', 'station', 'gallon', 'container', 'bottle', 'delivery'], 'Water Station Module') && (
-                    <Accordion title="4. 💧 Water Refilling Station Module" icon="water-drop" defaultOpen={selectedCategory === 'water'}>
+                {/* 4. Accounting & General Ledger */}
+                {(showCategory('accounting') || selectedCategory === 'all') && matchesSearch(['accounting', 'ledger', 'cash', 'bank', 'journal', 'coa', 'crj', 'cdj', 'statement'], 'Accounting & General Ledger') && (
+                    <Accordion title="4. 💰 Accounting, Cash & General Ledger" icon="menu-book" defaultOpen={selectedCategory === 'accounting'}>
                         <Text className="text-gray-600 mb-4 leading-6">
-                            Dedicated business unit module for operating community water refilling stations with customer container tracking, delivery routing, and payment logging.
-                        </Text>
-                        <HelpStepCard stepNumber={1} icon="people" title="Customer Profiles & Special Rates" description="Register household and commercial customers (bakeries, schools, barangay halls) with default gallon rates and delivery addresses." />
-                        <HelpStepCard stepNumber={2} icon="local-drink" title="Bottle & Container Asset Tracking" description="Track Round 5-Gallon and Slim 5-Gallon containers. Record bottles owned by the customer vs loaned from the station to prevent asset loss." />
-                        <HelpStepCard stepNumber={3} icon="local-shipping" title="Deliveries & Payment Collection" description="Dispatch delivery runs, mark orders delivered, and accept payments via Cash or GCash with instant receipt generation." />
-                        <HelpStepCard stepNumber={4} icon="build" title="Station Maintenance & Operating Expenses" description="Record operating expenses such as replacement sediment filters, activated carbon cartridges, and delivery vehicle fuel." />
-                    </Accordion>
-                )}
-
-                {/* 5. 💳 Microfinance & Lending Management */}
-                {(showCategory('lending') || selectedCategory === 'all') && matchesSearch(['lending', 'loan', 'borrower', 'collector', 'payment', 'penalty', 'cic'], 'Lending & Credit Operations') && (
-                    <Accordion title="5. 💳 Microfinance & Lending Operations" icon="payments" defaultOpen={selectedCategory === 'lending'}>
-                        <Text className="text-gray-600 mb-4 leading-6">
-                            Comprehensive microfinance engine supporting member registration, loan products, amortization calculation, field collection sheets, and delinquency management.
-                        </Text>
-                        <HelpStepCard stepNumber={1} icon="person-add" title="Member KYC & Area Route Assignment" description="Register borrowers with co-maker details, ID photos, and assign them to collector routes and geographical areas." />
-                        <HelpStepCard stepNumber={2} icon="receipt-long" title="Loan Application & Approval" description="Configure loan products (Standard, Petty Cash, Livelihood, Emergency) with flat interest calculation, terms, and approval workflows." />
-                        <HelpStepCard stepNumber={3} icon="calendar-today" title="Payment Schedules & Field Collections" description="Generate installment schedules (daily/weekly/monthly). Collectors use mobile collection sheets with live offline receipting." />
-                        <HelpStepCard stepNumber={4} icon="gavel" title="Portfolio Aging & File Cases" description="Track Portfolio at Risk (PAR>30 days), automatic delinquency flags, and legal case file logging for defaulted accounts." />
-                    </Accordion>
-                )}
-
-                {/* 6. 💰 Vault, Cash on Hand & Accounting */}
-                {(showCategory('accounting') || selectedCategory === 'all') && matchesSearch(['accounting', 'vault', 'cash', 'bank', 'journal', 'ledger', 'coa'], 'Accounting & Financial Vault') && (
-                    <Accordion title="6. 💰 Accounting, Vault & General Ledger" icon="menu-book" defaultOpen={selectedCategory === 'accounting'}>
-                        <Text className="text-gray-600 mb-4 leading-6">
-                            Enterprise double-entry accounting with strict PostgreSQL balance triggers. Manages vault cash, petty cash funds, bank accounts, and certified books of accounts.
+                            Double-entry accounting with strict balance enforcement. Manages cash on hand, petty cash, bank accounts, suppliers and the certified books of account.
                         </Text>
                         <HelpNote
                             title="Strict Double-Entry Rule"
                             variant="indigo"
-                            body="Every journal entry must be balanced: Total Debits must exactly equal Total Credits. The database enforces this at both client and database trigger levels."
+                            body="Every journal entry must balance: total debits equal total credits exactly. The rule is enforced at both the client service and the database trigger level."
                         />
-                        <HelpStepCard stepNumber={1} icon="account-balance-wallet" title="Cash Vault & Petty Cash Float" description="Track physical vault movements. Approved collector remittances increase vault cash, while expenses and disbursements decrease it." />
-                        <HelpStepCard stepNumber={2} icon="account-balance" title="Bank Accounts & Reconciliations" description="Manage multiple corporate bank accounts (e.g. LandBank, BDO) with opening balances, deposit records, and fund transfers." />
-                        <HelpStepCard stepNumber={3} icon="format-list-numbered" title="Chart of Accounts & Journal Entries" description="Standard Cooperative Chart of Accounts (COA). View Cash Receipts Journal (CRJ), Cash Disbursements (CDJ), and General Ledger." />
-                        <HelpStepCard stepNumber={4} icon="assessment" title="Audited Financial Statements" description="Generate on-demand Balance Sheets, Income Statements, Statements of Cash Flows, and Cooperative Annual Statutory Reserve Reports." />
+                        <HelpStepCard stepNumber={1} icon="account-balance-wallet" title="Cash On Hand & Petty Cash" description="Track physical cash positions; expense disbursements reduce cash while collections and partner funding increase it." />
+                        <HelpStepCard stepNumber={2} icon="account-balance" title="Bank Accounts & Transfers" description="Maintain corporate bank accounts (e.g. BDO, PNB) with opening balances, transactions and internal transfers between cash and bank." />
+                        <HelpStepCard stepNumber={3} icon="format-list-numbered" title="Chart of Accounts & Journals" description="Farm chart of accounts, journal entries, Cash Receipts Journal (CRJ), Cash Disbursements Journal (CDJ), sales and purchase journals." />
+                        <HelpStepCard stepNumber={4} icon="assessment" title="Audited Financial Statements" description="Generate the Balance Sheet, Income Statement, Statement of Cash Flows, Changes in Equity and Notes to the Financial Statements." />
                     </Accordion>
                 )}
 
-                {/* 7. 👥 Employees, HR & Philippine Payroll */}
-                {(showCategory('hr') || selectedCategory === 'all') && matchesSearch(['hr', 'employee', 'payroll', 'sss', 'philhealth', 'pagibig', 'tin'], 'HR & Staff Payroll') && (
-                    <Accordion title="7. 👥 HR & Philippine Statutory Payroll" icon="badge" defaultOpen={selectedCategory === 'hr'}>
-                        <Text className="text-gray-600 mb-4 leading-6">
-                            Manage staff records and automate Philippine statutory contributions (SSS, PhilHealth, Pag-IBIG, Withholding Tax) with semi-monthly payroll runs.
-                        </Text>
-                        <HelpStepCard stepNumber={1} icon="assignment-ind" title="201 Employee Masterlist" description="Store employee profiles, positions, daily/monthly salary rates, branch assignment, and government ID numbers (SSS, PhilHealth, Pag-IBIG, TIN)." />
-                        <HelpStepCard stepNumber={2} icon="calculate" title="Statutory Deductions Engine" description="Accurately compute employee and employer share contributions in accordance with current Philippine statutory tables." />
-                        <HelpStepCard stepNumber={3} icon="monetization-on" title="Payroll Processing & Payslips" description="Run semi-monthly payroll, review gross pay, overtime, deductions, and net pay in ₱ PHP with downloadable payslips." />
-                    </Accordion>
-                )}
-
-                {/* 8. 🔄 Offline-First & Cloud Sync */}
+                {/* 5. Offline-First & Cloud Sync */}
                 {(showCategory('sync') || selectedCategory === 'all') && matchesSearch(['sync', 'offline', 'backup', 'restore', 'cloud', 'supabase'], 'Offline Resilience & Cloud Sync') && (
-                    <Accordion title="8. 🔄 Offline-First Architecture & Cloud Sync" icon="sync" defaultOpen={selectedCategory === 'sync'}>
+                    <Accordion title="5. 🔄 Offline-First Architecture & Cloud Sync" icon="sync" defaultOpen={selectedCategory === 'sync'}>
                         <Text className="text-gray-600 mb-4 leading-6">
-                            JetFarm is engineered from the ground up for Philippine rural conditions where connectivity is intermittent or unavailable.
+                            Agri-One is engineered for Philippine rural conditions where connectivity is intermittent or unavailable.
                         </Text>
                         <HelpNote
                             title="Zero-Lag Local First"
                             variant="emerald"
-                            body="All transactions (loans, harvest weigh-ins, POS sales, payments) write to local WatermelonDB instantly in less than 5ms. No spinners or waiting for internet."
+                            body="Every write — parcel edits, harvest weigh-ins, labor logs, expenses, journal entries — lands in the local database instantly in under 5ms. No spinners, no waiting for internet."
                         />
-                        <HelpStepCard stepNumber={1} icon="cloud-download" title="Automatic Two-Way Sync" description="When internet is detected, the sync engine exchanges changes with Supabase using Last-Write-Wins and strict relational dependency order." />
-                        <HelpStepCard stepNumber={2} icon="sync" title="Sync Status Indicators" description="Green badge = All data safely synced to cloud; Amber badge = Syncing in progress; Red badge = Offline changes queued on device." />
-                        <HelpStepCard stepNumber={3} icon="backup" title="Local Backup & Cloud Archival" description="Create complete encrypted JSON database backups in Settings > Backup, and restore on replacement devices anytime." />
+                        <HelpStepCard stepNumber={1} icon="cloud-download" title="Automatic Two-Way Sync" description="When a connection is detected, the sync engine exchanges changes with the cloud using Last-Write-Wins in strict relational dependency order." />
+                        <HelpStepCard stepNumber={2} icon="sync" title="Sync Status Indicators" description="Green badge = all data safely synced; amber badge = syncing; red badge = offline changes queued on the device." />
+                        <HelpStepCard stepNumber={3} icon="backup" title="Local Backup & Restore" description="Create encrypted database backups in Settings > Backup and restore them on a replacement device anytime." />
                     </Accordion>
                 )}
 

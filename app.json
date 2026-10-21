@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "JetFarm",
-    "slug": "jetfarm",
+    "name": "Agri-One",
+    "slug": "agri-one",
     "version": "0.1.5",
     "orientation": "default",
     "icon": "./assets/icon.png",
@@ -15,7 +15,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.jetfarm.app",
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "Allow JetFarm to use your location to map farm parcel boundaries."
+        "NSLocationWhenInUseUsageDescription": "Allow Agri-One to use your location to map farm parcel boundaries."
       }
     },
     "android": {
@@ -42,7 +42,7 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Allow JetFarm to use your location to map farm parcel boundaries."
+          "locationWhenInUsePermission": "Allow Agri-One to use your location to map farm parcel boundaries."
         }
       ],
       [

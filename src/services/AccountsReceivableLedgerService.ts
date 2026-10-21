@@ -1,10 +1,10 @@
 /**
  * AccountsReceivableLedgerService
  *
- * Generates per-customer AR ledger (subsidiary AR ledger).
- * Tracks debits (new charges/loans) and credits (payments received)
- * against receivable accounts: 1100 Loans Receivable, 1200 Savings Loan
- * Receivable, 1300 Interest Receivable, 1500 Other Receivables (WS/Marketplace).
+ * Generates per-counterparty AR ledger (subsidiary AR ledger).
+ * Tracks debits (new charges) and credits (collections received) against the
+ * receivable accounts this build ships: 1300 Interest/Receivable and
+ * 1500 Other Receivables (farm settlement and land-owner advances).
  *
  * Aging brackets: Current | 1-30 | 31-60 | 61-90 | 90+ days
  */
@@ -14,7 +14,7 @@ import { database as globalDatabase } from '../database';
 import JournalEntry from '../database/models/JournalEntry';
 import JournalEntryLine from '../database/models/JournalEntryLine';
 
-const AR_ACCOUNT_CODES = ['1100', '1200', '1300', '1500'];
+const AR_ACCOUNT_CODES = ['1300', '1500'];
 
 export interface ARLedgerLine {
     date: Date;
@@ -32,7 +32,8 @@ export interface ARLedgerLine {
 export interface ARCustomerSummary {
     customerId: string;
     customerName: string;
-    customerType: 'borrower' | 'ws_customer' | 'marketplace_buyer' | 'unknown';
+    /** Journal source table the balance was posted from, e.g. 'agri_weekly_settlements'. */
+    sourceTable: string;
     totalAR: number;
     lastActivityDate: Date | null;
     agingCurrent: number;
@@ -199,15 +200,10 @@ export class AccountsReceivableLedgerServiceClass {
             total61to90 += aging61to90;
             totalOver90 += agingOver90;
 
-            const customerType = data.sourceTable === 'loans' ? 'borrower'
-                : data.sourceTable === 'ws_deliveries' ? 'ws_customer'
-                : data.sourceTable === 'marketplace_orders' ? 'marketplace_buyer'
-                : 'unknown';
-
             customers.push({
                 customerId: data.sourceId,
                 customerName: data.sourceTable ? `${data.sourceTable}/${data.sourceId.substring(0, 8)}` : 'Unknown',
-                customerType,
+                sourceTable: data.sourceTable || '',
                 totalAR: b,
                 lastActivityDate: data.lastDate,
                 agingCurrent,

@@ -122,7 +122,7 @@ describe('OnboardingTour System', () => {
 
     describe('OnboardingTourModal UI', () => {
         it('renders modal with step 1 content when active', async () => {
-            const { getByTestId, getByText } = render(
+            const { getByTestId, getByText, queryByText } = render(
                 <OnboardingTourProvider autoStartIfNew={false}>
                     <TestConsumer />
                     <OnboardingTourModal />
@@ -140,7 +140,8 @@ describe('OnboardingTour System', () => {
 
             expect(getByTestId('onboarding-tour-card')).toBeTruthy();
             expect(getByTestId('onboarding-step-counter')).toBeTruthy();
-            expect(getByText('Welcome to JetFarm')).toBeTruthy();
+            expect(getByText('Welcome to Agri-One')).toBeTruthy();
+            expect(queryByText(/Welcome to JetFarm/)).toBeNull();
             expect(getByTestId('onboarding-primary-button')).toBeTruthy();
             expect(getByText('Start tour')).toBeTruthy();
             expect(getByText('Skip tour')).toBeTruthy();
@@ -173,12 +174,12 @@ describe('OnboardingTour System', () => {
             act(() => {
                 fireEvent.press(getByTestId('onboarding-primary-button')); // Step 3
             });
-            expect(getByText('Touch POS & Store Inventory')).toBeTruthy();
+            expect(getByText('Yield Analytics & Settlements')).toBeTruthy();
 
             act(() => {
                 fireEvent.press(getByTestId('onboarding-primary-button')); // Step 4
             });
-            expect(getByText('Lending & Credit Portfolio')).toBeTruthy();
+            expect(getByText('Accounting & Financial Statements')).toBeTruthy();
 
             act(() => {
                 fireEvent.press(getByTestId('onboarding-primary-button')); // Step 5
@@ -189,7 +190,7 @@ describe('OnboardingTour System', () => {
                 fireEvent.press(getByTestId('onboarding-primary-button')); // Step 6
             });
             expect(getByText('Help Guides & Demo Data')).toBeTruthy();
-            expect(getByText('Explore JetFarm')).toBeTruthy();
+            expect(getByText('Explore Agri-One')).toBeTruthy();
             expect(getByTestId('onboarding-load-demo-button')).toBeTruthy();
 
             // Finish Tour

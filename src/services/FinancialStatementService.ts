@@ -58,8 +58,8 @@ export interface FinancialConditionData {
     assets: {
         cashOnHand: ComparativeAmount;
         cashInBank: ComparativeAmount;
-        loanReceivable: ComparativeAmount;
-        savingsLoansReceivable: ComparativeAmount;
+        /** Standing crops, harvested produce and farm-input inventory (1240 / 1245 / 1246). */
+        farmAssets: ComparativeAmount;
         otherReceivables: ComparativeAmount;
         sundryAssets: ComparativeAmount;
         totalCurrentAssets: ComparativeAmount;
@@ -67,14 +67,21 @@ export interface FinancialConditionData {
     };
     /** LIABILITIES */
     liabilities: {
-        savingsDeposits: ComparativeAmount;
-        shareCapitalPayable: ComparativeAmount;
+        /** Land-owner settlement payouts owed for the crop period (2035). */
+        settlementsPayable: ComparativeAmount;
+        /** Field labour accrued but unpaid (2036). */
+        laborPayable: ComparativeAmount;
+        /** Supplier / accounts-payable balances (2030, 2040). */
+        accountsPayable: ComparativeAmount;
+        /** Every other 2xxx balance, including the capital-partner profit share (2050). */
         otherPayables: ComparativeAmount;
         totalLiabilities: ComparativeAmount;
     };
     /** FUND BALANCE / EQUITY */
     fundBalance: {
         shareCapital: ComparativeAmount;
+        /** Project & partner equity contributed to the farm operation (3015). */
+        projectEquity: ComparativeAmount;
         reserveFund: ComparativeAmount;
         educationFund: ComparativeAmount;
         communityDevFund: ComparativeAmount;
@@ -89,16 +96,20 @@ export interface ActivitiesData {
     year: number;
     priorYear: number;
     revenues: {
-        interestOnLoans: ComparativeAmount;
-        serviceCharges: ComparativeAmount;
-        membershipFees: ComparativeAmount;
+        /** Off-take paid for delivered kilos (4140). */
+        offtakeRevenue: ComparativeAmount;
+        /** By-product and residual sales (4145). */
+        byproductRevenue: ComparativeAmount;
         otherIncome: ComparativeAmount;
         totalRevenues: ComparativeAmount;
     };
     expenses: {
+        /** The 5160-5169 production block: settlements, labour, inputs, machinery, other. */
+        farmProductionCosts: ComparativeAmount;
         salariesAndWages: ComparativeAmount;
         officeExpenses: ComparativeAmount;
         depreciationAndAmortization: ComparativeAmount;
+        /** Remaining administrative lines (5030/5040/5060/5070/5080/5090 and the 5xxx residual). */
         otherExpenses: ComparativeAmount;
         totalExpenses: ComparativeAmount;
     };
@@ -117,7 +128,11 @@ export interface ChangesInFundBalanceData {
         optionalFund: ComparativeAmount;
         totalAllocations: ComparativeAmount;
     };
-    dividendsDeclared: ComparativeAmount;
+    /**
+     * The surplus the statutory appropriations leave behind. There is no member dividend on this
+     * variant — the enterprise is a farm operation, so what is not appropriated stays retained.
+     */
+    unallocatedSurplus: ComparativeAmount;
     closing: ComparativeAmount;
 }
 
@@ -246,43 +261,45 @@ export class FinancialStatementService {
     static async getStatementOfFinancialCondition(year: number): Promise<FinancialConditionData> {
         const priorYear = year - 1;
         const gl = await CoopFinancialReportService.getStatementOfFinancialCondition(year);
-        
-        const addCmp = (...args: {current: number, prior: number}[]) => ({
-            current: args.reduce((s, a) => s + (a?.current || 0), 0),
-            prior: args.reduce((s, a) => s + (a?.prior || 0), 0)
+
+        // The ledger service reports a variance on every line; this statement's consumers compute
+        // their own, and ComparativeAmount deliberately has no variance field.
+        const strip = (a?: { current: number; prior: number } | null): ComparativeAmount => ({
+            current: a?.current ?? 0,
+            prior: a?.prior ?? 0,
         });
-        const zeroCmp = { current: 0, prior: 0 };
-        
+
         return {
             year,
             priorYear,
             asOf: new Date(year, 11, 31),
             assets: {
-                cashOnHand: gl.assets.cashOnHand,
-                cashInBank: gl.assets.cashInBank,
-                loanReceivable: gl.assets.loanReceivable,
-                savingsLoansReceivable: zeroCmp,
-                otherReceivables: zeroCmp,
-                sundryAssets: gl.assets.sundryAssets,
-                totalCurrentAssets: gl.assets.totalCurrentAssets,
-                totalAssets: gl.assets.totalAssets,
+                cashOnHand: strip(gl.assets.cashOnHand),
+                cashInBank: strip(gl.assets.cashInBank),
+                farmAssets: strip(gl.assets.farmAssets),
+                otherReceivables: strip(gl.assets.otherReceivables),
+                sundryAssets: strip(gl.assets.sundryAssets),
+                totalCurrentAssets: strip(gl.assets.totalCurrentAssets),
+                totalAssets: strip(gl.assets.totalAssets),
             },
             liabilities: {
-                savingsDeposits: gl.liabilities.depositLiabilities,
-                shareCapitalPayable: gl.liabilities.interestShareCapitalPayable,
-                otherPayables: addCmp(gl.liabilities.patronageRefundPayable, gl.liabilities.dueToUnion),
-                totalLiabilities: gl.liabilities.totalLiabilities,
+                settlementsPayable: strip(gl.liabilities.settlementsPayable),
+                laborPayable: strip(gl.liabilities.laborPayable),
+                accountsPayable: strip(gl.liabilities.accountsPayable),
+                otherPayables: strip(gl.liabilities.otherPayables),
+                totalLiabilities: strip(gl.liabilities.totalLiabilities),
             },
             fundBalance: {
-                shareCapital: gl.equity.paidUpCapital,
-                reserveFund: gl.equity.reserveFund,
-                educationFund: gl.equity.educationFund,
-                communityDevFund: gl.equity.communityDevFund,
-                optionalFund: gl.equity.optionalFund,
-                retainedSurplus: gl.equity.retainedSurplus,
-                totalFundBalance: gl.equity.totalEquity,
+                shareCapital: strip(gl.equity.paidUpCapital),
+                projectEquity: strip(gl.equity.projectEquity),
+                reserveFund: strip(gl.equity.reserveFund),
+                educationFund: strip(gl.equity.educationFund),
+                communityDevFund: strip(gl.equity.communityDevFund),
+                optionalFund: strip(gl.equity.optionalFund),
+                retainedSurplus: strip(gl.equity.retainedSurplus),
+                totalFundBalance: strip(gl.equity.totalEquity),
             },
-            totalLiabilitiesAndFundBalance: gl.totalLiabilitiesAndEquity
+            totalLiabilitiesAndFundBalance: strip(gl.totalLiabilitiesAndEquity)
         };
     }
 
@@ -298,25 +315,39 @@ export class FinancialStatementService {
             current: args.reduce((s, a) => s + (a?.current || 0), 0),
             prior: args.reduce((s, a) => s + (a?.prior || 0), 0)
         });
+        const strip = (a?: { current: number; prior: number } | null): ComparativeAmount => ({
+            current: a?.current ?? 0,
+            prior: a?.prior ?? 0,
+        });
 
         return {
             year,
             priorYear,
             revenues: {
-                interestOnLoans: gl.revenues.interestOnLoans,
-                serviceCharges: gl.revenues.serviceCharges,
-                membershipFees: gl.revenues.membershipFees,
-                otherIncome: addCmp(gl.revenues.interestOnInvestments, gl.revenues.miscellaneousIncome),
-                totalRevenues: gl.revenues.totalRevenues,
+                offtakeRevenue: strip(gl.revenues.offtakeRevenue),
+                byproductRevenue: strip(gl.revenues.byproductRevenue),
+                otherIncome: strip(gl.revenues.otherRevenue),
+                totalRevenues: strip(gl.revenues.totalRevenues),
             },
             expenses: {
-                salariesAndWages: gl.expenses.salaries,
-                officeExpenses: gl.expenses.office,
-                depreciationAndAmortization: gl.expenses.depreciation,
-                otherExpenses: addCmp(gl.expenses.financingCosts, gl.expenses.communication, gl.expenses.transportation, gl.expenses.taxes, gl.expenses.repairs),
-                totalExpenses: gl.expenses.totalExpenses,
+                farmProductionCosts: strip(gl.expenses.farmProductionCosts),
+                salariesAndWages: strip(gl.expenses.salaries),
+                officeExpenses: strip(gl.expenses.office),
+                depreciationAndAmortization: strip(gl.expenses.depreciation),
+                // Every administrative line the report does not name individually, so the displayed
+                // rows still add back to totalExpenses.
+                otherExpenses: addCmp(
+                    gl.expenses.communication,
+                    gl.expenses.transportation,
+                    gl.expenses.taxes,
+                    gl.expenses.repairs,
+                    gl.expenses.training,
+                    gl.expenses.professional,
+                    gl.expenses.otherExpenses,
+                ),
+                totalExpenses: strip(gl.expenses.totalExpenses),
             },
-            netSurplus: gl.netSurplus,
+            netSurplus: strip(gl.netSurplus),
         };
     }
 
@@ -358,7 +389,10 @@ export class FinancialStatementService {
                 optionalFund: cmp(currOpt, priorOpt),
                 totalAllocations: cmp(currTotalAlloc, priorTotalAlloc),
             },
-            dividendsDeclared: cmp(0, 0),
+            // closing = opening + surplus - allocations, so whatever the appropriations do not
+            // claim is disclosed as retained rather than assumed by the reader.
+            unallocatedSurplus: cmp(act.netSurplus.current - currTotalAlloc,
+                                    act.netSurplus.prior - priorTotalAlloc),
             closing: fc.fundBalance.totalFundBalance,
         };
     }

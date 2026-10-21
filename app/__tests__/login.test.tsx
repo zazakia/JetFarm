@@ -46,8 +46,8 @@ jest.mock('../../src/services/InquiryService', () => ({
             message: 'Interested',
         }),
         buildAdminNotificationLinks: jest.fn().mockReturnValue({
-            whatsappUrl: 'https://wa.me/639811254446?text=New%20AGAP%20MICRO-LENDING%20CORP.%20demo%20inquiry',
-            mailtoUrl: 'mailto:cybergada@gmail.com?subject=New%20AGAP%20MICRO-LENDING%20CORP.%20Demo%20Inquiry',
+            whatsappUrl: 'https://wa.me/639811254446?text=New%20Agri-One%20demo%20inquiry',
+            mailtoUrl: 'mailto:cybergada@gmail.com?subject=New%20Agri-One%20Demo%20Inquiry',
         }),
     },
 }));
@@ -188,20 +188,34 @@ describe('LoginScreen', () => {
 
     it('loads and displays quick login users', async () => {
         const mockUsers = [
-            { id: '1', full_name: 'Admin User', role: 'admin', email: 'admin@poscursor.com' },
-            { id: '2', full_name: 'Collector User', role: 'collector', email: 'collector@poscursor.com' }
+            { id: '1', full_name: 'Admin User', role: 'admin', email: 'admin@agri-one.com' },
+            { id: '2', full_name: 'Expenses Encoder', role: 'expenses_encoder', email: 'expenses_encoder@agri-one.com' }
         ];
         (AuthService.getQuickLoginUsers as jest.Mock).mockResolvedValue(mockUsers);
 
         render(<LoginScreen />);
 
         expect(await screen.findByText('Admin User')).toBeTruthy();
-        expect(screen.getByText('Collector User')).toBeTruthy();
-        expect(screen.getByText('admin@poscursor.com')).toBeTruthy();
+        expect(screen.getByText('Expenses Encoder')).toBeTruthy();
+        expect(screen.getByText('admin@agri-one.com')).toBeTruthy();
+    });
+
+    it('renders a quick-login card for a role this variant no longer ships', async () => {
+        // A stale auth.users row can still carry a retired lending role (the sample data syncs
+        // into the shared remote). The list must fall back to a neutral style, not crash the
+        // screen - ROLE_STYLES only has the three kept keys.
+        (AuthService.getQuickLoginUsers as jest.Mock).mockResolvedValue([
+            { id: '9', full_name: 'Stale Collector', role: 'collector', email: 'stale@gmail.com' },
+        ]);
+
+        render(<LoginScreen />);
+
+        expect(await screen.findByText('Stale Collector')).toBeTruthy();
+        expect(screen.getByTestId('quick-login-stale@gmail.com')).toBeTruthy();
     });
 
     it('handles quick login correctly', async () => {
-        const mockUsers = [{ id: 'mock-admin', full_name: 'Admin User', role: 'admin', email: 'admin@poscursor.com' }];
+        const mockUsers = [{ id: 'mock-admin', full_name: 'Admin User', role: 'admin', email: 'admin@agri-one.com' }];
         (AuthService.getQuickLoginUsers as jest.Mock).mockResolvedValue(mockUsers);
         (AuthService.quickSignIn as jest.Mock).mockResolvedValue({});
 
@@ -212,11 +226,11 @@ describe('LoginScreen', () => {
             expect(AuthService.getQuickLoginUsers).toHaveBeenCalled();
         });
 
-        const quickLoginBtn = await screen.findByTestId('quick-login-admin@poscursor.com');
+        const quickLoginBtn = await screen.findByTestId('quick-login-admin@agri-one.com');
         fireEvent.press(quickLoginBtn);
 
         await waitFor(() => {
-            expect(AuthService.quickSignIn).toHaveBeenCalledWith('admin@poscursor.com', '12345678');
+            expect(AuthService.quickSignIn).toHaveBeenCalledWith('admin@agri-one.com', '12345678');
         }, { timeout: 2000 });
         expect(mockReplace).toHaveBeenCalledWith('/loading');
     });
@@ -253,7 +267,7 @@ describe('LoginScreen', () => {
     });
 
     it('handles quick login failure', async () => {
-        const mockUsers = [{ id: 'mock-admin-fail', full_name: 'Admin User', role: 'admin', email: 'admin@poscursor.com' }];
+        const mockUsers = [{ id: 'mock-admin-fail', full_name: 'Admin User', role: 'admin', email: 'admin@agri-one.com' }];
         (AuthService.getQuickLoginUsers as jest.Mock).mockResolvedValue(mockUsers);
         (AuthService.quickSignIn as jest.Mock).mockRejectedValue(new Error('Quick fail'));
 
@@ -263,7 +277,7 @@ describe('LoginScreen', () => {
             expect(AuthService.getQuickLoginUsers).toHaveBeenCalled();
         });
 
-        const quickLoginBtn = await screen.findByTestId('quick-login-admin@poscursor.com');
+        const quickLoginBtn = await screen.findByTestId('quick-login-admin@agri-one.com');
         fireEvent.press(quickLoginBtn);
 
         expect(await screen.findByText(/Quick fail/i)).toBeTruthy();

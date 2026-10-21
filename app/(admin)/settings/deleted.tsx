@@ -19,68 +19,88 @@ type DeletedItem = {
 };
 
 const CATEGORIES = [
-    { id: 'borrowers', label: 'Members', icon: 'people' },
-    { id: 'loans', label: 'Loans', icon: 'receipt-long' },
-    { id: 'payments', label: 'Payments', icon: 'payments' },
+    { id: 'agri_parcels', label: 'Parcels', icon: 'landscape' },
+    { id: 'agri_crop_cycles', label: 'Crop Cycles', icon: 'agriculture' },
+    { id: 'agri_weekly_settlements', label: 'Settlements', icon: 'event-note' },
     { id: 'expenses', label: 'Expenses', icon: 'account-balance-wallet' },
+    { id: 'journal_entries', label: 'Journal Entries', icon: 'book' },
+    { id: 'suppliers', label: 'Suppliers', icon: 'business' },
 ];
 
-const HIDDEN_FIELDS = ['id', 'deletedAt', 'createdAt', 'updatedAt', '_status', '_changed', 'borrowerId', 'loanId', 'collectorId', 'authId', 'previousLoanId', 'borrower_id', 'loan_id', 'collector_id', 'schedule_id', 'scheduleId'];
+/** Human label per soft-deletable table this build ships. */
+const describeDeleted = (tableName: string, m: any): { title: string; subtitle: string } => {
+    switch (tableName) {
+        case 'agri_parcels':
+            return { title: m.name || m.id, subtitle: m.code ? `Parcel ${m.code}` : '' };
+        case 'agri_crop_cycles':
+            return {
+                title: m.cycle_code || m.id,
+                subtitle: `${m.crop_type || 'Crop'} · ${m.area_planted_ha ?? 0} ha`,
+            };
+        case 'agri_weekly_settlements':
+            return {
+                title: `Week ${m.week_number ?? '?'} settlement`,
+                subtitle: m.receipt_reference
+                    ? `Receipt ${m.receipt_reference}`
+                    : formatPHP(m.net_payout_due_this_week ?? 0),
+            };
+        case 'expenses':
+            return {
+                title: `${m.category || 'Expense'}: ${formatPHP(m.amount)}`,
+                subtitle: m.description || m.payee || '',
+            };
+        case 'journal_entries':
+            return { title: m.reference_number || 'Journal entry', subtitle: m.description || '' };
+        case 'suppliers':
+            return { title: m.name || m.id, subtitle: m.contact_person || '' };
+        default:
+            return { title: m.id, subtitle: '' };
+    }
+};
+
+const HIDDEN_FIELDS = ['id', 'deletedAt', 'createdAt', 'updatedAt', '_status', '_changed', 'authId', 'auth_id'];
 
 const FIELD_LABELS: Record<string, string> = {
+    name: 'Name',
+    code: 'Code',
     fullName: 'Full Name',
     full_name: 'Full Name',
     firstName: 'First Name',
     first_name: 'First Name',
     lastName: 'Last Name',
     last_name: 'Last Name',
-    loanNumber: 'Loan #',
-    loan_number: 'Loan #',
-    principalAmount: 'Principal',
-    principal_amount: 'Principal',
-    interestRate: 'Interest Rate',
-    interest_rate: 'Interest Rate',
-    interestType: 'Interest Type',
-    interest_type: 'Interest Type',
-    totalAmount: 'Total Amount',
-    total_amount: 'Total Amount',
-    installmentAmount: 'Installment',
-    installment_amount: 'Installment',
-    releaseDate: 'Release Date',
-    release_date: 'Release Date',
-    maturityDate: 'Maturity Date',
-    maturity_date: 'Maturity Date',
-    firstPaymentDate: 'First Payment',
-    first_payment_date: 'First Payment',
+    areaHectares: 'Area (ha)',
+    area_hectares: 'Area (ha)',
+    areaPlantedHa: 'Planted (ha)',
+    area_planted_ha: 'Planted (ha)',
+    cropType: 'Crop',
+    crop_type: 'Crop',
+    cycleCode: 'Cycle Code',
+    cycle_code: 'Cycle Code',
+    soilType: 'Soil Type',
+    soil_type: 'Soil Type',
+    locationAddress: 'Location',
+    location_address: 'Location',
     status: 'Status',
     amount: 'Amount',
-    paymentDate: 'Payment Date',
-    payment_date: 'Payment Date',
     description: 'Description',
     category: 'Category',
     date: 'Date',
     notes: 'Notes',
     address: 'Address',
     phone: 'Phone',
+    email: 'Email',
+    tin: 'TIN',
     area: 'Area',
-    term: 'Term',
-    termUnit: 'Unit',
-    term_unit: 'Unit',
     frequency: 'Frequency',
-    depositAmount: 'Deposit',
-    deposit_amount: 'Deposit',
-    insuranceAmount: 'Insurance',
-    insurance_amount: 'Insurance',
-    deductedAmount: 'Deducted',
-    deducted_amount: 'Deducted',
-    interestAmount: 'Interest Amount',
-    interest_amount: 'Interest Amount',
-    batch: 'Batch',
-    cycle: 'Cycle',
-    loanBatch: 'Batch',
-    loanCycle: 'Cycle',
-    loan_batch: 'Batch',
-    loan_cycle: 'Cycle',
+    paymentStatus: 'Payment Status',
+    payment_status: 'Payment Status',
+    cumulativeKilos: 'Cumulative Kilos',
+    cumulative_kilos: 'Cumulative Kilos',
+    ratePerKilo: 'Rate / kg',
+    rate_per_kilo: 'Rate / kg',
+    netPayoutDueThisWeek: 'Payout Due',
+    net_payout_due_this_week: 'Payout Due',
     paymentMethod: 'Method',
     payment_method: 'Method',
     referenceNumber: 'Ref #',
@@ -94,7 +114,7 @@ const FIELD_LABELS: Record<string, string> = {
 };
 
 export default function DeletedItemsScreen() {
-    const [activeTab, setActiveTab] = useState('borrowers');
+    const [activeTab, setActiveTab] = useState('agri_parcels');
     const [items, setItems] = useState<DeletedItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedItem, setSelectedItem] = useState<DeletedItem | null>(null);
@@ -105,52 +125,18 @@ export default function DeletedItemsScreen() {
         setLoading(true);
         try {
             const fetched = await BaseModelService.fetchDeleted(activeTab);
-            const mapped = await Promise.all(fetched.map(async (m: any) => {
-                let displayName = m.id;
-                let subtitle = '';
-                let relatedInfo: Record<string, string> = {};
-
-                if (activeTab === 'borrowers') {
-                    displayName = m.fullName || m.id;
-                } else if (activeTab === 'loans') {
-                    displayName = m.loanNumber ? `Loan #${m.loanNumber}` : m.id;
-                    try {
-                        const borrower = await m.borrower.fetch();
-                        if (borrower) {
-                            subtitle = `Borrower: ${borrower.fullName}`;
-                            relatedInfo['Borrower'] = borrower.fullName;
-                        }
-                    } catch (e) {
-                        console.log('Error fetching borrower for loan:', e);
-                    }
-                } else if (activeTab === 'payments') {
-                    displayName = `Payment: ${formatPHP(m.amount)}`;
-                    if (m.receiptNumber) displayName += ` (#${m.receiptNumber})`;
-                    try {
-                        const loan = await m.loan.fetch();
-                        if (loan) {
-                            const borrower = await loan.borrower.fetch();
-                            subtitle = `Loan #${loan.loanNumber || loan.id} - ${borrower?.fullName || 'Unknown'}`;
-                            relatedInfo['Loan Info'] = `Loan #${loan.loanNumber || loan.id}`;
-                            if (borrower) relatedInfo['Borrower'] = borrower.fullName;
-                        }
-                    } catch (e) {
-                        console.log('Error fetching relation for payment:', e);
-                    }
-                } else if (activeTab === 'expenses') {
-                    displayName = `${m.category || 'Expense'}: ${formatPHP(m.amount)}`;
-                }
-                
+            const mapped = fetched.map((m: any) => {
+                const { title, subtitle } = describeDeleted(activeTab, m);
                 return {
                     id: m.id,
-                    display_name: displayName,
+                    display_name: title,
                     subtitle,
                     deleted_at: m.deletedAt,
                     type: activeTab,
                     model: m,
-                    related_info: relatedInfo
+                    related_info: {} as Record<string, string>
                 };
-            }));
+            });
             setItems(mapped);
         } catch (error) {
             console.error('Failed to load deleted items:', error);

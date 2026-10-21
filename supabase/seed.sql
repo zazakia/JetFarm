@@ -24,10 +24,10 @@ BEGIN
 
     INSERT INTO seed_login_users (id, email, full_name, app_role)
     VALUES
-        ('00000000-0000-0000-0000-000000000001', 'admin@poscursor.com', 'Admin User', 'admin'),
+        ('00000000-0000-0000-0000-000000000001', 'admin@agri-one.com', 'Admin User', 'admin'),
         ('00000000-0000-0000-0000-000000000002', 'cybergada@gmail.com', 'Cybergada Master', 'admin'),
-        ('00000000-0000-0000-0000-000000000006', 'expenses_encoder@poscursor.com', 'Expenses Encoder', 'expenses_encoder'),
-        ('00000000-0000-0000-0000-000000000011', 'mainoffice@poscursor.com', 'Main Office', 'main_office');
+        ('00000000-0000-0000-0000-000000000006', 'expenses_encoder@agri-one.com', 'Expenses Encoder', 'expenses_encoder'),
+        ('00000000-0000-0000-0000-000000000011', 'mainoffice@agri-one.com', 'Main Office', 'main_office');
 
     DELETE FROM auth.identities
     WHERE user_id IN (SELECT id FROM seed_login_users)

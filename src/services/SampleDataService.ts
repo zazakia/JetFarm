@@ -380,7 +380,7 @@ export class SampleDataService {
             if (!existingIds.has(SAMPLE_BRANCH_ID)) {
                 await db.get<Branch>('branches').create(b => {
                     b._raw.id = SAMPLE_BRANCH_ID;
-                    b.name = `${SAMPLE_MARKER} JetFarm Main Operations Hub`;
+                    b.name = `${SAMPLE_MARKER} Agri-One Main Operations Hub`;
                     b.code = 'JFB-01';
                     b.isHq = true;
                     b.isActive = true;
@@ -404,7 +404,7 @@ export class SampleDataService {
                 await db.get<BankAccount>('bank_accounts').create(b => {
                     b._raw.id = bank1Id;
                     b.bankName = 'LandBank of the Philippines';
-                    b.accountName = `${SAMPLE_MARKER} JetFarm Agri-Operations Account`;
+                    b.accountName = `${SAMPLE_MARKER} Agri-One Agri-Operations Account`;
                     b.accountNumber = '0421-9981-22';
                     b.startingBalance = 250000;
                 });
@@ -413,7 +413,7 @@ export class SampleDataService {
                 await db.get<BankAccount>('bank_accounts').create(b => {
                     b._raw.id = bank2Id;
                     b.bankName = 'BDO Unibank';
-                    b.accountName = `${SAMPLE_MARKER} JetFarm Treasury & Lending Float`;
+                    b.accountName = `${SAMPLE_MARKER} Agri-One Treasury & Working Capital Account`;
                     b.accountNumber = '1009-4452-11';
                     b.startingBalance = 180000;
                 });
@@ -592,7 +592,7 @@ export class SampleDataService {
             const buAgriId = sampleUuid('sample-bu-agri');
 
             const buList = [
-                { id: buAgriId, name: `${SAMPLE_MARKER} JetFarm Agri Operations`, slug: 'agri-operations', moduleId: 'agri-operations' },
+                { id: buAgriId, name: `${SAMPLE_MARKER} Agri-One Agri Operations`, slug: 'agri-operations', moduleId: 'agri-operations' },
             ];
 
             for (const bu of buList) {

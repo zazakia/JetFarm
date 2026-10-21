@@ -38,12 +38,12 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 
 const MODULE_FILTERS = [
     'All',
-    'Crispy King POS',
-    'Inventory & Bodega',
-    'Lending & Loans',
+    'Agribusiness Operations',
+    'Farm Inputs & Supplies',
     'Accounting & Finance',
-    'HR & Staff',
+    'Structure & Reference',
     'System & Config',
+    'General Operations',
 ];
 
 const ACTION_FILTERS = [
@@ -343,16 +343,14 @@ export default function AuditTrailScreen() {
 
     const getModuleBadgeStyle = (module: string) => {
         switch (module) {
-            case 'Crispy King POS':
-                return { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200' };
-            case 'Inventory & Bodega':
+            case 'Agribusiness Operations':
+                return { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200' };
+            case 'Farm Inputs & Supplies':
                 return { bg: 'bg-teal-50', text: 'text-teal-700', border: 'border-teal-200' };
-            case 'Lending & Loans':
-                return { bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200' };
+            case 'Structure & Reference':
+                return { bg: 'bg-stone-50', text: 'text-stone-700', border: 'border-stone-200' };
             case 'Accounting & Finance':
                 return { bg: 'bg-purple-50', text: 'text-purple-700', border: 'border-purple-200' };
-            case 'HR & Staff':
-                return { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200' };
             case 'System & Config':
                 return { bg: 'bg-indigo-50', text: 'text-indigo-700', border: 'border-indigo-200' };
             default:

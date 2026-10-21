@@ -179,10 +179,10 @@ describe('AuthService', () => {
             };
             (supabase.auth.signInWithPassword as jest.Mock).mockResolvedValue({ data: { user: { id: 'admin' } }, error: null });
 
-            await AuthService.quickSignIn('admin@jetfarm.com', '12345678');
+            await AuthService.quickSignIn('admin@agri-one.com', '12345678');
 
             expect(supabase.auth.signInWithPassword).toHaveBeenCalledWith({
-                email: 'admin@jetfarm.com',
+                email: 'admin@agri-one.com',
                 password: '12345678',
             });
             expect(localStorageMock.setItem).not.toHaveBeenCalled();
@@ -243,12 +243,9 @@ describe('AuthService', () => {
             process.env.EXPO_PUBLIC_E2E_TEST_PASSWORD = '12345678';
 
             const seededEmails = [
-                'cresencio.junco@jetfarm.com',
-                'gerald.gera@jetfarm.com',
-                'bernie.casera@jetfarm.com',
-                'loan_encoder@jetfarm.com',
-                'payment_encoder@jetfarm.com',
-                'expenses_encoder@jetfarm.com',
+                'admin@agri-one.com',
+                'expenses_encoder@agri-one.com',
+                'mainoffice@agri-one.com',
             ];
 
             for (const email of seededEmails) {
@@ -533,148 +530,6 @@ describe('AuthService', () => {
         });
     });
 
-    describe('resolveCollectorId', () => {
-        it('resolves from local db', async () => {
-            mockAuthCollection.fetch.mockResolvedValue([{ id: 'c1' }]);
-            const id = await AuthService.resolveCollectorId('u1');
-            expect(id).toBe('c1');
-        });
-
-        it('resolves from remote if local empty', async () => {
-            mockAuthCollection.fetch.mockResolvedValue([]);
-            mockAuthChain.maybeSingle.mockResolvedValue({ data: { id: 'remote-c' }, error: null });
-            const id = await AuthService.resolveCollectorId('u1');
-            expect(id).toBe('remote-c');
-        });
-
-        it('falls back to matching collector profile name when auth_id is missing', async () => {
-            mockAuthCollection.fetch.mockResolvedValue([]);
-            mockAuthChain.maybeSingle
-                .mockResolvedValueOnce({ data: null, error: null })
-                .mockResolvedValueOnce({
-                    data: {
-                        full_name: 'Cresencio Junco',
-                        role: 'collector',
-                        is_active: true,
-                        deleted_at: null,
-                    },
-                    error: null,
-                })
-                .mockResolvedValueOnce({ data: { id: 'collector-cresencio' }, error: null });
-
-            const id = await AuthService.resolveCollectorId('u1');
-
-            expect(id).toBe('collector-cresencio');
-            expect(supabase.from).toHaveBeenCalledWith('user_profiles');
-            expect(supabase.from).toHaveBeenCalledWith('app_collectors');
-        });
-
-        it('returns null on remote error', async () => {
-            mockAuthCollection.fetch.mockResolvedValue([]);
-            mockAuthChain.maybeSingle.mockResolvedValue({ data: null, error: { message: 'RemFail' } });
-            const id = await AuthService.resolveCollectorId('u1');
-            expect(id).toBeNull();
-        });
-
-        it('returns null when remote profile lookup has error', async () => {
-            mockAuthCollection.fetch.mockResolvedValue([]);
-            mockAuthChain.maybeSingle
-                .mockResolvedValueOnce({ data: null, error: null })     // auth_id lookup
-                .mockResolvedValueOnce({ data: null, error: { message: 'Profile error' } }); // profile error
-
-            const id = await AuthService.resolveCollectorId('u1');
-            expect(id).toBeNull();
-        });
-
-        it('returns null when profile role is not collector', async () => {
-            mockAuthCollection.fetch.mockResolvedValue([]);
-            mockAuthChain.maybeSingle
-                .mockResolvedValueOnce({ data: null, error: null })
-                .mockResolvedValueOnce({ data: { role: 'admin', is_active: true, deleted_at: null, full_name: 'Admin' }, error: null });
-
-            const id = await AuthService.resolveCollectorId('u1');
-            expect(id).toBeNull();
-        });
-
-        it('returns null when collector profile is inactive', async () => {
-            mockAuthCollection.fetch.mockResolvedValue([]);
-            mockAuthChain.maybeSingle
-                .mockResolvedValueOnce({ data: null, error: null })
-                .mockResolvedValueOnce({ data: { role: 'collector', is_active: false, deleted_at: null, full_name: 'Inactive' }, error: null });
-
-            const id = await AuthService.resolveCollectorId('u1');
-            expect(id).toBeNull();
-        });
-
-        it('returns null when collector profile is deleted', async () => {
-            mockAuthCollection.fetch.mockResolvedValue([]);
-            mockAuthChain.maybeSingle
-                .mockResolvedValueOnce({ data: null, error: null })
-                .mockResolvedValueOnce({ data: { role: 'collector', is_active: true, deleted_at: '2024-01-01', full_name: 'Deleted' }, error: null });
-
-            const id = await AuthService.resolveCollectorId('u1');
-            expect(id).toBeNull();
-        });
-
-        it('returns null when collector profile has no full_name', async () => {
-            mockAuthCollection.fetch.mockResolvedValue([]);
-            mockAuthChain.maybeSingle
-                .mockResolvedValueOnce({ data: null, error: null })
-                .mockResolvedValueOnce({ data: { role: 'collector', is_active: true, deleted_at: null, full_name: null }, error: null });
-
-            const id = await AuthService.resolveCollectorId('u1');
-            expect(id).toBeNull();
-        });
-
-        it('returns null when named collector lookup has error', async () => {
-            mockAuthCollection.fetch.mockResolvedValue([]);
-            mockAuthChain.maybeSingle
-                .mockResolvedValueOnce({ data: null, error: null })     // auth_id
-                .mockResolvedValueOnce({ data: { full_name: 'Test Collector', role: 'collector', is_active: true, deleted_at: null }, error: null }) // profile
-                .mockResolvedValueOnce({ data: null, error: { message: 'Named lookup fail' } }); // named collector error
-
-            const id = await AuthService.resolveCollectorId('u1');
-            expect(id).toBeNull();
-        });
-    });
-
-    describe('resolveCollectorId - E2E (localhost:19009)', () => {
-        it('returns collector id for E2E collector user', async () => {
-            const localStorageMock = {
-                getItem: jest.fn().mockReturnValue(JSON.stringify({
-                    id: 'master_collector', email: 'collector@jetfarm.com', role: 'collector', full_name: 'Master Collector'
-                })),
-            };
-            (globalThis as any).window = {
-                location: { hostname: 'localhost', port: '19009' },
-                localStorage: localStorageMock,
-            };
-
-            const id = await AuthService.resolveCollectorId('master_collector');
-            expect(id).toBe('collector-master_collector');
-        });
-
-        it('returns null when E2E user is not collector', async () => {
-            const localStorageMock = {
-                getItem: jest.fn().mockReturnValue(JSON.stringify({
-                    id: 'cybergada', email: 'cybergada@gmail.com', role: 'admin', full_name: 'Cybergada'
-                })),
-            };
-            (globalThis as any).window = {
-                location: { hostname: 'localhost', port: '19009' },
-                localStorage: localStorageMock,
-            };
-
-            // Admin user, not collector — should fall through to normal lookup
-            // Since e2eUser.role !== 'collector', it won't return early
-            mockAuthCollection.fetch.mockResolvedValue([]);
-            mockAuthChain.maybeSingle.mockResolvedValue({ data: null, error: { message: 'Not found' } });
-
-            const id = await AuthService.resolveCollectorId('cybergada');
-            expect(id).toBeNull();
-        });
-    });
-
     describe('getQuickLoginUsers', () => {
         it('returns no quick-login users when explicitly disabled', async () => {
             process.env.NODE_ENV = 'production';
@@ -689,16 +544,16 @@ describe('AuthService', () => {
         it('filters and deduplicates users from local and remote', async () => {
             // Local
             mockAuthCollection.fetch.mockResolvedValueOnce([
-                { id: '1', email: 'admin@jetfarm.com', fullName: 'Real Admin', role: 'admin', isActive: true },
-                { id: '2', email: 'mock@test.com', fullName: 'Mock User', role: 'collector', isActive: true } // should be filtered
+                { id: '1', email: 'admin@agri-one.com', fullName: 'Real Admin', role: 'admin', isActive: true },
+                { id: '2', email: 'mock@test.com', fullName: 'Mock User', role: 'expenses_encoder', isActive: true } // filtered by name and domain
             ]);
             // Remote
             (supabase.auth.getSession as jest.Mock).mockResolvedValueOnce({ data: { session: { access_token: 'token' } }, error: null });
             mockAuthChain.then.mockImplementationOnce(function(this: any, resolve: any) {
                 return Promise.resolve({
                     data: [
-                        { id: '1', email: 'admin@jetfarm.com', role: 'admin', is_active: true }, // Duplicate
-                        { id: '3', email: 'real@gmail.com', role: 'collector', is_active: true }
+                        { id: '1', email: 'admin@agri-one.com', role: 'admin', is_active: true }, // Duplicate
+                        { id: '3', email: 'real@gmail.com', role: 'main_office', is_active: true }
                     ],
                     error: null
                 }).then(resolve);
@@ -706,7 +561,7 @@ describe('AuthService', () => {
 
             const users = await AuthService.getQuickLoginUsers();
             expect(users.length).toBe(2);
-            expect(users.map(u => u.email)).toContain('admin@jetfarm.com');
+            expect(users.map(u => u.email)).toContain('admin@agri-one.com');
             expect(users.map(u => u.email)).toContain('real@gmail.com');
         });
 
@@ -737,12 +592,12 @@ describe('AuthService', () => {
             delete process.env.EXPO_PUBLIC_ENABLE_QUICK_LOGIN;
             (supabase.auth.getSession as jest.Mock).mockResolvedValue({ data: { session: null }, error: null });
             mockAuthCollection.fetch.mockResolvedValue([
-                { id: '1', email: 'admin@jetfarm.com', fullName: 'Real Admin', role: 'admin', isActive: true },
+                { id: '1', email: 'admin@agri-one.com', fullName: 'Real Admin', role: 'admin', isActive: true },
             ]);
 
             const users = await AuthService.getQuickLoginUsers();
             expect(users.length).toBe(1);
-            expect(users[0].email).toBe('admin@jetfarm.com');
+            expect(users[0].email).toBe('admin@agri-one.com');
             // Should not call supabase.from for remote profiles
             expect(supabase.auth.getSession).toHaveBeenCalled();
         });
@@ -784,17 +639,6 @@ describe('AuthService', () => {
             (supabase.auth.getUser as jest.Mock).mockResolvedValue({ data: { user: { id: 'u123' } } });
             await AuthService.getCurrentUserId();
             expect(AuthService.currentUser).toBeDefined();
-        });
-
-        it('handles error in resolveCollectorId', async () => {
-            const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
-            jest.spyOn(database.collections, 'get').mockImplementationOnce(() => {
-                throw new Error('Local Fail');
-            });
-            const res = await AuthService.resolveCollectorId('u1');
-            expect(res).toBeNull();
-            expect(consoleSpy).toHaveBeenCalled();
-            consoleSpy.mockRestore();
         });
 
         it('handles error in getCurrentUserRole', async () => {

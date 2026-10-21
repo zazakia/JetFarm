@@ -97,13 +97,19 @@ describe('LandSettlementEngine', () => {
                 receiptReference: 'CHK-998811',
             });
 
-            expect(slip).toContain('JETFARM AGRIBUSINESS PLATFORM');
+            expect(slip).toContain('AGRI-ONE AGRIBUSINESS PLATFORM');
+            expect(slip).not.toMatch(/JETFARM|JetFarm/);
             expect(slip).toContain('Don Ramon Valderrama');
             expect(slip).toContain('CYC-2026-PCL01');
             expect(slip).toContain('32,000 kg');
             expect(slip).toContain(formatPHP(7000));
             expect(slip).toContain('CHK-998811');
-            expect(slip).toContain('Audited & Guarantee-Protected by JetFarm Settlement Engine');
+            expect(slip).toContain('Audited & Guarantee-Protected by Agri-One Settlement Engine');
+
+            // The banner is monospace-padded inside the rule; a mis-padded brand keeps the slip
+            // readable but breaks the printed alignment, so pin the width.
+            const banner = slip.split('\n').find(line => line.includes('AGRI-ONE'));
+            expect(banner).toHaveLength(50);
         });
     });
 });

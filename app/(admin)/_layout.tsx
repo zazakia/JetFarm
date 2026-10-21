@@ -5,14 +5,13 @@ import { Slot, usePathname, useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useAuth } from '../../src/store/AuthContext';
 import { adminAuthGateVariant, adminGateMessage } from '../../src/utils/adminAuthGate';
-import { SidebarContent, AGRIBUSINESS_MENU, CRISPY_KING_OPERATIONS, FRANCHISE_MENU, LENDING_MENU, MAIN_MENU, ADMIN_MENU, DAILY_REPORTS, WEEKLY_REPORTS, MONTHLY_REPORTS, COOPERATIVE_REPORTS, FINANCIALS_MENU, ACCOUNTING_MENU, BOOKS_OF_ACCOUNTS_MENU, SUPPORT_MENU } from '../../src/components/SidebarContent';
+import { SidebarContent, AGRIBUSINESS_MENU, FINANCIAL_REPORTS_MENU, MAIN_MENU, ADMIN_MENU, FINANCIALS_MENU, ACCOUNTING_MENU, BOOKS_OF_ACCOUNTS_MENU, SUPPORT_MENU } from '../../src/components/SidebarContent';
 import { SyncStatusBadge } from '../../src/components/SyncStatusBadge';
 import { AuthGateLoading } from '../../src/components/AuthGateLoading';
 import { ROLE_HOME_ROUTES, UserRole } from '../../src/constants/roles';
 import { COMPANY_NAME } from '../../src/constants/brand';
 import { useFeatureFlags, useRolePermissions } from '../../src/hooks/useSettingsConfig';
 import { getFeatureKeyForRoute } from '../../src/utils/featureFlags';
-import { isCrispyKing } from '../../src/config/deployment';
 import { OnboardingTourProvider } from '../../src/context/OnboardingTourContext';
 import { OnboardingTourModal } from '../../src/components/onboarding/OnboardingTourModal';
 import { GlobalSearchModal } from '../../src/components/GlobalSearch';
@@ -114,14 +113,9 @@ export default function AdminShellLayout() {
 
     const currentTitle = [
         ...AGRIBUSINESS_MENU,
-        ...(isCrispyKing() ? [...CRISPY_KING_OPERATIONS, ...FRANCHISE_MENU] : []),
-        ...LENDING_MENU,
+        ...FINANCIAL_REPORTS_MENU,
         ...MAIN_MENU,
         ...ADMIN_MENU,
-        ...DAILY_REPORTS,
-        ...WEEKLY_REPORTS,
-        ...MONTHLY_REPORTS,
-        ...COOPERATIVE_REPORTS,
         ...FINANCIALS_MENU,
         ...ACCOUNTING_MENU,
         ...BOOKS_OF_ACCOUNTS_MENU,
@@ -151,7 +145,7 @@ export default function AdminShellLayout() {
                                     accessibilityLabel="Quick search"
                                 >
                                     <MaterialIcons name="search" size={18} color="#64748B" />
-                                    <Text className="text-gray-500 text-xs ml-2 font-medium">Quick search menus, borrowers, parcels...</Text>
+                                    <Text className="text-gray-500 text-xs ml-2 font-medium">Quick search menus, parcels, expenses...</Text>
                                 </Pressable>
                                 <SyncStatusBadge />
                             </View>
@@ -180,16 +174,17 @@ export default function AdminShellLayout() {
                         const clean = path.replace('/(admin)', '').replace(/\/$/, '');
                         if (!clean || clean === '/') return false;
                         
+                        // Top-level sections keep the drawer button instead of a back arrow.
                         const topLevelPaths = [
                             '/agribusiness',
-                            '/borrowers',
-                            '/loans',
-                            '/payments',
+                            '/accounting',
+                            '/reports',
                             '/expenses',
-                            '/payroll',
+                            '/cash-on-hand',
+                            '/bank-accounts',
+                            '/transfers',
+                            '/areas',
                             '/users',
-                            '/collectors',
-                            '/reports/dashboard',
                             '/settings'
                         ];
                         return !topLevelPaths.includes(clean);

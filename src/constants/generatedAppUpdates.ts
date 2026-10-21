@@ -2,6 +2,458 @@ import type { AppUpdateEntry } from './appUpdates';
 
 export const GENERATED_APP_UPDATES: AppUpdateEntry[] = [
     {
+        "id": "c54bd687649a94cef6c7f35c8c7e4ae781721f47",
+        "version": "c54bd68",
+        "versionLabel": "Commit",
+        "date": "2026-10-20",
+        "title": "Retire the non-agribusiness remote tables (LOCAL/VARIANT ONLY)",
+        "category": "feature",
+        "icon": "new-releases",
+        "summary": "supabase/migrations/20261021000000_retire_non_agribusiness_tables.sql drops the 52",
+        "changes": [
+            "Retire the non-agribusiness remote tables (LOCAL/VARIANT ONLY)",
+            "supabase/migrations/20261021000000_retire_non_agribusiness_tables.sql drops the 52",
+            "remote names that left remoteTableMap plus 5 that were already unreachable from the"
+        ],
+        "codeChanges": [
+            "Updated docs/AGRIBUSINESS-ONLY-BRANCH.md",
+            "Updated src/database/supabaseMigrations.regression.test.ts",
+            "Updated supabase/migrations/20261021000000_retire_non_agribusiness_tables.sql"
+        ]
+    },
+    {
+        "id": "0883d98f9a4bdd3f30838d4cad5dcbf573b328be",
+        "version": "0883d98",
+        "versionLabel": "Commit",
+        "date": "2026-10-20",
+        "title": "Delete the offline lending helper and an unused repair script",
+        "category": "data",
+        "icon": "fact-check",
+        "summary": "src/utils/offlineUtils.ts existed to classify loan and payment records for the",
+        "changes": [
+            "Delete the offline lending helper and an unused repair script",
+            "src/utils/offlineUtils.ts existed to classify loan and payment records for the",
+            "collector queue; with app_loans, app_payments and app_collectors retired it has no"
+        ],
+        "codeChanges": [
+            "Updated scripts/cleanup-undefined.ts",
+            "Updated src/utils/__tests__/offlineUtils.test.ts",
+            "Updated src/utils/offlineUtils.ts"
+        ]
+    },
+    {
+        "id": "05c11178a2b6517dc82957bbfc37c53dc8112dfd",
+        "version": "05c1117",
+        "versionLabel": "Commit",
+        "date": "2026-10-20",
+        "title": "Retarget the shared finance services off the retired tables",
+        "category": "fix",
+        "icon": "build-circle",
+        "summary": "These are the kept services that imported deleted models, which is the failure",
+        "changes": [
+            "Retarget the shared finance services off the retired tables",
+            "These are the kept services that imported deleted models, which is the failure",
+            "mode the plan called the highest-probability one."
+        ],
+        "codeChanges": [
+            "Updated src/services/AutoPostingService.ts",
+            "Updated src/services/BaseModelService.ts",
+            "Updated src/services/CashService.ts"
+        ]
+    },
+    {
+        "id": "ea5e792033524eb73ae84d3ec5139b911bf97715",
+        "version": "ea5e792",
+        "versionLabel": "Commit",
+        "date": "2026-10-20",
+        "title": "Keep only the financial statements among the reports",
+        "category": "feature",
+        "icon": "new-releases",
+        "summary": "The owner chose financial statements over the coop reporting set, so this closes",
+        "changes": [
+            "Keep only the financial statements among the reports",
+            "The owner chose financial statements over the coop reporting set, so this closes",
+            "the report list at 10 screens: balance-sheet, income-statement, cash-flows,"
+        ],
+        "codeChanges": [
+            "Updated app/(admin)/reports/annual-report.tsx",
+            "Updated app/(admin)/reports/bank-export.tsx",
+            "Updated app/(admin)/reports/cash-flows.tsx"
+        ]
+    },
+    {
+        "id": "a027af86ac8e86f475ddbf112f381803c7f91b2a",
+        "version": "a027af8",
+        "versionLabel": "Commit",
+        "date": "2026-10-20",
+        "title": "Prune the sync contract and SyncService to the agribusiness core",
+        "category": "feature",
+        "icon": "new-releases",
+        "summary": "remoteTableMap drops from 91 mapped pairs to 39 and apiOnlyTables empties with",
+        "changes": [
+            "Prune the sync contract and SyncService to the agribusiness core",
+            "remoteTableMap drops from 91 mapped pairs to 39 and apiOnlyTables empties with",
+            "src/services/cic."
+        ],
+        "codeChanges": [
+            "Updated src/database/nonAgriSchemaGuards.test.ts",
+            "Updated src/database/schemaContracts.regression.test.ts",
+            "Updated src/services/SyncService.ts"
+        ]
+    },
+    {
+        "id": "8e1fd0a66ab7e956bc93f405c09b82e4641b5727",
+        "version": "8e1fd0a",
+        "versionLabel": "Commit",
+        "date": "2026-10-20",
+        "title": "Bump the schema to v50 and retire the tables in migration steps",
+        "category": "feature",
+        "icon": "new-releases",
+        "summary": "The local WatermelonDB schema goes from 92 tables to 40; 52 of them are retired by",
+        "changes": [
+            "Bump the schema to v50 and retire the tables in migration steps",
+            "The local WatermelonDB schema goes from 92 tables to 40; 52 of them are retired by",
+            "the new toVersion 50 steps, one DROP per table."
+        ],
+        "codeChanges": [
+            "Updated src/constants/AppVersion.ts",
+            "Updated src/constants/__tests__/AppVersion.test.ts",
+            "Updated src/database/__tests__/webPersistenceUpgrade.test.ts"
+        ]
+    },
+    {
+        "id": "b8e1b941045f2b6c8cc53fa59867746ce8c06d62",
+        "version": "b8e1b94",
+        "versionLabel": "Commit",
+        "date": "2026-10-20",
+        "title": "Retire the non-agribusiness WatermelonDB models",
+        "category": "feature",
+        "icon": "new-releases",
+        "summary": "The lending, CIC, marketplace, payroll, franchise, QSR and water-station models",
+        "changes": [
+            "Retire the non-agribusiness WatermelonDB models",
+            "The lending, CIC, marketplace, payroll, franchise, QSR and water-station models",
+            "have no screen or service left that can reach them, so they go rather than sit"
+        ],
+        "codeChanges": [
+            "Updated app/(admin)/settings/__tests__/data-maintenance.test.tsx",
+            "Updated app/(admin)/settings/data-maintenance.tsx",
+            "Updated app/(admin)/users/[id].tsx"
+        ]
+    },
+    {
+        "id": "7d5e03bb26c29f2612df233a2e2233d186599aa1",
+        "version": "7d5e03b",
+        "versionLabel": "Commit",
+        "date": "2026-10-20",
+        "title": "Retire the coop business-unit module framework",
+        "category": "feature",
+        "icon": "new-releases",
+        "summary": "src/modules (the module registry, ModuleAccountingBridge, the water-station",
+        "changes": [
+            "Retire the coop business-unit module framework",
+            "src/modules (the module registry, ModuleAccountingBridge, the water-station",
+            "services and the four manifests), DemoDataNotice and the module scaffolding"
+        ],
+        "codeChanges": [
+            "Updated app/(admin)/accounting/ap-journal.tsx",
+            "Updated app/(admin)/accounting/inventory-journal.tsx",
+            "Updated app/(admin)/accounting/purchase-journal.tsx"
+        ]
+    },
+    {
+        "id": "2ff06a71f6cea8080c02d856e0284b1359e54ca8",
+        "version": "2ff06a7",
+        "versionLabel": "Commit",
+        "date": "2026-10-20",
+        "title": "Remove non-agribusiness services and repair shared finance seams",
+        "category": "data",
+        "icon": "fact-check",
+        "summary": "Delete the lending, CIC, marketplace, payroll, franchise, QSR POS and",
+        "changes": [
+            "Remove non-agribusiness services and repair shared finance seams",
+            "Delete the lending, CIC, marketplace, payroll, franchise, QSR POS and",
+            "water-station services with their co-located tests, then re-point every kept"
+        ],
+        "codeChanges": [
+            "Updated app/(admin)/reports/audit.tsx",
+            "Updated app/(admin)/reports/dashboard.tsx",
+            "Updated app/(admin)/returns/index.tsx"
+        ]
+    },
+    {
+        "id": "0ccd985171cdd5bda00efa4fdadab65e9e470844",
+        "version": "0ccd985",
+        "versionLabel": "Commit",
+        "date": "2026-10-20",
+        "title": "Lift area CRUD out of GroupService into AreaService",
+        "category": "feature",
+        "icon": "new-releases",
+        "summary": "(admin)/areas only ever called GroupService.getAreas() and createArea(); the",
+        "changes": [
+            "Lift area CRUD out of GroupService into AreaService",
+            "(admin)/areas only ever called GroupService.getAreas() and createArea(); the",
+            "rest of that service is AGAP solidarity groups, which this branch deletes."
+        ],
+        "codeChanges": [
+            "Updated app/(admin)/areas/index.tsx",
+            "Updated app/(admin)/areas/new.tsx",
+            "Updated src/services/AreaService.ts"
+        ]
+    },
+    {
+        "id": "ea1cfb29472d17a7d8f24fb6b236f2a3a4122091",
+        "version": "ea1cfb2",
+        "versionLabel": "Commit",
+        "date": "2026-10-20",
+        "title": "Delete module, marketplace, payroll, franchise and lending settings routes (stage S3b)",
+        "category": "feature",
+        "icon": "new-releases",
+        "summary": "The four coop business-unit screens, the marketplace storefront, the payroll",
+        "changes": [
+            "Delete module, marketplace, payroll, franchise and lending settings routes (stage S3b)",
+            "The four coop business-unit screens, the marketplace storefront, the payroll",
+            "run and franchise CRM are separate businesses, and the settings entries that"
+        ],
+        "codeChanges": [
+            "Updated app/(admin)/franchise/_layout.tsx",
+            "Updated app/(admin)/franchise/audits.tsx",
+            "Updated app/(admin)/franchise/index.tsx"
+        ]
+    },
+    {
+        "id": "ca16a9be6aec2e591018e2a8fae5f6b19700e8f0",
+        "version": "ca16a9b",
+        "versionLabel": "Commit",
+        "date": "2026-10-20",
+        "title": "Keep only the 15 financial-statement reports (stage S3a)",
+        "category": "feature",
+        "icon": "new-releases",
+        "summary": "Portfolio, delinquency and cooperative share-capital reporting (active-loans,",
+        "changes": [
+            "Keep only the 15 financial-statement reports (stage S3a)",
+            "Portfolio, delinquency and cooperative share-capital reporting (active-loans,",
+            "aging, PAR, past-due, portfolio-aging, collection family, daily/weekly"
+        ],
+        "codeChanges": [
+            "Updated app/(admin)/reports/__tests__/active-loans.test.tsx",
+            "Updated app/(admin)/reports/__tests__/collection.test.tsx",
+            "Updated app/(admin)/reports/__tests__/daily-collection.test.tsx"
+        ]
+    },
+    {
+        "id": "ad70c50d7d62d2bbc78334b62913939b11abae3f",
+        "version": "ad70c50",
+        "versionLabel": "Commit",
+        "date": "2026-10-20",
+        "title": "Delete the nine non-agribusiness role lanes (stage S2)",
+        "category": "feature",
+        "icon": "new-releases",
+        "summary": "Borrower portal, collector, loan encoder, payment encoder, cashier, branch",
+        "changes": [
+            "Delete the nine non-agribusiness role lanes (stage S2)",
+            "Borrower portal, collector, loan encoder, payment encoder, cashier, branch",
+            "manager, commissary, executive and area supervisor are cooperative-credit and"
+        ],
+        "codeChanges": [
+            "Updated app/(area-supervisor)/_layout.tsx",
+            "Updated app/(area-supervisor)/index.tsx",
+            "Updated app/(borrower)/__tests__/layout.test.tsx"
+        ]
+    },
+    {
+        "id": "b39fa73facb5cf5529754fd2c1181259fbda7137",
+        "version": "b39fa73",
+        "versionLabel": "Commit",
+        "date": "2026-10-20",
+        "title": "Delete lending and CIC admin screens (stage S1)",
+        "category": "feature",
+        "icon": "new-releases",
+        "summary": "Borrowers/members, loans, repayments, approvals, collectors, file cases,",
+        "changes": [
+            "Delete lending and CIC admin screens (stage S1)",
+            "Borrowers/members, loans, repayments, approvals, collectors, file cases,",
+            "groups, CIC reporting and remittances are cooperative-credit features the"
+        ],
+        "codeChanges": [
+            "Updated app/(admin)/borrowers/[id].tsx",
+            "Updated app/(admin)/borrowers/[id]/edit.tsx",
+            "Updated app/(admin)/borrowers/[id]/membership-agreement.tsx"
+        ]
+    },
+    {
+        "id": "6ff794ad983a4208e35bd87f10bc80dc9f644c79",
+        "version": "6ff794a",
+        "versionLabel": "Commit",
+        "date": "2026-10-20",
+        "title": "Allow admin docs routes in the nav whitelist",
+        "category": "technical",
+        "icon": "code",
+        "summary": "help.tsx and member-manual.tsx are agri-neutral operator docs, so the",
+        "changes": [
+            "Allow admin docs routes in the nav whitelist",
+            "help.tsx and member-manual.tsx are agri-neutral operator docs, so the",
+            "allowed-path regex wrongly listed them as non-agribusiness entry points."
+        ],
+        "codeChanges": [
+            "Updated src/__tests__/agribusinessNavWhitelist.test.ts"
+        ]
+    },
+    {
+        "id": "ad3ee210f0c88cd3a83abf8979c78ee3b39492b1",
+        "version": "ad3ee21",
+        "versionLabel": "Commit",
+        "date": "2026-10-20",
+        "title": "RED teardown guards for routes, nav and schema",
+        "category": "technical",
+        "icon": "code",
+        "summary": "Deleting features is a behavior change, so the target state is pinned as",
+        "changes": [
+            "RED teardown guards for routes, nav and schema",
+            "Deleting features is a behavior change, so the target state is pinned as",
+            "failing tests before any file is removed."
+        ],
+        "codeChanges": [
+            "Updated src/__tests__/agribusinessNavWhitelist.test.ts",
+            "Updated src/__tests__/agribusinessRouteManifest.test.ts",
+            "Updated src/database/nonAgriSchemaGuards.test.ts"
+        ]
+    },
+    {
+        "id": "7f6377fcd676030576714d31e923de0599639431",
+        "version": "7f6377f",
+        "versionLabel": "Commit",
+        "date": "2026-10-20",
+        "title": "Let the CRUD audit honour contract.localOnlyTables",
+        "category": "data",
+        "icon": "fact-check",
+        "summary": "agri_pending_layout_operations is a local outbox whose rows are destroyed after",
+        "changes": [
+            "Let the CRUD audit honour contract.localOnlyTables",
+            "agri_pending_layout_operations is a local outbox whose rows are destroyed after",
+            "the remote ACK, and schemaContracts.regression.test.ts:700 pins it as"
+        ],
+        "codeChanges": [
+            "Updated scripts/__tests__/auditCrudPersistence.test.js",
+            "Updated scripts/audit-crud-persistence.mjs"
+        ]
+    },
+    {
+        "id": "bdf360f6fb663efe558ec4e20c0bcc6ce7a5b998",
+        "version": "bdf360f",
+        "versionLabel": "Commit",
+        "date": "2026-10-20",
+        "title": "Add a visible-Chrome route walk with a loopback backend guard",
+        "category": "feature",
+        "icon": "new-releases",
+        "summary": "Walks every routed screen after a real local login and records what actually",
+        "changes": [
+            "Add a visible-Chrome route walk with a loopback backend guard",
+            "Walks every routed screen after a real local login and records what actually",
+            "rendered, so a route that redirects away reports as gated instead of passing."
+        ],
+        "codeChanges": [
+            "Updated docs/E2E-MODULE-WALK-2026-10-20.md",
+            "Updated scripts/e2e-module-walk.mjs"
+        ]
+    },
+    {
+        "id": "3ee8f0e7775e18e2bad2620ece38d9799988f31d",
+        "version": "3ee8f0e",
+        "versionLabel": "Commit",
+        "date": "2026-10-20",
+        "title": "Regenerate the in-app changelog from commit history",
+        "category": "technical",
+        "icon": "code",
+        "summary": "generatedAppUpdates is a build artifact; the two commits since the last",
+        "changes": [
+            "Regenerate the in-app changelog from commit history",
+            "generatedAppUpdates is a build artifact; the two commits since the last",
+            "generation (tier enforcement at pre-push, and the software-factory design doc)"
+        ],
+        "codeChanges": [
+            "Updated src/constants/generatedAppUpdates.json",
+            "Updated src/constants/generatedAppUpdates.ts"
+        ]
+    },
+    {
+        "id": "dc0ec874a2ea47de7883b540ef877a3065ff7656",
+        "version": "dc0ec87",
+        "versionLabel": "Commit",
+        "date": "2026-10-20",
+        "title": "Plan the self-hosted realtime container and pin its JWT secret",
+        "category": "feature",
+        "icon": "new-releases",
+        "summary": "Kong and Caddy already route /realtime/v1 on the VPS; only the container is",
+        "changes": [
+            "Plan the self-hosted realtime container and pin its JWT secret",
+            "Kong and Caddy already route /realtime/v1 on the VPS; only the container is",
+            "missing and the shared publication holds no JetFarm tables."
+        ],
+        "codeChanges": [
+            "Updated docs/REALTIME-SELF-HOSTED-DEPLOYMENT-PLAN.md",
+            "Updated supabase/self-hosted/docker-compose.realtime-override.yml"
+        ]
+    },
+    {
+        "id": "45a978acc58f44a939814120d5e16bc2f7f4d0bb",
+        "version": "45a978a",
+        "versionLabel": "Commit",
+        "date": "2026-10-20",
+        "title": "Forward-only repair for the production schema drift",
+        "category": "data",
+        "icon": "fact-check",
+        "summary": "Production is missing 59 columns across three tables that the local schema",
+        "changes": [
+            "Forward-only repair for the production schema drift",
+            "Production is missing 59 columns across three tables that the local schema",
+            "pushes, while deploy_schema_migrations claims every migration applied."
+        ],
+        "codeChanges": [
+            "Updated supabase/migrations/20261019000000_sync_push_repair_production_drift.sql"
+        ]
+    },
+    {
+        "id": "86df4b7115dfa3f708462a3a2d9d5c86e8fc6506",
+        "version": "86df4b7",
+        "versionLabel": "Commit",
+        "date": "2026-10-20",
+        "title": "Derive expected remote schema from the sync contract",
+        "category": "fix",
+        "icon": "build-circle",
+        "summary": "apply-hetzner-migrations.mjs verified a hand-pinned list of four tables, so it",
+        "changes": [
+            "Derive expected remote schema from the sync contract",
+            "apply-hetzner-migrations.mjs verified a hand-pinned list of four tables, so it",
+            "printed \"every pushed column exists\" while production was missing 59 columns"
+        ],
+        "codeChanges": [
+            "Updated scripts/apply-hetzner-migrations.mjs",
+            "Updated scripts/audit-remote-schema-gap.mjs",
+            "Updated scripts/lib/sync-schema-contract.mjs"
+        ]
+    },
+    {
+        "id": "cec0bbc68b267af8a8c4c26e8f0e62e705d8833a",
+        "version": "cec0bbc",
+        "versionLabel": "Commit",
+        "date": "2026-10-20",
+        "title": "Single-source the Content-Security-Policy across all deploy paths",
+        "category": "feature",
+        "icon": "new-releases",
+        "summary": "The three web deploy paths each assembled their own CSP string, so a",
+        "changes": [
+            "Single-source the Content-Security-Policy across all deploy paths",
+            "The three web deploy paths each assembled their own CSP string, so a",
+            "directive added in one place silently stayed missing in the others, and the"
+        ],
+        "codeChanges": [
+            "Updated netlify.toml",
+            "Updated scripts/__tests__/contentSecurityPolicy.test.js",
+            "Updated scripts/deploy-cloudflare.mjs"
+        ]
+    },
+    {
         "id": "3b5c1c5f95208547305418180367a5144a307066",
         "version": "3b5c1c5",
         "versionLabel": "Commit",

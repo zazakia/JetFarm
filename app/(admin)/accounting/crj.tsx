@@ -94,7 +94,7 @@ export default function CashReceiptsJournal() {
                     {/* Grand Total Highlight Card */}
                     <View className="bg-emerald-900 p-6 rounded-3xl mb-4 shadow-sm">
                         <Text className="text-emerald-200 text-xs font-bold uppercase tracking-wider mb-1">
-                            Total Cash Collections (Dr 1010)
+                            Total Cash &amp; Bank Collections
                         </Text>
                         <Text className="text-white font-black text-3xl">
                             {formatPHP(summary?.grandTotalCash ?? 0)}
@@ -107,21 +107,21 @@ export default function CashReceiptsJournal() {
                     {/* Breakdown Summary Grid */}
                     <View className="flex-row flex-wrap justify-between mb-4">
                         <View className="w-[48%] bg-white p-4 rounded-2xl border border-gray-100 mb-3">
-                            <Text className="text-gray-600 text-[10px] font-bold uppercase">Loan Repayments</Text>
-                            <Text className="text-gray-900 font-bold text-sm mt-1">{formatPHP(summary?.totalLoanRepayments ?? 0)}</Text>
+                            <Text className="text-gray-600 text-[10px] font-bold uppercase">Receivable Collections</Text>
+                            <Text className="text-gray-900 font-bold text-sm mt-1">{formatPHP(summary?.totalReceivableCollections ?? 0)}</Text>
                         </View>
                         <View className="w-[48%] bg-white p-4 rounded-2xl border border-gray-100 mb-3">
-                            <Text className="text-gray-600 text-[10px] font-bold uppercase">Savings Deposits</Text>
-                            <Text className="text-gray-900 font-bold text-sm mt-1">{formatPHP(summary?.totalSavingsDeposits ?? 0)}</Text>
+                            <Text className="text-gray-600 text-[10px] font-bold uppercase">Farm Revenue</Text>
+                            <Text className="text-gray-900 font-bold text-sm mt-1">{formatPHP(summary?.totalFarmRevenue ?? 0)}</Text>
                         </View>
                         <View className="w-[48%] bg-white p-4 rounded-2xl border border-gray-100 mb-3">
-                            <Text className="text-gray-600 text-[10px] font-bold uppercase">Share Capital</Text>
-                            <Text className="text-gray-900 font-bold text-sm mt-1">{formatPHP(summary?.totalShareCapital ?? 0)}</Text>
+                            <Text className="text-gray-600 text-[10px] font-bold uppercase">Capital Contributions</Text>
+                            <Text className="text-gray-900 font-bold text-sm mt-1">{formatPHP(summary?.totalCapitalContributions ?? 0)}</Text>
                         </View>
                         <View className="w-[48%] bg-white p-4 rounded-2xl border border-gray-100 mb-3">
-                            <Text className="text-gray-600 text-[10px] font-bold uppercase">Service & Misc</Text>
+                            <Text className="text-gray-600 text-[10px] font-bold uppercase">Transfers &amp; Other</Text>
                             <Text className="text-gray-900 font-bold text-sm mt-1">
-                                {formatPHP((summary?.totalServiceCharges ?? 0) + (summary?.totalMembershipFees ?? 0) + (summary?.totalOtherReceipts ?? 0))}
+                                {formatPHP((summary?.totalInternalTransfers ?? 0) + (summary?.totalOtherReceipts ?? 0))}
                             </Text>
                         </View>
                     </View>
@@ -139,11 +139,11 @@ export default function CashReceiptsJournal() {
                                     <View style={{ width: 80 }}><Text className="text-gray-600 text-[10px] font-bold uppercase">Date</Text></View>
                                     <View style={{ width: 120 }}><Text className="text-gray-600 text-[10px] font-bold uppercase">Ref / OR No.</Text></View>
                                     <View style={{ width: 180 }}><Text className="text-gray-600 text-[10px] font-bold uppercase">Description</Text></View>
-                                    <View style={{ width: 100 }} className="items-end"><Text className="text-gray-600 text-[10px] font-bold uppercase">Loan Rep.</Text></View>
-                                    <View style={{ width: 100 }} className="items-end"><Text className="text-gray-600 text-[10px] font-bold uppercase">Savings</Text></View>
+                                    <View style={{ width: 100 }} className="items-end"><Text className="text-gray-600 text-[10px] font-bold uppercase">Receivables</Text></View>
                                     <View style={{ width: 100 }} className="items-end"><Text className="text-gray-600 text-[10px] font-bold uppercase">Capital</Text></View>
-                                    <View style={{ width: 90 }} className="items-end"><Text className="text-gray-600 text-[10px] font-bold uppercase">Fees/Other</Text></View>
-                                    <View style={{ width: 110 }} className="items-end"><Text className="text-gray-600 text-[10px] font-bold uppercase">Cash (Dr 1010)</Text></View>
+                                    <View style={{ width: 100 }} className="items-end"><Text className="text-gray-600 text-[10px] font-bold uppercase">Farm Revenue</Text></View>
+                                    <View style={{ width: 90 }} className="items-end"><Text className="text-gray-600 text-[10px] font-bold uppercase">Transfers/Other</Text></View>
+                                    <View style={{ width: 110 }} className="items-end"><Text className="text-gray-600 text-[10px] font-bold uppercase">Cash In</Text></View>
                                 </View>
 
                                 {/* Table Rows */}
@@ -166,18 +166,18 @@ export default function CashReceiptsJournal() {
                                                 <Text className="text-gray-700 text-xs" numberOfLines={1}>{row.description}</Text>
                                             </View>
                                             <View style={{ width: 100 }} className="items-end">
-                                                <Text className="text-gray-900 text-xs">{row.loanRepayments > 0 ? formatPHP(row.loanRepayments) : '—'}</Text>
+                                                <Text className="text-gray-900 text-xs">{row.receivableCollections > 0 ? formatPHP(row.receivableCollections) : '—'}</Text>
                                             </View>
                                             <View style={{ width: 100 }} className="items-end">
-                                                <Text className="text-gray-900 text-xs">{row.savingsDeposits > 0 ? formatPHP(row.savingsDeposits) : '—'}</Text>
+                                                <Text className="text-gray-900 text-xs">{row.capitalContributions > 0 ? formatPHP(row.capitalContributions) : '—'}</Text>
                                             </View>
                                             <View style={{ width: 100 }} className="items-end">
-                                                <Text className="text-gray-900 text-xs">{row.shareCapital > 0 ? formatPHP(row.shareCapital) : '—'}</Text>
+                                                <Text className="text-gray-900 text-xs">{row.farmRevenue > 0 ? formatPHP(row.farmRevenue) : '—'}</Text>
                                             </View>
                                             <View style={{ width: 90 }} className="items-end">
                                                 <Text className="text-gray-900 text-xs">
-                                                    {(row.serviceCharges + row.membershipFees + row.otherReceipts) > 0
-                                                        ? formatPHP(row.serviceCharges + row.membershipFees + row.otherReceipts)
+                                                    {(row.internalTransfers + row.otherReceipts) > 0
+                                                        ? formatPHP(row.internalTransfers + row.otherReceipts)
                                                         : '—'}
                                                 </Text>
                                             </View>
@@ -195,17 +195,17 @@ export default function CashReceiptsJournal() {
                                             <Text className="text-emerald-950 font-black text-xs uppercase">Totals</Text>
                                         </View>
                                         <View style={{ width: 100 }} className="items-end">
-                                            <Text className="text-emerald-950 font-black text-xs">{formatPHP(summary.totalLoanRepayments)}</Text>
+                                            <Text className="text-emerald-950 font-black text-xs">{formatPHP(summary.totalReceivableCollections)}</Text>
                                         </View>
                                         <View style={{ width: 100 }} className="items-end">
-                                            <Text className="text-emerald-950 font-black text-xs">{formatPHP(summary.totalSavingsDeposits)}</Text>
+                                            <Text className="text-emerald-950 font-black text-xs">{formatPHP(summary.totalCapitalContributions)}</Text>
                                         </View>
                                         <View style={{ width: 100 }} className="items-end">
-                                            <Text className="text-emerald-950 font-black text-xs">{formatPHP(summary.totalShareCapital)}</Text>
+                                            <Text className="text-emerald-950 font-black text-xs">{formatPHP(summary.totalFarmRevenue)}</Text>
                                         </View>
                                         <View style={{ width: 90 }} className="items-end">
                                             <Text className="text-emerald-950 font-black text-xs">
-                                                {formatPHP(summary.totalServiceCharges + summary.totalMembershipFees + summary.totalOtherReceipts)}
+                                                {formatPHP(summary.totalInternalTransfers + summary.totalOtherReceipts)}
                                             </Text>
                                         </View>
                                         <View style={{ width: 110 }} className="items-end">

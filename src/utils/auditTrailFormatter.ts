@@ -34,19 +34,11 @@ export interface FieldChange {
 const WELL_KNOWN_USERS: Record<string, { name: string; role: string; email?: string }> = {
     '00000000-0000-0000-0000-000000000002': { name: 'Cybergada Master', role: 'Admin', email: 'cybergada@gmail.com' },
     '00000000-0000-0000-0000-000000000001': { name: 'Super Admin', role: 'Admin', email: 'admin@poscursor.com' },
-    '00000000-0000-0000-0000-000000000003': { name: 'Loan Encoder', role: 'Loan Encoder', email: 'encoder@poscursor.com' },
-    '00000000-0000-0000-0000-000000000004': { name: 'Payment Encoder', role: 'Payment Encoder', email: 'payment_encoder@poscursor.com' },
     '00000000-0000-0000-0000-000000000005': { name: 'Expenses Encoder', role: 'Expenses Encoder', email: 'expenses_encoder@poscursor.com' },
     'cybergada': { name: 'Cybergada Master', role: 'Admin', email: 'cybergada@gmail.com' },
     'admin': { name: 'Admin User', role: 'Admin', email: 'admin@poscursor.com' },
-    'master_collector': { name: 'Master Collector', role: 'Collector', email: 'collector@poscursor.com' },
-    'loan_encoder': { name: 'Loan Encoder', role: 'Loan Encoder', email: 'encoder@poscursor.com' },
-    'payment_encoder': { name: 'Payment Encoder', role: 'Payment Encoder', email: 'payment_encoder@poscursor.com' },
     'expenses_encoder': { name: 'Expenses Encoder', role: 'Expenses Encoder', email: 'expenses_encoder@poscursor.com' },
-    'cresencio': { name: 'Cresencio Junco', role: 'Collector', email: 'cresencio.junco@poscursor.com' },
-    'gerald': { name: 'Gerald Gera', role: 'Collector', email: 'gerald.gera@poscursor.com' },
-    'bernie': { name: 'Bernie Casera', role: 'Collector', email: 'bernie.casera@poscursor.com' },
-    'test_member': { name: 'Test Member', role: 'Borrower', email: 'member.test@poscursor.com' },
+    'main_office': { name: 'Main Office', role: 'Main Office', email: 'mainoffice@poscursor.com' },
     'system': { name: 'System Automated Engine', role: 'System', email: 'system@poscursor.internal' },
 };
 
@@ -130,63 +122,52 @@ interface TableMetadata {
 }
 
 const TABLE_METADATA: Record<string, TableMetadata> = {
-    // POS & Sales
-    marketplace_products: { entityName: 'Product', module: 'Crispy King POS', icon: 'fastfood', badgeColor: 'amber' },
-    products: { entityName: 'Product', module: 'Crispy King POS', icon: 'fastfood', badgeColor: 'amber' },
-    marketplace_orders: { entityName: 'POS Sales Order', module: 'Crispy King POS', icon: 'point-of-sale', badgeColor: 'amber' },
-    sales_orders: { entityName: 'POS Sales Order', module: 'Crispy King POS', icon: 'point-of-sale', badgeColor: 'amber' },
-    sales_returns: { entityName: 'Sales Return', module: 'Crispy King POS', icon: 'assignment-return', badgeColor: 'rose' },
-    cash_transactions: { entityName: 'Cash Register Till', module: 'Crispy King POS', icon: 'account-balance-wallet', badgeColor: 'cyan' },
-    
-    // Inventory
-    stock_movements: { entityName: 'Stock Movement', module: 'Inventory & Bodega', icon: 'inventory', badgeColor: 'teal' },
-    commissary_dispatches: { entityName: 'Commissary Dispatch', module: 'Inventory & Bodega', icon: 'local-shipping', badgeColor: 'sky' },
-    waste_logs: { entityName: 'Spoilage & Waste', module: 'Inventory & Bodega', icon: 'delete-sweep', badgeColor: 'stone' },
-    spoilage: { entityName: 'Spoilage & Bad Orders', module: 'Inventory & Bodega', icon: 'delete-sweep', badgeColor: 'stone' },
-    store_audits: { entityName: 'Bodega Inventory Audit', module: 'Inventory & Bodega', icon: 'fact-check', badgeColor: 'teal' },
-
-    // Lending & Credit
-    loans: { entityName: 'Loan Account', module: 'Lending & Loans', icon: 'receipt-long', badgeColor: 'blue' },
-    payments: { entityName: 'Payment Entry', module: 'Lending & Loans', icon: 'payments', badgeColor: 'emerald' },
-    borrowers: { entityName: 'Member / Borrower', module: 'Lending & Loans', icon: 'person', badgeColor: 'indigo' },
-    loan_products: { entityName: 'Loan Product', module: 'Lending & Loans', icon: 'category', badgeColor: 'blue' },
-    loan_applications: { entityName: 'Loan Application', module: 'Lending & Loans', icon: 'assignment', badgeColor: 'blue' },
-    collection_logs: { entityName: 'Collection Activity', module: 'Lending & Loans', icon: 'history-edu', badgeColor: 'emerald' },
-    collection_groups: { entityName: 'Collection Group', module: 'Lending & Loans', icon: 'groups', badgeColor: 'indigo' },
-    savings_transactions: { entityName: 'Savings Transaction', module: 'Lending & Loans', icon: 'savings', badgeColor: 'emerald' },
-    share_capital_transactions: { entityName: 'Share Capital Entry', module: 'Lending & Loans', icon: 'account-balance', badgeColor: 'indigo' },
+    // Agribusiness Operations
+    agri_parcels: { entityName: 'Farm Parcel', module: 'Agribusiness Operations', icon: 'landscape', badgeColor: 'emerald' },
+    agri_parcel_blocks: { entityName: 'Parcel Block', module: 'Agribusiness Operations', icon: 'grid-view', badgeColor: 'emerald' },
+    agri_block_assignments: { entityName: 'Block Assignment', module: 'Agribusiness Operations', icon: 'assignment', badgeColor: 'teal' },
+    agri_block_progress: { entityName: 'Block Progress', module: 'Agribusiness Operations', icon: 'timeline', badgeColor: 'teal' },
+    agri_crop_cycles: { entityName: 'Crop Cycle', module: 'Agribusiness Operations', icon: 'agriculture', badgeColor: 'teal' },
+    agri_harvest_logs: { entityName: 'Harvest Log', module: 'Agribusiness Operations', icon: 'grain', badgeColor: 'amber' },
+    agri_weekly_settlements: { entityName: 'Harvest Settlement', module: 'Agribusiness Operations', icon: 'event-note', badgeColor: 'emerald' },
+    agri_growth_checkins: { entityName: 'Growth Check-in', module: 'Agribusiness Operations', icon: 'ecg-heart', badgeColor: 'sky' },
+    agri_land_owners: { entityName: 'Land Owner', module: 'Agribusiness Operations', icon: 'terrain', badgeColor: 'stone' },
+    agri_investors: { entityName: 'Capital Partner', module: 'Agribusiness Operations', icon: 'groups', badgeColor: 'indigo' },
+    agri_investor_ledgers: { entityName: 'Partner Ledger', module: 'Agribusiness Operations', icon: 'manage-accounts', badgeColor: 'indigo' },
+    agri_farm_workers: { entityName: 'Farm Worker', module: 'Agribusiness Operations', icon: 'person', badgeColor: 'cyan' },
+    agri_labor_logs: { entityName: 'Field Labor Log', module: 'Agribusiness Operations', icon: 'engineering', badgeColor: 'cyan' },
+    agri_farm_expenses: { entityName: 'Farm Expense', module: 'Agribusiness Operations', icon: 'money-off', badgeColor: 'red' },
+    stock_movements: { entityName: 'Stock Movement', module: 'Farm Inputs & Supplies', icon: 'inventory', badgeColor: 'teal' },
 
     // Accounting & Finance
     journal_entries: { entityName: 'Journal Entry', module: 'Accounting & Finance', icon: 'menu-book', badgeColor: 'violet' },
     journal_entry_lines: { entityName: 'Journal Entry Line', module: 'Accounting & Finance', icon: 'format-list-numbered', badgeColor: 'violet' },
     accounts_payable_vouchers: { entityName: 'AP Voucher', module: 'Accounting & Finance', icon: 'receipt', badgeColor: 'blue' },
-    expenses: { entityName: 'Store Expense', module: 'Accounting & Finance', icon: 'money-off', badgeColor: 'red' },
+    expenses: { entityName: 'Expense', module: 'Accounting & Finance', icon: 'money-off', badgeColor: 'red' },
     expense_categories: { entityName: 'Expense Category', module: 'Accounting & Finance', icon: 'label', badgeColor: 'red' },
+    cash_transactions: { entityName: 'Cash Position', module: 'Accounting & Finance', icon: 'account-balance-wallet', badgeColor: 'cyan' },
     bank_accounts: { entityName: 'Bank Account', module: 'Accounting & Finance', icon: 'account-balance', badgeColor: 'blue' },
     bank_transactions: { entityName: 'Bank Transaction', module: 'Accounting & Finance', icon: 'swap-horiz', badgeColor: 'blue' },
     chart_of_accounts: { entityName: 'Chart of Accounts', module: 'Accounting & Finance', icon: 'account-tree', badgeColor: 'violet' },
-    
-    // Franchise & CRM
-    franchise_contracts: { entityName: 'Franchise Contract', module: 'Franchise & CRM', icon: 'handshake', badgeColor: 'amber' },
-    franchise_royalty_ledgers: { entityName: 'Franchise Royalty Ledger', module: 'Franchise & CRM', icon: 'monetization-on', badgeColor: 'amber' },
+    financial_snapshots: { entityName: 'Financial Snapshot', module: 'Accounting & Finance', icon: 'photo-library', badgeColor: 'violet' },
+    financial_period_settings: { entityName: 'Financial Period', module: 'Accounting & Finance', icon: 'date-range', badgeColor: 'violet' },
+    statutory_rates: { entityName: 'Statutory Rate', module: 'Accounting & Finance', icon: 'percent', badgeColor: 'violet' },
+    statutory_fund_allocations: { entityName: 'Statutory Fund Allocation', module: 'Accounting & Finance', icon: 'savings', badgeColor: 'violet' },
+    suppliers: { entityName: 'Supplier', module: 'Accounting & Finance', icon: 'local-shipping', badgeColor: 'blue' },
 
-    // HR & Payroll
-    employees: { entityName: 'Employee Profile', module: 'HR & Staff', icon: 'badge', badgeColor: 'emerald' },
-    payrolls: { entityName: 'Payroll Record', module: 'HR & Staff', icon: 'payments', badgeColor: 'emerald' },
-    payroll_runs: { entityName: 'Payroll Run', module: 'HR & Staff', icon: 'date-range', badgeColor: 'emerald' },
+    // Structure & Reference Data
+    branches: { entityName: 'Branch', module: 'Structure & Reference', icon: 'account-balance', badgeColor: 'stone' },
+    warehouses: { entityName: 'Warehouse', module: 'Structure & Reference', icon: 'warehouse', badgeColor: 'stone' },
+    business_units: { entityName: 'Business Unit', module: 'Structure & Reference', icon: 'business', badgeColor: 'stone' },
+    areas: { entityName: 'Area / Zone', module: 'Structure & Reference', icon: 'map', badgeColor: 'stone' },
 
     // System & Settings
     feature_flags: { entityName: 'Feature Flag', module: 'System & Config', icon: 'toggle-on', badgeColor: 'purple' },
     user_profiles: { entityName: 'User Account', module: 'System & Config', icon: 'admin-panel-settings', badgeColor: 'indigo' },
-    device_registries: { entityName: 'Device Registry', module: 'System & Config', icon: 'devices', badgeColor: 'gray' },
+    user_branch_roles: { entityName: 'User Branch Role', module: 'System & Config', icon: 'admin-panel-settings', badgeColor: 'indigo' },
+    role_permissions: { entityName: 'Role Permission', module: 'System & Config', icon: 'lock', badgeColor: 'purple' },
     app_settings: { entityName: 'System Setting', module: 'System & Config', icon: 'settings', badgeColor: 'gray' },
-
-    // Water Station
-    ws_customers: { entityName: 'WS Customer', module: 'Water Station', icon: 'person', badgeColor: 'blue' },
-    ws_deliveries: { entityName: 'WS Delivery', module: 'Water Station', icon: 'local-shipping', badgeColor: 'blue' },
-    ws_payments: { entityName: 'WS Payment', module: 'Water Station', icon: 'payments', badgeColor: 'blue' },
-    ws_expenses: { entityName: 'WS Expense', module: 'Water Station', icon: 'money-off', badgeColor: 'blue' },
-    ws_containers: { entityName: 'WS Container Tracking', module: 'Water Station', icon: 'water-drop', badgeColor: 'blue' },
+    action_logs: { entityName: 'Audit Log Entry', module: 'System & Config', icon: 'history', badgeColor: 'gray' },
 };
 
 function parsePayload(data: any): any {
@@ -232,43 +213,57 @@ export function formatEntityInfo(
             title = capitalizeRole(data.key || entityId.replace('feature-', '').replace(/[-_]/g, ' '));
         }
         subtitle = `Key: ${data.key || entityId}`;
-    } else if (normTable === 'loans') {
-        const loanNum = data.loan_number || data.loanNumber || entityId.substring(0, 8);
-        const borrower = data.borrower_name || data.borrowerName || '';
-        title = `Loan #${loanNum}${borrower ? ` • ${borrower}` : ''}`;
-        if (data.total_amount || data.principal_amount) {
-            subtitle = `Amount: ${formatPHP(data.total_amount || data.principal_amount)}`;
-        }
-    } else if (normTable === 'payments') {
-        const amount = data.amount != null ? formatPHP(data.amount) : '';
-        const ref = data.reference_number || data.receipt_number || data.receiptNumber || '';
-        title = amount ? `Payment ${amount}` : 'Loan Payment';
-        if (ref) subtitle = `Ref #${ref}`;
-    } else if (normTable === 'borrowers') {
-        const name = data.full_name || data.fullName || `${data.first_name || ''} ${data.last_name || ''}`.trim() || entityId;
-        title = name;
+    } else if (normTable === 'agri_parcels') {
+        const code = data.code || data.parcel_code || entityId.substring(0, 8);
+        title = data.name ? `${data.name} (${code})` : `Parcel ${code}`;
+        if (data.area_hectares != null) subtitle = `Area: ${data.area_hectares} ha`;
+        else if (data.location_address) subtitle = data.location_address;
+    } else if (normTable === 'agri_crop_cycles') {
+        const cycle = data.cycle_code || data.cycle_number || data.code || entityId.substring(0, 8);
+        title = `Crop Cycle ${cycle}`;
+        if (data.crop_type || data.crop) subtitle = `Crop: ${data.crop_type || data.crop}`;
+    } else if (normTable === 'agri_weekly_settlements') {
+        title = data.week_number != null ? `Weekly Settlement #${data.week_number}` : `Settlement (${entityId.substring(0, 8)})`;
+        const due = data.net_payout_due_this_week != null ? data.net_payout_due_this_week : data.raw_kilo_earnings;
+        if (due != null) subtitle = `Net payout: ${formatPHP(due)}`;
+    } else if (normTable === 'agri_harvest_logs') {
+        title = data.batch_number ? `Harvest ${data.batch_number}` : `Harvest Log (${entityId.substring(0, 8)})`;
+        if (data.net_weight_kg != null) subtitle = `Net weight: ${data.net_weight_kg} kg`;
+    } else if (normTable === 'agri_farm_expenses') {
+        title = data.description || data.category || 'Farm Expense';
+        if (data.amount != null) subtitle = `Amount: ${formatPHP(data.amount)}`;
+    } else if (normTable === 'agri_labor_logs') {
+        title = data.task ? `Field task: ${data.task}` : `Labor Log (${entityId.substring(0, 8)})`;
+        if (data.total_pay != null) subtitle = `Total pay: ${formatPHP(data.total_pay)}`;
+    } else if (normTable === 'agri_investors') {
+        title = data.company_name || data.contact_person || `Capital Partner (${entityId.substring(0, 8)})`;
+        if (data.contact_number) subtitle = `Contact: ${data.contact_number}`;
+    } else if (normTable === 'agri_investor_ledgers') {
+        title = data.type ? `Partner ledger: ${capitalizeRole(data.type)}` : `Partner Ledger (${entityId.substring(0, 8)})`;
+        if (data.amount != null) subtitle = `Amount: ${formatPHP(data.amount)}`;
+    } else if (normTable === 'agri_land_owners') {
+        title = data.name || data.full_name || `Land Owner (${entityId.substring(0, 8)})`;
         if (data.contact_number || data.phone) subtitle = `Contact: ${data.contact_number || data.phone}`;
-    } else if (normTable.includes('product')) {
-        title = data.name || data.title || entityId;
-        if (data.price != null) subtitle = `Price: ${formatPHP(data.price)}`;
-    } else if (normTable.includes('order')) {
-        const ord = data.order_number || data.orderNumber || entityId.substring(0, 8);
-        title = `Order #${ord}`;
-        if (data.total_amount != null) subtitle = `Total: ${formatPHP(data.total_amount)}`;
+    } else if (normTable === 'agri_farm_workers') {
+        title = data.name || `Farm Worker (${entityId.substring(0, 8)})`;
+        if (data.specialization) subtitle = `Specialization: ${data.specialization}`;
+    } else if (normTable === 'journal_entries') {
+        title = data.description || data.reference_number || `Journal Entry (${entityId.substring(0, 8)})`;
+        if (data.reference_number) subtitle = `Ref #${data.reference_number}`;
     } else if (normTable === 'stock_movements') {
-        const prod = data.product_name || data.productName || 'Inventory Item';
+        const prod = data.product_name || data.productName || 'Farm Input';
         const qty = data.quantity != null ? `${data.quantity > 0 ? '+' : ''}${data.quantity}` : '';
         title = `${prod} (${qty})`;
         subtitle = `Movement: ${capitalizeRole(data.movement_type || 'Stock Change')}`;
     } else if (normTable === 'expenses') {
-        title = data.description || data.category || 'Store Expense';
+        title = data.description || data.category || 'Expense';
         if (data.amount != null) subtitle = `Amount: ${formatPHP(data.amount)}`;
     } else if (normTable === 'user_profiles') {
         title = data.full_name || data.fullName || data.email || entityId;
         subtitle = `Role: ${capitalizeRole(data.role || 'User')}`;
-    } else if (normTable === 'commissary_dispatches') {
-        title = `Dispatch #${data.dispatch_number || entityId.substring(0, 8)}`;
-        if (data.status) subtitle = `Status: ${capitalizeRole(data.status)}`;
+    } else if (normTable === 'suppliers') {
+        title = data.name || data.supplier_name || `Supplier (${entityId.substring(0, 8)})`;
+        if (data.phone) subtitle = `Contact: ${data.phone}`;
     } else {
         title = data.name || data.title || data.full_name || data.description || data.code || `${meta.entityName} (${entityId.substring(0, 8)})`;
     }
@@ -329,15 +324,16 @@ const EXCLUDED_DIFF_FIELDS = new Set([
 ]);
 
 const CURRENCY_FIELDS = new Set([
-    'amount', 'total_amount', 'totalAmount', 'principal_amount', 'principalAmount',
-    'installment_amount', 'installmentAmount', 'balance', 'price', 'cost',
-    'interest_amount', 'interestAmount', 'fee', 'penalty_amount', 'deposit_amount'
+    'amount', 'total_amount', 'totalAmount', 'gross_amount', 'grossAmount',
+    'net_amount', 'netAmount', 'balance', 'price', 'cost', 'fee',
+    'daily_wage', 'dailyWage', 'investment_amount', 'investmentAmount',
+    'principal_amount', 'principalAmount'
 ]);
 
 const DATE_FIELDS = new Set([
-    'date', 'payment_date', 'paymentDate', 'release_date', 'releaseDate',
-    'maturity_date', 'maturityDate', 'first_payment_date', 'firstPaymentDate',
-    'due_date', 'dueDate', 'timestamp'
+    'date', 'settlement_date', 'settlementDate', 'start_date', 'startDate',
+    'end_date', 'endDate', 'planting_date', 'plantingDate', 'harvest_date',
+    'harvestDate', 'due_date', 'dueDate', 'timestamp'
 ]);
 
 /**

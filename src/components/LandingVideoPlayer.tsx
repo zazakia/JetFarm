@@ -30,7 +30,7 @@ function formatTime(seconds: number): string {
 export function LandingVideoPlayer({
     videoSrc = '/videos/jetfarms.mp4',
     posterSrc = '/videos/jetfarms-poster.jpg',
-    title = 'JetFarm Agribusiness & Field Operations Showcase',
+    title = 'Agri-One Agribusiness & Field Operations Showcase',
     subtitle = 'See real-time crop cycle tracking, offline GPS parcel mapping, Pakyaw labor payroll, and weighbridge harvest intake in action.',
     autoPlay = true,
     autoPlaySound = true,

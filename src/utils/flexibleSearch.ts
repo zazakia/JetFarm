@@ -1,5 +1,5 @@
 /**
- * Dynamic and Flexible Search Engine for JetFarm
+ * Dynamic and Flexible Search Engine for Agri-One
  *
  * Provides multi-token, accent-insensitive, weighted-field searching,
  * dynamic field filtering, relevance scoring, and match highlighting.

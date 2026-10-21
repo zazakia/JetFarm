@@ -232,7 +232,7 @@ export class LandSettlementEngine {
     static generateSettlementSlip(data: SettlementSlipData): string {
         const lines: string[] = [
             '==================================================',
-            '             JETFARM AGRIBUSINESS PLATFORM        ',
+            '          AGRI-ONE AGRIBUSINESS PLATFORM          ',
             '            WEEKLY LAND OWNER SETTLEMENT SLIP     ',
             '==================================================',
             `Cycle Code   : ${data.cropCycleCode}`,
@@ -258,7 +258,7 @@ export class LandSettlementEngine {
         if (data.receiptReference) {
             lines.push(`Reference / Receipt: ${data.receiptReference}`);
         }
-        lines.push('Audited & Guarantee-Protected by JetFarm Settlement Engine');
+        lines.push('Audited & Guarantee-Protected by Agri-One Settlement Engine');
 
         return lines.join('\n');
     }

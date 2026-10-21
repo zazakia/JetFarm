@@ -12,12 +12,20 @@ import { isRouteAllowedForRole, LAST_AUTHORIZED_ROUTE_KEY } from '../src/utils/a
 import { COMPANY_NAME } from '../src/constants/brand';
 
 const { width } = Dimensions.get('window');
-const logoSource = require('../assets/agap_mark.png');
+const logoSource = require('../assets/agri_one_logo.png');
 
 const SYNC_TIMEOUT_MS = 30000; // 30 second timeout for sync operation
 const AUTO_REDIRECT_DELAY_MS = 1000; // Delay before redirecting to allow UI to settle
 const BACKGROUND_SYNC_REDIRECT_DELAY_MS = 1200; // Do not block app entry on a full sync cycle
 const NO_SESSION_GRACE_MS = 3000; // Allow auth event/session storage to settle after login handoff
+
+/**
+ * Home route for a role, failing closed to /login. The lending roles are deleted on this variant,
+ * so a stale auth session can still carry one of their names - without this guard the screen
+ * would call router.replace(undefined) and strand the user on the loading screen.
+ */
+const homeRouteFor = (role: string | null | undefined): string =>
+    (role && ROLE_HOME_ROUTES[role as UserRole]) || '/login';
 
 export default function LoadingScreen() {
     console.log('[LoadingScreen] Rendering LoadingScreen');
@@ -164,14 +172,14 @@ export default function LoadingScreen() {
             if (role) {
                 AsyncStorage.getItem(LAST_AUTHORIZED_ROUTE_KEY)
                     .then((lastRoute) => {
-                        const fallbackRoute = ROLE_HOME_ROUTES[role as UserRole];
+                        const fallbackRoute = homeRouteFor(role);
                         const isOldAdminHome = !lastRoute || lastRoute === '/(admin)' || lastRoute === '/(admin)/' || lastRoute === '/';
                         const nextRoute = (!isOldAdminHome && isRouteAllowedForRole(lastRoute, role)) ? lastRoute : fallbackRoute;
                         router.replace(nextRoute as any);
                     })
                     .catch((error) => {
                         console.warn('[LoadingScreen] Failed to restore last authorized route:', error);
-                        router.replace(ROLE_HOME_ROUTES[role as UserRole] as any);
+                        router.replace(homeRouteFor(role) as any);
                     });
             } else {
                 router.replace('/login');

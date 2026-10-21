@@ -7,10 +7,10 @@ import { safeBack } from '../../../src/utils/navigation';
 
 const ALL_CARDS = [
     {
-        icon: 'calculate',
-        title: 'Cooperative Computations',
-        description: 'Edit savings interest rate, statutory allocations, and net surplus distributions.',
-        route: '/(admin)/settings/coop-computations',
+        icon: 'account-balance',
+        title: 'Statutory Reserve Allocations',
+        description: 'Edit the reserve, education, community development and optional fund percentages used by the financial statements.',
+        route: '/(admin)/settings/statutory-allocations',
         lendingOnly: false,
     },
     {

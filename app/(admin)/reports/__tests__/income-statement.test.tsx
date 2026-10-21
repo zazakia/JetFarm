@@ -12,10 +12,10 @@ jest.mock('../../../../src/services/CoopFinancialReportService', () => ({
 jest.mock('../../../../src/services/BusinessUnitService', () => ({
     __esModule: true,
     BusinessUnitService: {
-        getAll: jest.fn().mockResolvedValue([{ id: 'bu1', name: 'Coop Main', isActive: true }]),
+        getAll: jest.fn().mockResolvedValue([{ id: 'bu1', name: 'Agri-One Main', isActive: true }]),
     },
     default: {
-        getAll: jest.fn().mockResolvedValue([{ id: 'bu1', name: 'Coop Main', isActive: true }]),
+        getAll: jest.fn().mockResolvedValue([{ id: 'bu1', name: 'Agri-One Main', isActive: true }]),
     },
 }));
 
@@ -31,44 +31,46 @@ jest.mock('expo-router', () => ({
     }),
 }));
 
+// Self-consistent so a mis-mapped key shows up as an arithmetic failure rather than a blank row:
+// revenues 30,000 - expenses 20,800 = surplus 9,200; the four statutory funds take 30% (2,760)
+// and the screen is expected to disclose the remaining 6,440 itself.
+const amount = (current: number, prior: number) => ({ current, prior, variance: current - prior });
+
 const mockReportData = {
     year: 2025,
     priorYear: 2024,
     revenues: {
-        interestOnLoans: { current: 15000, prior: 12000, variance: 3000 },
-        serviceCharges: { current: 2000, prior: 1500, variance: 500 },
-        penalties: { current: 500, prior: 300, variance: 200 },
-        totalCreditOps: { current: 17500, prior: 13800, variance: 3700 },
-        membershipFees: { current: 1000, prior: 800, variance: 200 },
-        interestOnInvestments: { current: 300, prior: 200, variance: 100 },
-        miscellaneousIncome: { current: 200, prior: 100, variance: 100 },
-        totalOtherIncome: { current: 1500, prior: 1100, variance: 400 },
-        totalRevenues: { current: 19000, prior: 14900, variance: 4100 },
+        offtakeRevenue: amount(22800, 20000),
+        byproductRevenue: amount(5700, 5000),
+        otherRevenue: amount(1500, 1100),
+        totalRevenues: amount(30000, 26100),
     },
     expenses: {
-        financingCosts: { current: 1000, prior: 800, variance: 200 },
-        salaries: { current: 5000, prior: 4500, variance: 500 },
-        office: { current: 1200, prior: 1000, variance: 200 },
-        communication: { current: 300, prior: 250, variance: 50 },
-        transportation: { current: 800, prior: 700, variance: 100 },
-        depreciation: { current: 1500, prior: 1500, variance: 0 },
-        taxes: { current: 200, prior: 150, variance: 50 },
-        repairs: { current: 300, prior: 200, variance: 100 },
-        training: { current: 500, prior: 400, variance: 100 },
-        professional: { current: 600, prior: 500, variance: 100 },
-        otherExpenses: { current: 400, prior: 300, variance: 100 },
-        totalAdminCosts: { current: 10800, prior: 9500, variance: 1300 },
-        totalExpenses: { current: 11800, prior: 10300, variance: 1500 },
+        farmProductionCosts: amount(10000, 8500),
+        landOwnerSettlements: amount(4200, 3600),
+        farmLabor: amount(3100, 2700),
+        farmInputs: amount(1800, 1500),
+        machineryAndLogistics: amount(600, 500),
+        otherFarmCosts: amount(300, 200),
+        salaries: amount(5000, 4500),
+        office: amount(1200, 1000),
+        communication: amount(300, 250),
+        transportation: amount(800, 700),
+        depreciation: amount(1500, 1500),
+        taxes: amount(200, 150),
+        repairs: amount(300, 200),
+        training: amount(500, 400),
+        professional: amount(600, 500),
+        otherExpenses: amount(400, 300),
+        totalAdminCosts: amount(10800, 9500),
+        totalExpenses: amount(20800, 18000),
     },
-    netSurplus: { current: 7200, prior: 4600, variance: 2600 },
+    netSurplus: amount(9200, 8100),
     allocations: [
-        { fundType: 'Reserve Fund', percentage: 50, amount: 3600, priorAmount: 2300 },
-        { fundType: 'Education and Training Fund-local', percentage: 5, amount: 360, priorAmount: 230 },
-        { fundType: 'Due to Union/Federation', percentage: 5, amount: 360, priorAmount: 230 },
-        { fundType: 'Community Development Fund', percentage: 3, amount: 216, priorAmount: 138 },
-        { fundType: 'Optional Fund', percentage: 7, amount: 504, priorAmount: 322 },
-        { fundType: 'Interest on share capital payable', percentage: 15, amount: 1080, priorAmount: 690 },
-        { fundType: 'Patronage Refund Payable', percentage: 15, amount: 1080, priorAmount: 690 },
+        { fundType: 'Reserve Fund', percentage: 10, amount: 920, priorAmount: 810 },
+        { fundType: 'Education and Training Fund', percentage: 10, amount: 920, priorAmount: 810 },
+        { fundType: 'Community Development Fund', percentage: 3, amount: 276, priorAmount: 243 },
+        { fundType: 'Optional Fund', percentage: 7, amount: 644, priorAmount: 567 },
     ],
 };
 
@@ -86,5 +88,37 @@ describe('IncomeStatementScreen', () => {
             expect(screen.getAllByText(/TOTAL EXPENSES/i).length).toBeGreaterThan(0);
             expect(screen.getAllByText(/Reserve Fund/i).length).toBeGreaterThan(0);
         });
+    });
+
+    it('presents the farm revenue and cost lines the crop cycle actually posts', async () => {
+        render(<IncomeStatementScreen />);
+        await waitFor(() => {
+            expect(screen.getAllByText('Harvest Revenue').length).toBeGreaterThan(0);
+            expect(screen.getAllByText('Off-take delivered to buyer').length).toBeGreaterThan(0);
+            expect(screen.getAllByText('By-product & residue sales').length).toBeGreaterThan(0);
+            expect(screen.getAllByText('Farm Production Costs').length).toBeGreaterThan(0);
+            expect(screen.getAllByText('Land-owner settlements').length).toBeGreaterThan(0);
+            expect(screen.getAllByText('Field labor').length).toBeGreaterThan(0);
+            expect(screen.getAllByText('Machinery & logistics').length).toBeGreaterThan(0);
+        });
+    });
+
+    it('discloses the surplus the statutory funds leave behind instead of implying it', async () => {
+        render(<IncomeStatementScreen />);
+        await waitFor(() => {
+            expect(screen.getAllByText('Retained — not appropriated').length).toBeGreaterThan(0);
+        });
+        // 9,200 surplus - 2,760 appropriated.
+        expect(screen.getAllByText('6,440.00').length).toBeGreaterThan(0);
+        expect(screen.getAllByText('NET SURPLUS (LOSS) FOR THE YEAR').length).toBeGreaterThan(0);
+        expect(screen.getAllByText('9,200.00').length).toBeGreaterThan(0);
+    });
+
+    it('shows no lending or share-capital distribution line', async () => {
+        render(<IncomeStatementScreen />);
+        await waitFor(() => {
+            expect(screen.getAllByText(/TOTAL REVENUES/i).length).toBeGreaterThan(0);
+        });
+        expect(screen.queryAllByText(/interest on loans|service charges|penalt|membership fee|patronage|share capital|due to union|financing cost/i)).toHaveLength(0);
     });
 });

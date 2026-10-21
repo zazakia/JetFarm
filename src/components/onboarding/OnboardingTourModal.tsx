@@ -226,7 +226,7 @@ export function OnboardingTourModal() {
                                     {isFirstStep
                                         ? 'Start tour'
                                         : isLastStep
-                                        ? 'Explore JetFarm'
+                                        ? 'Explore Agri-One'
                                         : 'Next'}
                                 </Text>
                                 <MaterialIcons

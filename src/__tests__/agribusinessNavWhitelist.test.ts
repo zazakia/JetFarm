@@ -85,8 +85,9 @@ describe('agribusiness-only navigation whitelist', () => {
 
     it('parses the three enumerations it guards', () => {
         expect(sidebarRoutes.length).toBeGreaterThan(10);
-        expect(roleHomes.length).toBe(12);
-        expect(flagPrefixes.length).toBeGreaterThan(5);
+        // The role vocabulary is the three identities seed.sql can still log in.
+        expect(roleHomes.length).toBe(3);
+        expect(flagPrefixes.length).toBeGreaterThan(3);
     });
 
     it('declares no non-agribusiness segment in any enumeration', () => {

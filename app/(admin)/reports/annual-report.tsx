@@ -282,20 +282,24 @@ export default function AnnualReportScreen() {
                                 <Text className="text-[10px] font-black text-blue-500 uppercase tracking-wider mb-2">Assets</Text>
                                 <ComparativeRow label="Cash on Hand" current={fc.assets.cashOnHand.current} prior={fc.assets.cashOnHand.prior} indent />
                                 <ComparativeRow label="Cash in Bank" current={fc.assets.cashInBank.current} prior={fc.assets.cashInBank.prior} indent />
-                                <ComparativeRow label="Loan Receivables, Net" current={fc.assets.loanReceivable.current} prior={fc.assets.loanReceivable.prior} indent />
+                                <ComparativeRow label="Standing Crops, Produce & Farm Inputs" current={fc.assets.farmAssets.current} prior={fc.assets.farmAssets.prior} indent />
                                 <ComparativeRow label="Other Receivables" current={fc.assets.otherReceivables.current} prior={fc.assets.otherReceivables.prior} indent />
+                                <ComparativeRow label="TOTAL CURRENT ASSETS" current={fc.assets.totalCurrentAssets.current} prior={fc.assets.totalCurrentAssets.prior} bold />
+                                <ComparativeRow label="Sundry Assets (Non-Current)" current={fc.assets.sundryAssets.current} prior={fc.assets.sundryAssets.prior} indent />
                                 <ComparativeRow label="TOTAL ASSETS" current={fc.assets.totalAssets.current} prior={fc.assets.totalAssets.prior} bold highlight="blue" />
 
                                 <View className="h-px bg-gray-100 my-3" />
                                 <Text className="text-[10px] font-black text-red-500 uppercase tracking-wider mb-2">Liabilities</Text>
-                                <ComparativeRow label="Member Savings Deposits" current={fc.liabilities.savingsDeposits.current} prior={fc.liabilities.savingsDeposits.prior} indent />
-                                <ComparativeRow label="Share Capital Payable" current={fc.liabilities.shareCapitalPayable.current} prior={fc.liabilities.shareCapitalPayable.prior} indent />
+                                <ComparativeRow label="Land-Owner Settlements Payable" current={fc.liabilities.settlementsPayable.current} prior={fc.liabilities.settlementsPayable.prior} indent />
+                                <ComparativeRow label="Field Labor Payable" current={fc.liabilities.laborPayable.current} prior={fc.liabilities.laborPayable.prior} indent />
+                                <ComparativeRow label="Accounts Payable" current={fc.liabilities.accountsPayable.current} prior={fc.liabilities.accountsPayable.prior} indent />
                                 <ComparativeRow label="Other Payables" current={fc.liabilities.otherPayables.current} prior={fc.liabilities.otherPayables.prior} indent />
                                 <ComparativeRow label="TOTAL LIABILITIES" current={fc.liabilities.totalLiabilities.current} prior={fc.liabilities.totalLiabilities.prior} bold highlight="red" />
 
                                 <View className="h-px bg-gray-100 my-3" />
                                 <Text className="text-[10px] font-black text-green-600 uppercase tracking-wider mb-2">Fund Balance (Equity)</Text>
                                 <ComparativeRow label="Share Capital" current={fc.fundBalance.shareCapital.current} prior={fc.fundBalance.shareCapital.prior} indent />
+                                <ComparativeRow label="Project & Partner Equity" current={fc.fundBalance.projectEquity.current} prior={fc.fundBalance.projectEquity.prior} indent />
                                 <ComparativeRow label="General Reserve Fund" current={fc.fundBalance.reserveFund.current} prior={fc.fundBalance.reserveFund.prior} indent />
                                 <ComparativeRow label="Education & Training Fund" current={fc.fundBalance.educationFund.current} prior={fc.fundBalance.educationFund.prior} indent />
                                 <ComparativeRow label="Community Dev. Fund" current={fc.fundBalance.communityDevFund.current} prior={fc.fundBalance.communityDevFund.prior} indent />
@@ -313,18 +317,18 @@ export default function AnnualReportScreen() {
                         {act && (
                             <StatementCard title="Statement of Activities" icon="bar-chart" color="#059669">
                                 <Text className="text-[10px] font-black text-green-600 uppercase tracking-wider mb-2">Revenues</Text>
-                                <ComparativeRow label="Interest Income on Loans" current={act.revenues.interestOnLoans.current} prior={act.revenues.interestOnLoans.prior} indent />
-                                <ComparativeRow label="Service Charges and Fees" current={act.revenues.serviceCharges.current} prior={act.revenues.serviceCharges.prior} indent />
-                                <ComparativeRow label="Membership Fees" current={act.revenues.membershipFees.current} prior={act.revenues.membershipFees.prior} indent />
+                                <ComparativeRow label="Harvest Off-take Revenue" current={act.revenues.offtakeRevenue.current} prior={act.revenues.offtakeRevenue.prior} indent />
+                                <ComparativeRow label="By-product Revenue" current={act.revenues.byproductRevenue.current} prior={act.revenues.byproductRevenue.prior} indent />
                                 <ComparativeRow label="Other Income" current={act.revenues.otherIncome.current} prior={act.revenues.otherIncome.prior} indent />
                                 <ComparativeRow label="TOTAL REVENUES" current={act.revenues.totalRevenues.current} prior={act.revenues.totalRevenues.prior} bold highlight="green" />
 
                                 <View className="h-px bg-gray-100 my-3" />
                                 <Text className="text-[10px] font-black text-red-500 uppercase tracking-wider mb-2">Expenses</Text>
+                                <ComparativeRow label="Farm Production Costs" current={act.expenses.farmProductionCosts.current} prior={act.expenses.farmProductionCosts.prior} indent />
                                 <ComparativeRow label="Salaries and Wages" current={act.expenses.salariesAndWages.current} prior={act.expenses.salariesAndWages.prior} indent />
                                 <ComparativeRow label="Office & Admin Expenses" current={act.expenses.officeExpenses.current} prior={act.expenses.officeExpenses.prior} indent />
                                 <ComparativeRow label="Depreciation & Amortization" current={act.expenses.depreciationAndAmortization.current} prior={act.expenses.depreciationAndAmortization.prior} indent />
-                                <ComparativeRow label="Other Expenses" current={act.expenses.otherExpenses.current} prior={act.expenses.otherExpenses.prior} indent />
+                                <ComparativeRow label="Other Administrative Expenses" current={act.expenses.otherExpenses.current} prior={act.expenses.otherExpenses.prior} indent />
                                 <ComparativeRow label="TOTAL EXPENSES" current={act.expenses.totalExpenses.current} prior={act.expenses.totalExpenses.prior} bold highlight="red" />
 
                                 <View className="h-px bg-gray-100 my-3" />
@@ -351,7 +355,8 @@ export default function AnnualReportScreen() {
                                 <ComparativeRow label="Education & Training Fund (10%)" current={chg.statutoryAllocations.educationFund.current} prior={chg.statutoryAllocations.educationFund.prior} indent />
                                 <ComparativeRow label="Community Dev. Fund (3%)" current={chg.statutoryAllocations.communityDevFund.current} prior={chg.statutoryAllocations.communityDevFund.prior} indent />
                                 <ComparativeRow label="Optional Fund (7%)" current={chg.statutoryAllocations.optionalFund.current} prior={chg.statutoryAllocations.optionalFund.prior} indent />
-                                <ComparativeRow label="Dividends Declared" current={chg.dividendsDeclared.current} prior={chg.dividendsDeclared.prior} indent />
+                                <ComparativeRow label="Total Statutory Appropriations" current={chg.statutoryAllocations.totalAllocations.current} prior={chg.statutoryAllocations.totalAllocations.prior} indent />
+                                <ComparativeRow label="Surplus Not Appropriated (Retained)" current={chg.unallocatedSurplus.current} prior={chg.unallocatedSurplus.prior} indent />
 
                                 <View className="h-px bg-gray-100 my-2" />
                                 <ComparativeRow label="FUND BALANCE, END OF YEAR" current={chg.closing.current} prior={chg.closing.prior} bold highlight="purple" />

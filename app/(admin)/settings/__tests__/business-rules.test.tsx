@@ -48,7 +48,7 @@ describe('BusinessRulesScreen', () => {
         expect(screen.getByText('Business Rules')).toBeTruthy();
         expect(screen.getByText('Settings-driven app behavior')).toBeTruthy();
 
-        expect(screen.getByText('Cooperative Computations')).toBeTruthy();
+        expect(screen.getByText('Statutory Reserve Allocations')).toBeTruthy();
         expect(screen.getByText('Feature Flags')).toBeTruthy();
         expect(screen.getByText('Role Access')).toBeTruthy();
         expect(screen.getByText('Expense Categories')).toBeTruthy();
@@ -57,8 +57,8 @@ describe('BusinessRulesScreen', () => {
     it('navigates to corresponding routes on card press', () => {
         render(<BusinessRulesScreen />);
 
-        fireEvent.press(screen.getByText('Cooperative Computations'));
-        expect(mockPush).toHaveBeenCalledWith('/(admin)/settings/coop-computations');
+        fireEvent.press(screen.getByText('Statutory Reserve Allocations'));
+        expect(mockPush).toHaveBeenCalledWith('/(admin)/settings/statutory-allocations');
 
         fireEvent.press(screen.getByText('Feature Flags'));
         expect(mockPush).toHaveBeenCalledWith('/(admin)/settings/feature-flags');
@@ -84,7 +84,7 @@ describe('BusinessRulesScreen', () => {
 
         // count is the load-bearing assertion: reintroducing a lending card fails it
         expect(screen.getAllByTestId(/^business-rule-card-/)).toHaveLength(4);
-        expect(screen.getByText('Cooperative Computations')).toBeTruthy();
+        expect(screen.getByText('Statutory Reserve Allocations')).toBeTruthy();
         expect(screen.getByText('Feature Flags')).toBeTruthy();
         expect(screen.getByText('Role Access')).toBeTruthy();
         expect(screen.getByText('Expense Categories')).toBeTruthy();

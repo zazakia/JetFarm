@@ -104,7 +104,7 @@ describe('BUG-001: GoTrue NULL token column crash (500 Database error querying s
       error: gotrue500Error,
     });
 
-    await expect(AuthService.signIn('admin@poscursor.com', '12345678')).rejects.toThrow(
+    await expect(AuthService.signIn('admin@agri-one.com', '12345678')).rejects.toThrow(
       'Database error querying schema'
     );
   });
@@ -121,7 +121,7 @@ describe('BUG-001: GoTrue NULL token column crash (500 Database error querying s
 
     let caught: Error | null = null;
     try {
-      await AuthService.signIn('admin@poscursor.com', '12345678');
+      await AuthService.signIn('admin@agri-one.com', '12345678');
     } catch (e: any) {
       caught = e;
     }
@@ -135,7 +135,7 @@ describe('BUG-001: GoTrue NULL token column crash (500 Database error querying s
       data: {
         user: {
           id: '00000000-0000-0000-0000-000000000001',
-          email: 'admin@poscursor.com',
+          email: 'admin@agri-one.com',
           role: 'authenticated',
           // All token fields are present (non-NULL)
           confirmation_token: '',
@@ -148,9 +148,9 @@ describe('BUG-001: GoTrue NULL token column crash (500 Database error querying s
       error: null,
     });
 
-    await expect(AuthService.signIn('admin@poscursor.com', '12345678')).resolves.toBeUndefined();
+    await expect(AuthService.signIn('admin@agri-one.com', '12345678')).resolves.toBeUndefined();
     expect(supabase.auth.signInWithPassword).toHaveBeenCalledWith({
-      email: 'admin@poscursor.com',
+      email: 'admin@agri-one.com',
       password: '12345678',
     });
   });
@@ -161,10 +161,10 @@ describe('BUG-001: GoTrue NULL token column crash (500 Database error querying s
       error: null,
     });
 
-    await AuthService.signIn('  admin@poscursor.com  ', '  12345678  ');
+    await AuthService.signIn('  admin@agri-one.com  ', '  12345678  ');
 
     expect(supabase.auth.signInWithPassword).toHaveBeenCalledWith({
-      email: 'admin@poscursor.com',
+      email: 'admin@agri-one.com',
       password: '12345678',
     });
   });
@@ -225,7 +225,7 @@ describe('BUG-003: Stale cross-project refresh token causes auth failure', () =>
       error: refreshError,
     });
 
-    await expect(AuthService.signIn('admin@poscursor.com', 'pass')).rejects.toThrow(
+    await expect(AuthService.signIn('admin@agri-one.com', 'pass')).rejects.toThrow(
       'Invalid Refresh Token'
     );
   });

@@ -58,20 +58,20 @@ describe('SettingsService', () => {
     it('exposes feature and role permission maps', async () => {
         const [flags, permissions] = await Promise.all([
             service.getFeatureFlagMap(),
-            service.getRolePermissionMap('collector'),
+            service.getRolePermissionMap('expenses_encoder'),
         ]);
 
-        expect(flags['module.loans']).toBe(true);
-        expect(permissions['route.(collector)']).toBe(true);
+        expect(flags['module.accounting']).toBe(true);
+        expect(permissions['route.(expenses-encoder)']).toBe(true);
         expect(permissions['route.(admin)']).toBe(false);
     });
 
     it('updates feature and role toggles through the service maps', async () => {
         await service.ensureDefaults();
 
-        const feature = (await service.getFeatureFlags()).find(flag => flag.key === 'module.loans');
+        const feature = (await service.getFeatureFlags()).find(flag => flag.key === 'module.accounting');
         const permission = (await service.getRolePermissions()).find(item => (
-            item.role === 'collector' && item.permissionKey === 'route.(collector)'
+            item.role === 'expenses_encoder' && item.permissionKey === 'route.(expenses-encoder)'
         ));
 
         expect(feature).toBeTruthy();
@@ -80,8 +80,20 @@ describe('SettingsService', () => {
         await service.setFeatureEnabled(feature!, false);
         await service.setRolePermissionEnabled(permission!, false);
 
+        await expect(service.isFeatureEnabled('module.accounting')).resolves.toBe(false);
+        await expect(service.isRolePermissionEnabled('expenses_encoder', 'route.(expenses-encoder)')).resolves.toBe(false);
+    });
+
+    it('treats an unseeded key as off unless this build ships it', async () => {
+        await service.ensureDefaults();
+
+        // A feature_flags row left over from a pre-teardown database, or a plain typo, must not
+        // resolve to enabled - that was the fail-open default on main.
         await expect(service.isFeatureEnabled('module.loans')).resolves.toBe(false);
-        await expect(service.isRolePermissionEnabled('collector', 'route.(collector)')).resolves.toBe(false);
+        await expect(service.isFeatureEnabled('module.bananas')).resolves.toBe(false);
+        expect(await service.isFeatureEnabled('module.accounting')).toBe(true);
+        // The explicit fallback still overrides, for callers that want fail-open.
+        await expect(service.isFeatureEnabled('module.loans', true)).resolves.toBe(true);
     });
 
     it('bootstraps branding and company name settings defaults', async () => {

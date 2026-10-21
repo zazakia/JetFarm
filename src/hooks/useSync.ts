@@ -62,22 +62,6 @@ export function useSync() {
         return await SyncService.updatePendingCount();
     }, []);
 
-    /**
-     * Verify that assigned borrowers are present in local DB
-     * Useful for ensuring data consistency after sync
-     */
-    const verifyBorrowerAssignments = useCallback(async (collectorId: string) => {
-        try {
-            const collection = database.collections.get('borrowers');
-            const query = collection.query(Q.where('collector_id', collectorId));
-            const count = await query.fetchCount();
-            return count > 0;
-        } catch (err) {
-            console.error('[useSync] Verification failed:', err);
-            return false;
-        }
-    }, []);
-
     return {
         sync,
         isSyncing,
@@ -86,6 +70,5 @@ export function useSync() {
         pendingChanges: syncProgress.pendingChanges,
         lastSyncAt: syncProgress.lastSyncAt,
         getPendingCount,
-        verifyBorrowerAssignments,
     };
 }

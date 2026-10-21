@@ -10,74 +10,77 @@ const mockData: AnnualReportData = {
         year: 2026,
         priorYear: 2025,
         asOf: new Date('2026-12-31T00:00:00Z'),
+        // Self-consistent agribusiness figures: current 715,000 assets = 26,000 liabilities
+        // + 689,000 fund balance; prior 602,000 = 19,000 + 583,000.
         assets: {
             cashOnHand: { current: 50000, prior: 40000 },
             cashInBank: { current: 150000, prior: 100000 },
-            loanReceivable: { current: 500000, prior: 450000 },
-            savingsLoansReceivable: { current: 10000, prior: 5000 },
+            farmAssets: { current: 500000, prior: 450000 },
             otherReceivables: { current: 5000, prior: 2000 },
             sundryAssets: { current: 10000, prior: 10000 },
-            totalCurrentAssets: { current: 715000, prior: 597000 },
-            totalAssets: { current: 715000, prior: 597000 },
+            totalCurrentAssets: { current: 705000, prior: 592000 },
+            totalAssets: { current: 715000, prior: 602000 },
         },
         liabilities: {
-            savingsDeposits: { current: 20000, prior: 15000 },
-            shareCapitalPayable: { current: 0, prior: 0 },
+            settlementsPayable: { current: 20000, prior: 15000 },
+            laborPayable: { current: 4000, prior: 3000 },
+            accountsPayable: { current: 1000, prior: 500 },
             otherPayables: { current: 1000, prior: 500 },
-            totalLiabilities: { current: 21000, prior: 15500 },
+            totalLiabilities: { current: 26000, prior: 19000 },
         },
         fundBalance: {
             shareCapital: { current: 30000, prior: 25000 },
+            projectEquity: { current: 600000, prior: 500000 },
             reserveFund: { current: 1000, prior: 500 },
             educationFund: { current: 1000, prior: 500 },
             communityDevFund: { current: 500, prior: 200 },
             optionalFund: { current: 500, prior: 200 },
-            retainedSurplus: { current: 7000, prior: 3900 },
-            totalFundBalance: { current: 40000, prior: 30300 },
+            retainedSurplus: { current: 56000, prior: 56600 },
+            totalFundBalance: { current: 689000, prior: 583000 },
         },
-        totalLiabilitiesAndFundBalance: { current: 61000, prior: 45800 },
+        totalLiabilitiesAndFundBalance: { current: 715000, prior: 602000 },
     },
     activities: {
         year: 2026,
         priorYear: 2025,
         revenues: {
-            interestOnLoans: { current: 15000, prior: 12000 },
-            serviceCharges: { current: 2000, prior: 1500 },
-            membershipFees: { current: 100, prior: 50 },
-            otherIncome: { current: 500, prior: 300 },
+            offtakeRevenue: { current: 15000, prior: 12000 },
+            byproductRevenue: { current: 2000, prior: 1500 },
+            otherIncome: { current: 600, prior: 350 },
             totalRevenues: { current: 17600, prior: 13850 },
         },
         expenses: {
-            salariesAndWages: { current: 5000, prior: 4000 },
-            officeExpenses: { current: 2000, prior: 1500 },
-            depreciationAndAmortization: { current: 1000, prior: 1000 },
-            otherExpenses: { current: 1700, prior: 1500 },
-            totalExpenses: { current: 9700, prior: 8000 },
+            farmProductionCosts: { current: 7000, prior: 6000 },
+            salariesAndWages: { current: 2000, prior: 1500 },
+            officeExpenses: { current: 300, prior: 200 },
+            depreciationAndAmortization: { current: 200, prior: 100 },
+            otherExpenses: { current: 100, prior: 100 },
+            totalExpenses: { current: 9600, prior: 7900 },
         },
-        netSurplus: { current: 7900, prior: 5850 },
+        netSurplus: { current: 8000, prior: 5950 },
     },
     changesInFundBalance: {
         year: 2026,
         priorYear: 2025,
         opening: { current: 30300, prior: 20000 },
-        netSurplusForYear: { current: 7900, prior: 5850 },
+        netSurplusForYear: { current: 8000, prior: 5950 },
         statutoryAllocations: {
-            reserveFund: { current: 790, prior: 500 },
-            educationFund: { current: 395, prior: 300 },
-            communityDevFund: { current: 237, prior: 300 },
-            optionalFund: { current: 553, prior: 1000 },
-            totalAllocations: { current: 1975, prior: 2100 },
+            reserveFund: { current: 800, prior: 600 },
+            educationFund: { current: 800, prior: 600 },
+            communityDevFund: { current: 240, prior: 175 },
+            optionalFund: { current: 560, prior: 375 },
+            totalAllocations: { current: 2400, prior: 1750 },
         },
-        dividendsDeclared: { current: 3000, prior: 1350 },
-        closing: { current: 40000, prior: 30300 },
+        unallocatedSurplus: { current: 5600, prior: 4200 },
+        closing: { current: 35900, prior: 24200 },
     },
     cashFlows: {
         year: 2026,
         priorYear: 2025,
         operating: {
             items: [
-                { label: 'Net Surplus', current: 7900, prior: 5850, inflow: true },
-                { label: 'Increase in Savings', current: 5000, prior: 2000, inflow: true },
+                { label: 'Net Surplus', current: 8000, prior: 5950, inflow: true },
+                { label: 'Harvest Receipts Collected', current: 4900, prior: 1900, inflow: true },
             ],
             netOperating: { current: 12900, prior: 7850 },
         },
@@ -87,7 +90,7 @@ const mockData: AnnualReportData = {
         },
         financing: {
             items: [
-                { label: 'Increase in Share Capital', current: 5000, prior: 5000, inflow: true },
+                { label: 'Investor Capital Injected', current: 5000, prior: 5000, inflow: true },
             ],
             netFinancing: { current: 5000, prior: 5000 },
         },
@@ -102,7 +105,7 @@ const mockData: AnnualReportData = {
             address: "P-2, Barangay Linao, Ormoc City, Leyte",
             registrationNumber: "9520-101400030514",
             dateRegistered: "2010-01-01",
-            primaryPurpose: "Savings and Credit",
+            primaryPurpose: "Developing agricultural land into crop production cycles shared with land owners and investors",
         },
         accountingPolicies: ["Accrual basis"],
         farmOperations: {
@@ -152,8 +155,32 @@ describe('annualReportHtml', () => {
         expect(html).toContain('Statement of Cash Flows');
         expect(html).toContain('Notes to Financial Statements');
         
-        // Check for a specific numeric value (e.g., total assets current = 61,000)
-        expect(html).toContain('61,000.00');
+        // Check for a specific numeric value (total assets current = 715,000)
+        expect(html).toContain('715,000.00');
+    });
+
+    it('renders the agribusiness statement lines', () => {
+        const html = buildAnnualReportHtml(mockData);
+
+        expect(html).toContain('Standing Crops, Produce & Farm Inputs');
+        expect(html).toContain('Land-Owner Settlements Payable');
+        expect(html).toContain('Field Labor Payable');
+        expect(html).toContain('Project & Partner Equity');
+        expect(html).toContain('Harvest Off-take Revenue');
+        expect(html).toContain('Farm Production Costs');
+        expect(html).toContain('Surplus Not Appropriated (Retained)');
+    });
+
+    it('carries no lending or member-benefit wording anywhere in the report', () => {
+        const html = buildAnnualReportHtml(mockData);
+
+        for (const retired of [
+            'Loan Receivables', 'Member Savings Deposits', 'Share Capital Payable',
+            'Interest Income on Loans', 'Service Charges and Fees', 'Membership Fees',
+            'Dividends Declared', 'Loan Operations', 'savings and credit',
+        ]) {
+            expect(html).not.toContain(retired);
+        }
     });
 
     it('handles zero or missing values gracefully', () => {

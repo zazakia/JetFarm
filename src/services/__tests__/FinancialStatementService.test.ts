@@ -30,64 +30,71 @@ jest.mock('../CoopFinancialReportService', () => ({
     CoopFinancialReportService: {
         getStatementOfFinancialCondition: jest.fn().mockImplementation(async (year) => {
             const makeComp = (c: number, p: number) => ({ current: c, prior: p, variance: c - p });
+            // Internally consistent agribusiness figures: every subtotal is the sum of its own
+            // components and A = L + E, so a mapping that reads the wrong key cannot pass by luck.
+            //   current: 260000 assets = 110000 liabilities + 150000 equity
+            //   prior:   240000 assets =  97000 liabilities + 143000 equity
             return {
                 year,
                 priorYear: year - 1,
                 asOf: new Date(year, 11, 31),
                 assets: {
-                    cashOnHand: makeComp(47000, 40000),
+                    cashOnHand: makeComp(10000, 8000),
                     cashInBank: makeComp(150000, 140000),
-                    loanReceivable: makeComp(68000, 60000),
-                    totalCurrentAssets: makeComp(265000, 240000),
+                    farmAssets: makeComp(68000, 60000),
+                    otherReceivables: makeComp(32000, 32000),
+                    totalCurrentAssets: makeComp(260000, 240000),
                     sundryAssets: makeComp(0, 0),
                     totalNonCurrentAssets: makeComp(0, 0),
-                    totalAssets: makeComp(265000, 240000),
+                    totalAssets: makeComp(260000, 240000),
                 },
                 liabilities: {
-                    depositLiabilities: makeComp(150000, 140000),
-                    interestShareCapitalPayable: makeComp(0, 0),
-                    patronageRefundPayable: makeComp(0, 0),
-                    dueToUnion: makeComp(0, 0),
-                    totalCurrentLiabilities: makeComp(150000, 140000),
-                    totalLiabilities: makeComp(150000, 140000),
+                    settlementsPayable: makeComp(100000, 90000),
+                    laborPayable: makeComp(5000, 4000),
+                    accountsPayable: makeComp(3000, 2000),
+                    otherPayables: makeComp(2000, 1000),
+                    totalCurrentLiabilities: makeComp(110000, 97000),
+                    totalLiabilities: makeComp(110000, 97000),
                 },
                 equity: {
                     authorizedCapital: 280000,
                     priorAuthorizedCapital: 280000,
                     subscribedCapital: makeComp(250000, 250000),
-                    subscriptionReceivable: makeComp(18092.73, 18092.73),
-                    paidUpCapital: makeComp(115000, 100000),
+                    subscriptionReceivable: makeComp(150000, 155000),
+                    paidUpCapital: makeComp(100000, 95000),
+                    projectEquity: makeComp(40000, 35000),
                     reserveFund: makeComp(0, 0),
                     educationFund: makeComp(0, 0),
                     communityDevFund: makeComp(0, 0),
                     optionalFund: makeComp(0, 0),
                     totalStatutoryFunds: makeComp(0, 0),
-                    retainedSurplus: makeComp(0, 0),
-                    totalEquity: makeComp(115000, 100000),
+                    retainedSurplus: makeComp(10000, 13000),
+                    totalEquity: makeComp(150000, 143000),
                 },
-                totalLiabilitiesAndEquity: makeComp(265000, 240000),
+                totalLiabilitiesAndEquity: makeComp(260000, 240000),
             };
         }),
         getStatementOfOperations: jest.fn().mockImplementation(async (year) => {
             const makeComp = (c: number, p: number) => ({ current: c, prior: p, variance: c - p });
+            // 28500 - 10000 = 18500; 25000 - 8000 = 17000, and the farm cost components add up.
             return {
                 year,
                 priorYear: year - 1,
                 revenues: {
-                    interestOnLoans: makeComp(22800, 20000),
-                    serviceCharges: makeComp(5700, 5000),
-                    penalties: makeComp(0, 0),
-                    totalCreditOps: makeComp(28500, 25000),
-                    membershipFees: makeComp(0, 0),
-                    interestOnInvestments: makeComp(0, 0),
-                    miscellaneousIncome: makeComp(0, 0),
-                    totalOtherIncome: makeComp(0, 0),
+                    offtakeRevenue: makeComp(22800, 20000),
+                    byproductRevenue: makeComp(5700, 5000),
+                    otherRevenue: makeComp(0, 0),
                     totalRevenues: makeComp(28500, 25000),
                 },
                 expenses: {
-                    financingCosts: makeComp(0, 0),
+                    farmProductionCosts: makeComp(10000, 8000),
+                    landOwnerSettlements: makeComp(6000, 5000),
+                    farmLabor: makeComp(2000, 1500),
+                    farmInputs: makeComp(1500, 1000),
+                    machineryAndLogistics: makeComp(400, 300),
+                    otherFarmCosts: makeComp(100, 200),
                     salaries: makeComp(0, 0),
-                    office: makeComp(10000, 8000),
+                    office: makeComp(0, 0),
                     communication: makeComp(0, 0),
                     transportation: makeComp(0, 0),
                     depreciation: makeComp(0, 0),
@@ -96,7 +103,7 @@ jest.mock('../CoopFinancialReportService', () => ({
                     training: makeComp(0, 0),
                     professional: makeComp(0, 0),
                     otherExpenses: makeComp(0, 0),
-                    totalAdminCosts: makeComp(10000, 8000),
+                    totalAdminCosts: makeComp(0, 0),
                     totalExpenses: makeComp(10000, 8000),
                 },
                 netSurplus: makeComp(18500, 17000),
@@ -252,8 +259,29 @@ describe('FinancialStatementService', () => {
 
             expect(result.assets.cashOnHand).toHaveProperty('current');
             expect(result.assets.cashOnHand).toHaveProperty('prior');
-            expect(result.liabilities.savingsDeposits).toHaveProperty('current');
+            expect(result.liabilities.settlementsPayable).toHaveProperty('current');
             expect(result.fundBalance.shareCapital).toHaveProperty('current');
+        });
+
+        it('maps the agribusiness ledger lines through to the reported fields', async () => {
+            const result = await FinancialStatementService.getStatementOfFinancialCondition(YEAR);
+
+            expect(result.assets.farmAssets).toEqual({ current: 68000, prior: 60000 });
+            expect(result.liabilities.settlementsPayable).toEqual({ current: 100000, prior: 90000 });
+            expect(result.liabilities.laborPayable).toEqual({ current: 5000, prior: 4000 });
+            expect(result.liabilities.accountsPayable).toEqual({ current: 3000, prior: 2000 });
+            expect(result.liabilities.otherPayables).toEqual({ current: 2000, prior: 1000 });
+            expect(result.fundBalance.projectEquity).toEqual({ current: 40000, prior: 35000 });
+        });
+
+        it('carries no lending or member-benefit line', async () => {
+            const result = await FinancialStatementService.getStatementOfFinancialCondition(YEAR);
+
+            for (const retired of ['loanReceivable', 'savingsLoansReceivable', 'savingsDeposits', 'shareCapitalPayable']) {
+                expect(result.assets).not.toHaveProperty(retired);
+                expect(result.liabilities).not.toHaveProperty(retired);
+            }
+            expect(result.fundBalance).not.toHaveProperty('dividendsPayable');
         });
 
         it('total liabilities + fund balance = reported totalLiabilitiesAndFundBalance', async () => {
@@ -265,10 +293,22 @@ describe('FinancialStatementService', () => {
 
             // The reported total should equal the sum of its components
             expect(Math.abs(totalLFB - (totalL + totalFB))).toBeLessThan(0.01);
+            expect(totalL + totalFB).toBe(result.assets.totalAssets.current);
 
             // Total assets should be a non-negative finite number
             expect(result.assets.totalAssets.current).toBeGreaterThanOrEqual(0);
             expect(isFinite(result.assets.totalAssets.current)).toBe(true);
+        });
+
+        it('fund balance components add up to the reported total fund balance', async () => {
+            const result = await FinancialStatementService.getStatementOfFinancialCondition(YEAR);
+            const fb = result.fundBalance;
+
+            const parts = fb.shareCapital.current + fb.projectEquity.current
+                + fb.reserveFund.current + fb.educationFund.current
+                + fb.communityDevFund.current + fb.optionalFund.current + fb.retainedSurplus.current;
+
+            expect(Math.abs(fb.totalFundBalance.current - parts)).toBeLessThan(0.01);
         });
 
         it('does not return NaN in any numeric fields', async () => {
@@ -304,21 +344,50 @@ describe('FinancialStatementService', () => {
             expect(result.expenses.totalExpenses.current).toBeGreaterThanOrEqual(0);
         });
 
+        it('presents the harvest revenue and farm cost lines', async () => {
+            const result = await FinancialStatementService.getStatementOfActivities(YEAR);
+
+            expect(result.revenues.offtakeRevenue).toEqual({ current: 22800, prior: 20000 });
+            expect(result.revenues.byproductRevenue).toEqual({ current: 5700, prior: 5000 });
+            expect(result.revenues.otherIncome).toEqual({ current: 0, prior: 0 });
+            expect(result.expenses.farmProductionCosts).toEqual({ current: 10000, prior: 8000 });
+
+            // the farm cost components are what the group line reports
+            const parts = 6000 + 2000 + 1500 + 400 + 100;
+            expect(result.expenses.farmProductionCosts.current).toBe(parts);
+        });
+
+        it('carries no credit-operations revenue line', async () => {
+            const result = await FinancialStatementService.getStatementOfActivities(YEAR);
+
+            for (const retired of ['interestOnLoans', 'serviceCharges', 'membershipFees']) {
+                expect(result.revenues).not.toHaveProperty(retired);
+            }
+        });
+
     });
 
     describe('buildChangesInFundBalance', () => {
 
-        it('closing balance = opening + surplus - allocations - dividends', async () => {
+        it('closing balance = opening + surplus - allocations', async () => {
             const fc = await FinancialStatementService.getStatementOfFinancialCondition(YEAR);
             const act = await FinancialStatementService.getStatementOfActivities(YEAR);
             const result = FinancialStatementService.buildChangesInFundBalance(YEAR, fc, act);
 
             const expectedClosing = result.opening.current
                 + result.netSurplusForYear.current
-                - result.statutoryAllocations.totalAllocations.current
-                - result.dividendsDeclared.current;
+                - result.statutoryAllocations.totalAllocations.current;
 
             expect(Math.abs(result.closing.current - expectedClosing)).toBeLessThan(1);
+        });
+
+        it('unallocated surplus is what the statutory appropriations leave behind', async () => {
+            const fc = await FinancialStatementService.getStatementOfFinancialCondition(YEAR);
+            const act = await FinancialStatementService.getStatementOfActivities(YEAR);
+            const result = FinancialStatementService.buildChangesInFundBalance(YEAR, fc, act);
+
+            const expected = act.netSurplus.current - result.statutoryAllocations.totalAllocations.current;
+            expect(Math.abs(result.unallocatedSurplus.current - expected)).toBeLessThan(0.01);
         });
 
         it('statutory allocations sum to 30% of net surplus', async () => {

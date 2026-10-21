@@ -2,7 +2,6 @@ import React from 'react';
 import { render, fireEvent, waitFor, act } from '@testing-library/react-native';
 import { GlobalSearch } from '../GlobalSearch';
 import BaseModelService from '../../services/BaseModelService';
-import { setDeploymentMode, resetDeploymentMode } from '../../config/deployment';
 
 const mockPush = jest.fn();
 jest.mock('expo-router', () => ({
@@ -11,12 +10,26 @@ jest.mock('expo-router', () => ({
     }),
 }));
 
+// The search reads two entity tables now: borrowers and loans went with the lending teardown, and
+// BaseModelService throws on a collection the WatermelonDB schema no longer declares.
 jest.mock('../../services/BaseModelService', () => ({
-    fetchActive: jest.fn().mockResolvedValue([
-        { id: 'b1', fullName: 'Maria Santos', group: 'Group A' },
-        { id: 'b2', fullName: 'Juan Dela Cruz', group: 'Group B' },
-    ]),
+    fetchActive: jest.fn().mockImplementation((table: string) => {
+        if (table === 'agri_parcels') {
+            return Promise.resolve([
+                { id: 'p1', name: 'Bagacay Parcel One', areaHectares: 4.5, soilType: 'Clay Loam', code: 'PAR-001', status: 'Active' },
+                { id: 'p2', name: 'Daro Crossing Plot', areaHectares: 2.1, soilType: 'Sandy Loam', status: 'Fallowed' },
+            ]);
+        }
+        if (table === 'agri_farm_expenses') {
+            return Promise.resolve([
+                { id: 'e1', description: 'Organic Fertilizer Batch 4', amount: 18500, category: 'Farm Input' },
+            ]);
+        }
+        return Promise.resolve([]);
+    }),
 }));
+
+const input = (getByPlaceholderText: (t: string) => any) => getByPlaceholderText('Search menus & reports...');
 
 describe('GlobalSearch', () => {
     const mockOnNavigate = jest.fn();
@@ -37,31 +50,29 @@ describe('GlobalSearch', () => {
         );
         await act(async () => {});
 
-        const input = getByPlaceholderText('Search menus & reports...');
         await act(async () => {
-            fireEvent(input, 'focus');
-            fireEvent.changeText(input, 'Loans');
+            fireEvent(input(getByPlaceholderText), 'focus');
+            fireEvent.changeText(input(getByPlaceholderText), 'Balance Sheet');
         });
 
         await waitFor(() => {
-            expect(getByText('Loans')).toBeTruthy();
+            expect(getByText('Balance Sheet')).toBeTruthy();
         });
     });
 
-    it('filters matching borrower names from BaseModelService', async () => {
+    it('filters matching parcel names from BaseModelService', async () => {
         const { getByPlaceholderText, getByText } = render(
             <GlobalSearch onNavigate={mockOnNavigate} />
         );
         await act(async () => {});
 
-        const input = getByPlaceholderText('Search menus & reports...');
         await act(async () => {
-            fireEvent(input, 'focus');
-            fireEvent.changeText(input, 'Maria');
+            fireEvent(input(getByPlaceholderText), 'focus');
+            fireEvent.changeText(input(getByPlaceholderText), 'Bagacay');
         });
 
         await waitFor(() => {
-            expect(getByText('Maria Santos')).toBeTruthy();
+            expect(getByText('Bagacay Parcel One')).toBeTruthy();
         });
     });
 
@@ -71,21 +82,20 @@ describe('GlobalSearch', () => {
         );
         await act(async () => {});
 
-        const input = getByPlaceholderText('Search menus & reports...');
         await act(async () => {
-            fireEvent(input, 'focus');
-            fireEvent.changeText(input, 'Maria');
+            fireEvent(input(getByPlaceholderText), 'focus');
+            fireEvent.changeText(input(getByPlaceholderText), 'Bagacay');
         });
 
         await waitFor(() => {
-            expect(getByText('Maria Santos')).toBeTruthy();
+            expect(getByText('Bagacay Parcel One')).toBeTruthy();
         });
 
         await act(async () => {
-            fireEvent.press(getByText('Maria Santos'));
+            fireEvent.press(getByText('Bagacay Parcel One'));
         });
 
-        expect(mockPush).toHaveBeenCalledWith('/(admin)/borrowers/b1');
+        expect(mockPush).toHaveBeenCalledWith('/(admin)/agribusiness/parcels');
         expect(mockOnNavigate).toHaveBeenCalled();
     });
 
@@ -95,10 +105,9 @@ describe('GlobalSearch', () => {
         );
         await act(async () => {});
 
-        const input = getByPlaceholderText('Search menus & reports...');
         await act(async () => {
-            fireEvent(input, 'focus');
-            fireEvent.changeText(input, 'NonExistentXYZ');
+            fireEvent(input(getByPlaceholderText), 'focus');
+            fireEvent.changeText(input(getByPlaceholderText), 'NonExistentXYZ');
         });
 
         await waitFor(() => {
@@ -112,10 +121,9 @@ describe('GlobalSearch', () => {
         );
         await act(async () => {});
 
-        const input = getByPlaceholderText('Search menus & reports...');
         await act(async () => {
-            fireEvent(input, 'focus');
-            fireEvent.changeText(input, 'Harvest');
+            fireEvent(input(getByPlaceholderText), 'focus');
+            fireEvent.changeText(input(getByPlaceholderText), 'Harvest');
         });
 
         await waitFor(() => {
@@ -123,25 +131,19 @@ describe('GlobalSearch', () => {
         });
     });
 
-    it('does NOT return Crispy King Store Operations in search results in agribusiness mode', async () => {
-        setDeploymentMode('agri');
-        try {
-            const { getByPlaceholderText, queryByText } = render(
-                <GlobalSearch onNavigate={mockOnNavigate} />
-            );
-            await act(async () => {});
+    it('returns no POS, franchise or lending row', async () => {
+        // Those menu arrays are deleted, so this is absent-by-construction rather than mode-gated.
+        const { getByPlaceholderText, queryByText } = render(
+            <GlobalSearch onNavigate={mockOnNavigate} />
+        );
+        await act(async () => {});
 
-            const input = getByPlaceholderText('Search menus & reports...');
+        for (const term of ['Touch POS Terminal', 'Borrowers & Members', 'Franchise Agreements CRM', 'Loan Accounts']) {
             await act(async () => {
-                fireEvent(input, 'focus');
-                fireEvent.changeText(input, 'Touch POS Terminal');
+                fireEvent(input(getByPlaceholderText), 'focus');
+                fireEvent.changeText(input(getByPlaceholderText), term);
             });
-
-            await waitFor(() => {
-                expect(queryByText('Touch POS Terminal')).toBeNull();
-            });
-        } finally {
-            resetDeploymentMode();
+            expect(queryByText(term)).toBeNull();
         }
     });
 
@@ -151,14 +153,29 @@ describe('GlobalSearch', () => {
         );
         await act(async () => {});
 
-        const input = getByPlaceholderText('Search menus & reports...');
         await act(async () => {
-            fireEvent(input, 'focus');
-            fireEvent.changeText(input, 'Santos Maria');
+            fireEvent(input(getByPlaceholderText), 'focus');
+            fireEvent.changeText(input(getByPlaceholderText), 'PAR-001 Clay');
         });
 
         await waitFor(() => {
-            expect(getByText('Maria Santos')).toBeTruthy();
+            expect(getByText('Bagacay Parcel One')).toBeTruthy();
+        });
+    });
+
+    it('searches farm expenses by description and amount', async () => {
+        const { getByPlaceholderText, getByText } = render(
+            <GlobalSearch onNavigate={mockOnNavigate} />
+        );
+        await act(async () => {});
+
+        await act(async () => {
+            fireEvent(input(getByPlaceholderText), 'focus');
+            fireEvent.changeText(input(getByPlaceholderText), 'Fertilizer');
+        });
+
+        await waitFor(() => {
+            expect(getByText('Organic Fertilizer Batch 4')).toBeTruthy();
         });
     });
 
@@ -168,14 +185,13 @@ describe('GlobalSearch', () => {
         );
         await act(async () => {});
 
-        const input = getByPlaceholderText('Search menus & reports...');
         await act(async () => {
-            fireEvent(input, 'focus');
-            fireEvent.changeText(input, 'Maria');
+            fireEvent(input(getByPlaceholderText), 'focus');
+            fireEvent.changeText(input(getByPlaceholderText), 'Bagacay');
         });
 
         await waitFor(() => {
-            expect(getByText('Maria Santos')).toBeTruthy();
+            expect(getByText('Bagacay Parcel One')).toBeTruthy();
         });
 
         // Click Menus tab
@@ -184,17 +200,34 @@ describe('GlobalSearch', () => {
             fireEvent.press(menusTab);
         });
 
-        // Under Menus tab, Maria Santos (a borrower) is excluded
-        expect(queryByText('Maria Santos')).toBeNull();
+        // Under Menus tab, the parcel is excluded
+        expect(queryByText('Bagacay Parcel One')).toBeNull();
 
-        // Click Borrowers tab
-        const borrowersTab = getByText('Borrowers');
+        // Click Parcels tab
+        const parcelsTab = getByText('Parcels');
         await act(async () => {
-            fireEvent.press(borrowersTab);
+            fireEvent.press(parcelsTab);
         });
 
-        // Under Borrowers tab, Maria Santos is visible again
-        expect(getByText('Maria Santos')).toBeTruthy();
+        // Under Parcels tab, it is visible again
+        expect(getByText('Bagacay Parcel One')).toBeTruthy();
+    });
+
+    it('offers only the surviving entity categories as tabs', async () => {
+        const { getByPlaceholderText, getByText, queryByText } = render(
+            <GlobalSearch onNavigate={mockOnNavigate} showCategoryChips />
+        );
+        await act(async () => {});
+
+        await act(async () => {
+            fireEvent(input(getByPlaceholderText), 'focus');
+            fireEvent.changeText(input(getByPlaceholderText), 'Bagacay');
+        });
+        await waitFor(() => {
+            expect(getByText('Parcels')).toBeTruthy();
+        });
+
+        expect(queryByText('Borrowers')).toBeNull();
+        expect(queryByText('Loan Accounts')).toBeNull();
     });
 });
-

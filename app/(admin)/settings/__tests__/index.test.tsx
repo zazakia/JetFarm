@@ -129,12 +129,15 @@ describe('SettingsScreen', () => {
 
         fireEvent.press(screen.getByText('Updates & Changes'));
         expect(mockPush).toHaveBeenCalledWith('/(admin)/settings/updates');
-        
-        fireEvent.press(screen.getByText('Collection Groups'));
-        expect(mockPush).toHaveBeenCalledWith('/(admin)/settings/collection-groups');
-        
+
+        fireEvent.press(screen.getByText('Monthly Financial Closing'));
+        expect(mockPush).toHaveBeenCalledWith('/(admin)/settings/closing');
+
         fireEvent.press(screen.getByText('Audit Trail'));
         expect(mockPush).toHaveBeenCalledWith('/(admin)/settings/audit-trail');
+
+        // deleted with the lending domain: collection sheets / borrower groups
+        expect(screen.queryByText(/Collection Groups|Borrowers|Loans/i)).toBeNull();
     });
 
     it('shows alert confirmation for Clear Local Database', async () => {

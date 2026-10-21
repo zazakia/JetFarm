@@ -147,16 +147,9 @@ export default function RootLayout() {
                         <Stack screenOptions={{ headerShown: false }}>
                             <Stack.Screen name="loading" />
                             <Stack.Screen name="login" />
-                            <Stack.Screen name="loan-calculator" />
-                            <Stack.Screen name="loan-application" />
                             <Stack.Screen name="sync-center" options={{ presentation: 'modal' }} />
                             <Stack.Screen name="(admin)" />
-                            <Stack.Screen name="(cashier)" />
-                            <Stack.Screen name="(collector)" />
-                            <Stack.Screen name="(loan-encoder)" />
-                            <Stack.Screen name="(payment-encoder)" />
                             <Stack.Screen name="(expenses-encoder)" />
-                            <Stack.Screen name="(borrower)" />
                             <Stack.Screen name="select-branch" />
                         </Stack>
                     </AppShell>

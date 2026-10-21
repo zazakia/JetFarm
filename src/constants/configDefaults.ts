@@ -1,22 +1,14 @@
 import { ROLES, UserRole } from './roles';
 
+// Agribusiness-only variant: the flag vocabulary is the finance layer this build ships. The
+// lending master switch (system.lending) and every module.* key behind a deleted screen are gone,
+// because a flag whose route no longer exists is a row an operator can toggle with no effect - and
+// useFeatureFlags now treats an unlisted key as disabled rather than enabled.
 export type FeatureFlagKey =
-    | 'system.lending'
-    | 'module.borrowers'
-    | 'module.loans'
-    | 'module.payments'
     | 'module.expenses'
-    | 'module.remittances'
-    | 'module.file_cases'
     | 'module.reports'
     | 'module.cash_on_hand'
     | 'module.bank_accounts'
-    | 'module.savings'
-    | 'module.payroll'
-    | 'module.employees'
-    | 'module.business_modules'
-    | 'module.marketplace'
-    | 'module.cic'
     | 'module.accounting';
 
 export interface DefaultFeatureFlag {
@@ -56,41 +48,20 @@ const feature = (
 });
 
 export const DEFAULT_FEATURE_FLAGS: DefaultFeatureFlag[] = [
-    // Shipped dark: all loan-management surfaces (Borrowers, Loans, Payments, Remittances,
-    // Collectors, File Cases, CIC, lending reports & loan-products settings) are hidden by
-    // default via this master switch — routes render FeatureDisabledNotice and dependent
-    // lending flags are forced off (see useFeatureFlags.isEnabled). Re-enable in
-    // Settings > Feature Flags. NOTE: ensureFeatureFlags() only seeds rows that do not
-    // exist yet, so databases seeded before this change keep lending enabled until the
-    // flag is turned off there.
-    feature('system.lending', 'Lending & Credit System', 'Master switch for all lending features (Loans, Calculator, Applications, Approvals, Borrowers, Field Collections, CIC, and Lending Reports).', 1, false, 'Core Systems'),
-    feature('module.borrowers', 'Borrowers', 'Borrower management and profiles.', 10),
-    feature('module.loans', 'Loans', 'Loan creation, approval, and account management.', 20),
-    feature('module.payments', 'Payments', 'Payment encoding and receipts.', 30),
+    // Five flags, five surviving route groups. Settings > Feature Flags can still turn one off to
+    // hide that section, but there is no lending switch left to re-enable.
     feature('module.expenses', 'Expenses', 'Expense encoding and reports.', 40),
-    feature('module.remittances', 'Remittances', 'Collector remittance review.', 50),
-    feature('module.file_cases', 'File Cases', 'Legal/file case tracking for delinquent loans.', 60, false),
-    feature('module.reports', 'Reports', 'Operational and financial reports.', 70),
+    feature('module.reports', 'Reports', 'Financial statements and period reporting.', 70),
     feature('module.cash_on_hand', 'Cash on Hand', 'Cash vault and on-hand reporting.', 80),
     feature('module.bank_accounts', 'Bank Accounts', 'Bank account and transaction modules.', 90),
-    feature('module.savings', 'Savings', 'Borrower savings portfolio and passbook functions.', 100),
-    feature('module.payroll', 'Payroll', 'Monthly staff payroll runs and payout history.', 110, false),
-    feature('module.employees', 'Employees', 'Staff registry and base salary management.', 120, false),
-    feature('module.business_modules', 'Business Modules', 'Cooperative business modules hub (e.g. Water Station).', 130, true),
-    feature('module.marketplace', 'Marketplace', 'Cooperative member marketplace & seller center.', 135, true),
-    feature('module.cic', 'CIC Reporting', 'Credit Information Corporation (CIC) compliance reporting.', 140),
     feature('module.accounting', 'Accounting', 'General Ledger, Journal Entries, and Chart of Accounts.', 150),
 ];
 
 export const CONFIGURABLE_PERMISSION_KEYS = [
     { key: 'route.(admin)', label: 'Admin dashboard', category: 'Route groups' },
-    { key: 'route.(collector)', label: 'Collector dashboard', category: 'Route groups' },
-    { key: 'route.(loan-encoder)', label: 'Loan encoder', category: 'Route groups' },
-    { key: 'route.(payment-encoder)', label: 'Payment encoder', category: 'Route groups' },
     { key: 'route.(expenses-encoder)', label: 'Expenses encoder', category: 'Route groups' },
-    { key: 'route.(borrower)', label: 'Borrower portal', category: 'Route groups' },
-    { key: 'action.edit', label: 'Edit Data (Borrowers, Loans, Savings, CBU, Payments, Expenses)', category: 'Data Actions' },
-    { key: 'action.delete', label: 'Delete Data (Borrowers, Loans, Savings, CBU, Payments, Expenses)', category: 'Data Actions' },
+    { key: 'action.edit', label: 'Edit Data (Expenses, Parcels, Settlements, Journal Entries)', category: 'Data Actions' },
+    { key: 'action.delete', label: 'Delete Data (Expenses, Parcels, Settlements, Journal Entries)', category: 'Data Actions' },
     ...DEFAULT_FEATURE_FLAGS.map(flag => ({
         key: flag.key,
         label: flag.label,
@@ -99,25 +70,14 @@ export const CONFIGURABLE_PERMISSION_KEYS = [
 ] as const;
 
 const enabledByDefault = (role: UserRole, permissionKey: string): boolean => {
-    if (
-        permissionKey === 'module.file_cases' ||
-        permissionKey === 'module.payroll' ||
-        permissionKey === 'module.employees'
-    ) {
-        return false;
-    }
     if (role === ROLES.admin || role === ROLES.main_office) return true;
     if (permissionKey === 'action.edit') {
-        return role === ROLES.loan_encoder || role === ROLES.payment_encoder || role === ROLES.expenses_encoder;
+        return role === ROLES.expenses_encoder;
     }
     if (permissionKey === 'action.delete') {
         return false;
     }
-    if (role === ROLES.collector) return permissionKey === 'route.(collector)' || permissionKey === 'route.(payment-encoder)' || permissionKey === 'module.payments' || permissionKey === 'module.borrowers';
-    if (role === ROLES.loan_encoder) return permissionKey === 'route.(loan-encoder)' || permissionKey === 'module.borrowers' || permissionKey === 'module.loans';
-    if (role === ROLES.payment_encoder) return permissionKey === 'route.(payment-encoder)' || permissionKey === 'module.payments';
     if (role === ROLES.expenses_encoder) return permissionKey === 'route.(expenses-encoder)' || permissionKey === 'module.expenses';
-    if (role === ROLES.borrower) return permissionKey === 'route.(borrower)' || permissionKey === 'module.marketplace';
     return false;
 };
 

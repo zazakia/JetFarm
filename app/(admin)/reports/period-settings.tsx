@@ -2,7 +2,6 @@ import React, { useState, useCallback } from 'react';
 import { View, Text, ScrollView, TextInput, Pressable, ActivityIndicator, Alert } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { CoopFinancialReportService, PriorYearData } from '../../../src/services/CoopFinancialReportService';
-import { FinancialDataSeed } from '../../../src/services/FinancialDataSeedService';
 import { formatPHP } from '../../../src/utils/currency';
 import { MaterialIcons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
@@ -11,8 +10,6 @@ export default function PeriodSettingsScreen() {
     const router = useRouter();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    const [seeding, setSeeding] = useState(false);
-    const [isSeeded, setIsSeeded] = useState(false);
     const [year, setYear] = useState(2025);
     const [activeTab, setActiveTab] = useState<'current' | 'priorAssets' | 'priorLiab' | 'priorOps'>('current');
 
@@ -36,7 +33,14 @@ export default function PeriodSettingsScreen() {
                 setSundryAssets(settings.sundryAssets.toString());
                 setPriorData(JSON.parse(settings.priorYearData));
             } else {
-                // Set default empty settings or defaults from audited 2024 columns
+                // Defaults taken from the audited FY2024 columns. The FY2024 audit was struck before
+                // the farm books were separated, so the harvest, settlement and farm-asset lines have
+                // no audited source value and default to zero — the operator enters them from the farm
+                // production records before publishing the comparative column. Inventing them would put
+                // numbers in a signed statement. The legacy lending and deposit balances are carried on
+                // the agri line of the same nature (receivable → other receivables, amounts owed back
+                // to depositors and members → other payables, interest and service-charge income → other
+                // revenue) so the audited comparative column stays balanced.
                 setAuthCapital('280000');
                 setSubCapital('250000');
                 setSubReceivable('18092.73');
@@ -44,27 +48,26 @@ export default function PeriodSettingsScreen() {
                 setPriorData({
                     cashOnHand: 39902.93,
                     cashInBank: 53011.35,
-                    loanReceivable: 164622.70,
+                    farmAssets: 0,
+                    otherReceivables: 164622.70,
                     sundryAssets: 117411.91,
-                    depositLiabilities: 116384.50,
-                    interestShareCapitalPayable: 559.15,
-                    patronageRefundPayable: 559.15,
-                    dueToUnion: 186.38,
+                    settlementsPayable: 0,
+                    laborPayable: 0,
+                    accountsPayable: 0,
+                    otherPayables: 117689.18,
                     subscribedCapital: 250000.00,
                     subscriptionReceivable: 18092.73,
+                    projectEquity: 0,
                     reserveFund: 17094.76,
                     educationFund: 1366.41,
                     communityDevFund: 1647.38,
                     optionalFund: 5243.88,
                     retainedSurplus: 0.00,
                     authorizedShareCapital: 280000.00,
-                    interestOnLoans: 16260.00,
-                    serviceCharges: 3620.00,
-                    penalties: 0.00,
-                    membershipFees: 0.00,
-                    interestOnInvestments: 0.00,
-                    miscellaneousIncome: 0.00,
-                    financingCosts: 6814.31,
+                    offtakeRevenue: 0,
+                    byProductRevenue: 0,
+                    otherRevenue: 19880.00,
+                    farmProductionCosts: 0,
                     salaries: 0.00,
                     office: 0.00,
                     communication: 0.00,
@@ -74,12 +77,9 @@ export default function PeriodSettingsScreen() {
                     repairs: 0.00,
                     training: 0.00,
                     professional: 0.00,
-                    otherExpenses: 9338.00
+                    otherExpenses: 16152.31
                 });
             }
-            // Check if historical data is already seeded
-            const seeded = await FinancialDataSeed.isAlreadySeeded();
-            setIsSeeded(seeded);
         } catch (error) {
             console.error('Failed to load period settings:', error);
         } finally {
@@ -115,39 +115,6 @@ export default function PeriodSettingsScreen() {
         } finally {
             setSaving(false);
         }
-    };
-
-    const handleSeedHistorical = () => {
-        Alert.alert(
-            'Migrate Historical Data',
-            'This will seed audited FY2024 and FY2025 financial statements directly into the local database via double-entry journal postings. Are you sure you want to proceed?',
-            [
-                { text: 'Cancel', style: 'cancel' },
-                {
-                    text: 'Confirm',
-                    onPress: async () => {
-                        setSeeding(true);
-                        try {
-                            const res = await FinancialDataSeed.seedHistoricalData('Admin');
-                            if (res.success) {
-                                Toast.show({
-                                    type: 'success',
-                                    text1: 'Migration Successful',
-                                    text2: res.message,
-                                });
-                                await loadData();
-                            } else {
-                                Alert.alert('Migration Failed', res.message);
-                            }
-                        } catch (err: any) {
-                            Alert.alert('Error', err.message || 'An unexpected error occurred during seeding');
-                        } finally {
-                            setSeeding(false);
-                        }
-                    }
-                }
-            ]
-        );
     };
 
     const updatePriorField = (key: keyof PriorYearData, value: string) => {
@@ -255,38 +222,6 @@ export default function PeriodSettingsScreen() {
                             {renderInput('Less: Subscription Receivable (PHP)', subReceivable, setSubReceivable)}
                             {renderInput('Other Non-Current Assets (Sundry) (PHP)', sundryAssets, setSundryAssets)}
                         </View>
-
-                        <View className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm mb-6">
-                            <Text className="text-slate-900 font-black text-sm uppercase mb-2 border-b border-gray-100 pb-2">
-                                Historical Audit Data
-                            </Text>
-                            <Text className="text-gray-500 text-xs mb-4 leading-relaxed">
-                                Automatically seed and migrate 2024 and 2025 audited financial statements (Statement of Financial Condition, Statement of Operations, Surplus Allocations) into the local database.
-                            </Text>
-                            {isSeeded ? (
-                                <View className="bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 flex-row items-center justify-center">
-                                    <MaterialIcons name="check-circle" size={18} color="#059669" style={{ marginRight: 6 }} />
-                                    <Text className="text-emerald-700 font-bold text-xs">Historical Data Migrated</Text>
-                                </View>
-                            ) : (
-                                <Pressable
-                                    onPress={handleSeedHistorical}
-                                    disabled={seeding}
-                                    className={`bg-blue-600 py-3.5 rounded-xl items-center flex-row justify-center active:bg-blue-700 ${
-                                        seeding ? 'opacity-55' : ''
-                                    }`}
-                                >
-                                    {seeding ? (
-                                        <ActivityIndicator size="small" color="#FFFFFF" />
-                                    ) : (
-                                        <>
-                                            <MaterialIcons name="cloud-download" size={18} color="#FFFFFF" style={{ marginRight: 6 }} />
-                                            <Text className="text-white font-bold text-xs">Migrate Audited 2024 & 2025 Data</Text>
-                                        </>
-                                    )}
-                                </Pressable>
-                            )}
-                        </View>
                     </View>
                 )}
 
@@ -297,7 +232,8 @@ export default function PeriodSettingsScreen() {
                         </Text>
                         {renderPriorInput('Cash on Hand (PHP)', 'cashOnHand')}
                         {renderPriorInput('Cash in Bank (PHP)', 'cashInBank')}
-                        {renderPriorInput('Loans and Receivables (PHP)', 'loanReceivable')}
+                        {renderPriorInput('Standing Crops, Produce & Farm Inputs (PHP)', 'farmAssets')}
+                        {renderPriorInput('Other Receivables (PHP)', 'otherReceivables')}
                         {renderPriorInput('Other Non-Current Assets (Sundry) (PHP)', 'sundryAssets')}
                     </View>
                 )}
@@ -307,13 +243,14 @@ export default function PeriodSettingsScreen() {
                         <Text className="text-slate-900 font-black text-sm uppercase mb-4 border-b border-gray-100 pb-2">
                             FY {year - 1} Comparative Liabilities & Equity
                         </Text>
-                        {renderPriorInput('Deposit Liabilities (PHP)', 'depositLiabilities')}
-                        {renderPriorInput('Interest on Share Capital Payable (PHP)', 'interestShareCapitalPayable')}
-                        {renderPriorInput('Patronage Refund Payable (PHP)', 'patronageRefundPayable')}
-                        {renderPriorInput('Due to Union / Federation (PHP)', 'dueToUnion')}
+                        {renderPriorInput('Land-Owner Settlements Payable (PHP)', 'settlementsPayable')}
+                        {renderPriorInput('Field Labor Payable (PHP)', 'laborPayable')}
+                        {renderPriorInput('Accounts Payable (PHP)', 'accountsPayable')}
+                        {renderPriorInput('Other Payables (PHP)', 'otherPayables')}
                         {renderPriorInput('Authorized Share Capital (PHP)', 'authorizedShareCapital')}
                         {renderPriorInput('Subscribed Capital (PHP)', 'subscribedCapital')}
                         {renderPriorInput('Subscription Receivable (PHP)', 'subscriptionReceivable')}
+                        {renderPriorInput('Project & Partner Equity (PHP)', 'projectEquity')}
                         {renderPriorInput('Reserve Fund (PHP)', 'reserveFund')}
                         {renderPriorInput('Education and Training Fund (PHP)', 'educationFund')}
                         {renderPriorInput('Community Development Fund (PHP)', 'communityDevFund')}
@@ -327,13 +264,10 @@ export default function PeriodSettingsScreen() {
                         <Text className="text-slate-900 font-black text-sm uppercase mb-4 border-b border-gray-100 pb-2">
                             FY {year - 1} Comparative Operations
                         </Text>
-                        {renderPriorInput('Interest Income from Loans (PHP)', 'interestOnLoans')}
-                        {renderPriorInput('Service Fees (PHP)', 'serviceCharges')}
-                        {renderPriorInput('Fines and penalties (PHP)', 'penalties')}
-                        {renderPriorInput('Membership Fees (PHP)', 'membershipFees')}
-                        {renderPriorInput('Interest on Investments (PHP)', 'interestOnInvestments')}
-                        {renderPriorInput('Miscellaneous Income (PHP)', 'miscellaneousIncome')}
-                        {renderPriorInput('Interest on Deposit Liabilities (PHP)', 'financingCosts')}
+                        {renderPriorInput('Off-take Revenue (PHP)', 'offtakeRevenue')}
+                        {renderPriorInput('By-product Revenue (PHP)', 'byProductRevenue')}
+                        {renderPriorInput('Other Revenue (PHP)', 'otherRevenue')}
+                        {renderPriorInput('Farm Production Costs (PHP)', 'farmProductionCosts')}
                         {renderPriorInput('Salaries and Wages (PHP)', 'salaries')}
                         {renderPriorInput('Office Expenses (PHP)', 'office')}
                         {renderPriorInput('Communication Expenses (PHP)', 'communication')}

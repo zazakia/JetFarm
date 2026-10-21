@@ -72,5 +72,5 @@ export function getFullReleaseString(): string {
  * Returns standard footer copyright & release text.
  */
 export function getAppFooterText(): string {
-    return `JetFarm ${getReleaseName()} • Build ${APP_BUILD_NUMBER}`;
+    return `Agri-One ${getReleaseName()} • Build ${APP_BUILD_NUMBER}`;
 }

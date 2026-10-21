@@ -125,9 +125,10 @@ describe('AppVersion constants and utilities', () => {
         expect(getFullReleaseString()).toContain(`Build ${APP_BUILD_NUMBER}`);
     });
 
-    it('returns standard JetFarm footer text with branding and version', () => {
+    it('returns the Agri-One footer text with branding and version', () => {
         const footer = getAppFooterText();
-        expect(footer).toContain('JetFarm');
+        expect(footer).toContain('Agri-One');
+        expect(footer).not.toContain('JetFarm');
         expect(footer).toContain(`v${getAppVersion()}`);
         expect(footer).toContain(`Build ${APP_BUILD_NUMBER}`);
     });

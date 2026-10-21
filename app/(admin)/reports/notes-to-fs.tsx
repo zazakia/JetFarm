@@ -99,13 +99,13 @@ export default function NotesToFSScreen() {
                         {/* Note 1: Organization */}
                         {renderNoteHeader(1, 'General Information')}
                         <Text className="text-[11px] text-gray-600 leading-relaxed mb-2">
-                            The cooperative is registered as a Savings and Credit Cooperative under the Cooperative Development Authority (CDA) with Certificate of Registration No. {notes.registrationNumber}. Its primary goal is to promote thrift and provide credit facilities to members for productive and provident purposes.
+                            {notes.organizationName} develops agricultural land into crop production cycles shared with land owners and capital partners, and settles the harvest on a per-kilo basis. Registered with the Cooperative Development Authority (CDA) under Certificate of Registration No. {notes.registrationNumber}.
                         </Text>
 
                         {/* Note 2: Significant Accounting Policies */}
                         {renderNoteHeader(2, 'Significant Accounting Policies')}
                         <Text className="text-[11px] text-gray-600 leading-relaxed mb-2">
-                            Revenues are recognized upon receipt of cash for interest income, service fees, and other charges (cash basis). Expenses are recognized on accrual basis. Financial assets are measured at face value.
+                            Harvest revenue is recognized when the delivered kilos are weighed in and the off-take price per kilo is agreed. Farm inputs are expensed to the crop cycle in which they are applied; field labor is expensed when the work is performed and land-owner settlements at the computed payout for the week. Section totals are struck on the whole account class, so an account the presentation does not name is still included. Financial assets are measured at cost.
                         </Text>
 
                         {/* Note 5: Cash and Cash Equivalents */}
@@ -117,45 +117,42 @@ export default function NotesToFSScreen() {
                             <Text className="text-xs font-bold text-slate-900">{formatPHP(notes.cashNote.total).replace('PHP ', '')}</Text>
                         </View>
 
-                        {/* Note 6: Loans and Receivables */}
-                        {renderNoteHeader(6, 'Loans and Receivables')}
-                        {renderItem('Loans Receivable - Current', notes.loanNote.current)}
-                        {renderItem('Loans Receivable - Past Due', notes.loanNote.pastDue)}
-                        {renderItem('Gross Loans Receivable', notes.loanNote.outstandingLoans)}
-                        {renderItem('Less: Allowance for Probable Losses', -notes.loanNote.allowance)}
+                        {/* Note 6: Farm Assets */}
+                        {renderNoteHeader(6, 'Standing Crops, Produce & Farm Inputs')}
+                        {renderItem('Biological assets — standing crops', notes.farmAssetNote.standingCrops)}
+                        {renderItem('Harvested produce awaiting delivery', notes.farmAssetNote.harvestedProduce)}
+                        {renderItem('Agricultural supplies in storage', notes.farmAssetNote.farmInputsInventory)}
                         <View className="flex-row justify-between py-2.5 bg-slate-50 px-2 rounded mt-2 border-t border-slate-200">
-                            <Text className="text-xs font-bold text-slate-900">Net Loan Portfolio</Text>
-                            <Text className="text-xs font-bold text-slate-900">{formatPHP(notes.loanNote.net).replace('PHP ', '')}</Text>
+                            <Text className="text-xs font-bold text-slate-900">Total Farm Assets</Text>
+                            <Text className="text-xs font-bold text-slate-900">{formatPHP(notes.farmAssetNote.total).replace('PHP ', '')}</Text>
                         </View>
 
                         {/* Note 7: Other Non-Current Assets */}
                         {renderNoteHeader(7, 'Other Non-Current Assets')}
                         {renderItem('Sundry Assets', bs.assets.sundryAssets.current)}
 
-                        {/* Note 8: Deposit Liabilities */}
-                        {renderNoteHeader(8, 'Deposit Liabilities')}
-                        {renderItem('Member Savings Deposits', bs.liabilities.depositLiabilities.current)}
+                        {/* Note 8: Land-Owner Settlements Payable */}
+                        {renderNoteHeader(8, 'Land-Owner Settlements Payable')}
+                        {renderItem('Settlements payable at year end', notes.settlementNote.landOwnerSettlementsPayable)}
                         <Text className="text-[10px] text-gray-400 italic mt-1 leading-relaxed">
-                            Note: Savings deposits earn interest at a rate of 6% per annum.
+                            Note: Recognized at the computed per-kilo payout for the harvest weeks weighed in and discharged through the weekly settlement run.
                         </Text>
 
-                        {/* Note 9: Interest on Share Capital Payable */}
-                        {renderNoteHeader(9, 'Interest on Share Capital Payable')}
-                        {renderItem('Beginning Balance', bs.liabilities.interestShareCapitalPayable.prior)}
-                        {renderItem('Add: Allocation from Net Surplus', ops.allocations.find(a => a.fundType.includes('share capital'))?.amount ?? 0)}
-                        {renderItem('Ending Balance', bs.liabilities.interestShareCapitalPayable.current)}
+                        {/* Note 9: Capital Partner Profit Share */}
+                        {renderNoteHeader(9, 'Capital Partner Profit Share Payable')}
+                        {renderItem('Beginning Balance', bs.liabilities.otherPayables.prior)}
+                        {renderItem('Add: Allocation from Net Surplus', ops.allocations.find(a => a.fundType.includes('Capital Partner'))?.amount ?? 0)}
+                        {renderItem('Ending Balance', bs.liabilities.otherPayables.current)}
 
-                        {/* Note 10: Patronage Refund Payable */}
-                        {renderNoteHeader(10, 'Patronage Refund Payable')}
-                        {renderItem('Beginning Balance', bs.liabilities.patronageRefundPayable.prior)}
-                        {renderItem('Add: Allocation from Net Surplus', ops.allocations.find(a => a.fundType.includes('Patronage'))?.amount ?? 0)}
-                        {renderItem('Ending Balance', bs.liabilities.patronageRefundPayable.current)}
+                        {/* Note 10: Field Labor Payable */}
+                        {renderNoteHeader(10, 'Field Labor Payable')}
+                        {renderItem('Beginning Balance', bs.liabilities.laborPayable.prior)}
+                        {renderItem('Ending Balance', bs.liabilities.laborPayable.current)}
 
-                        {/* Note 11: Due to Union / Federation */}
-                        {renderNoteHeader(11, 'Due to Union / Federation')}
-                        {renderItem('Beginning Balance', bs.liabilities.dueToUnion.prior)}
-                        {renderItem('Add: Allocation from Net Surplus', ops.allocations.find(a => a.fundType.includes('Union'))?.amount ?? 0)}
-                        {renderItem('Ending Balance', bs.liabilities.dueToUnion.current)}
+                        {/* Note 11: Accounts Payable */}
+                        {renderNoteHeader(11, 'Accounts Payable')}
+                        {renderItem('Beginning Balance', bs.liabilities.accountsPayable.prior)}
+                        {renderItem('Ending Balance', bs.liabilities.accountsPayable.current)}
 
                         {/* Note 12: Statutory Funds */}
                         {renderNoteHeader(12, 'Statutory Funds')}
@@ -168,29 +165,37 @@ export default function NotesToFSScreen() {
                             <Text className="text-xs font-bold text-slate-900">{formatPHP(notes.statutoryNote.total).replace('PHP ', '')}</Text>
                         </View>
 
-                        {/* Note 13: Income from Credit Operations */}
-                        {renderNoteHeader(13, 'Income from Credit Operations')}
-                        {renderItem('Interest income from loans', ops.revenues.interestOnLoans.current)}
-                        {renderItem('Service Fees', ops.revenues.serviceCharges.current)}
-                        {renderItem('Fines and penalties', ops.revenues.penalties.current)}
+                        {/* Note 13: Harvest Revenue */}
+                        {renderNoteHeader(13, 'Harvest Revenue')}
+                        {renderItem('Off-take revenue', ops.revenues.offtakeRevenue.current)}
+                        {renderItem('By-product & residue revenue', ops.revenues.byproductRevenue.current)}
                         <View className="flex-row justify-between py-2.5 bg-slate-50 px-2 rounded mt-2 border-t border-slate-200">
-                            <Text className="text-xs font-bold text-slate-900">Total Credit Ops Income</Text>
-                            <Text className="text-xs font-bold text-slate-900">{formatPHP(ops.revenues.totalCreditOps.current).replace('PHP ', '')}</Text>
+                            <Text className="text-xs font-bold text-slate-900">Total Harvest Revenue</Text>
+                            <Text className="text-xs font-bold text-slate-900">{formatPHP(ops.revenues.offtakeRevenue.current + ops.revenues.byproductRevenue.current).replace('PHP ', '')}</Text>
                         </View>
 
-                        {/* Note 14: Other Income */}
-                        {renderNoteHeader(14, 'Other Income')}
-                        {renderItem('Membership Fees', ops.revenues.membershipFees.current)}
-                        {renderItem('Interest income on investments', ops.revenues.interestOnInvestments.current)}
-                        {renderItem('Miscellaneous Income', ops.revenues.miscellaneousIncome.current)}
+                        {/* Note 14: Other Revenue */}
+                        {renderNoteHeader(14, 'Other Revenue')}
+                        <Text className="text-[11px] text-gray-600 leading-relaxed mb-2">
+                            The 4xxx revenue accounts not presented as harvest revenue, computed as the whole class so nothing is omitted from total revenues.
+                        </Text>
+                        {renderItem('Other revenue accounts', ops.revenues.otherRevenue.current)}
                         <View className="flex-row justify-between py-2.5 bg-slate-50 px-2 rounded mt-2 border-t border-slate-200">
-                            <Text className="text-xs font-bold text-slate-900">Total Other Income</Text>
-                            <Text className="text-xs font-bold text-slate-900">{formatPHP(ops.revenues.totalOtherIncome.current).replace('PHP ', '')}</Text>
+                            <Text className="text-xs font-bold text-slate-900">Total Other Revenue</Text>
+                            <Text className="text-xs font-bold text-slate-900">{formatPHP(ops.revenues.otherRevenue.current).replace('PHP ', '')}</Text>
                         </View>
 
-                        {/* Note 15: Financing Costs */}
-                        {renderNoteHeader(15, 'Financing Costs')}
-                        {renderItem('Interest on Deposit Liabilities', ops.expenses.financingCosts.current)}
+                        {/* Note 15: Farm Production Costs */}
+                        {renderNoteHeader(15, 'Farm Production Costs')}
+                        {renderItem('Land-owner settlements', ops.expenses.landOwnerSettlements.current)}
+                        {renderItem('Field labor', ops.expenses.farmLabor.current)}
+                        {renderItem('Farm inputs', ops.expenses.farmInputs.current)}
+                        {renderItem('Machinery & logistics', ops.expenses.machineryAndLogistics.current)}
+                        {renderItem('Other farm costs', ops.expenses.otherFarmCosts.current)}
+                        <View className="flex-row justify-between py-2.5 bg-slate-50 px-2 rounded mt-2 border-t border-slate-200">
+                            <Text className="text-xs font-bold text-slate-900">Total Farm Production Costs</Text>
+                            <Text className="text-xs font-bold text-slate-900">{formatPHP(ops.expenses.farmProductionCosts.current).replace('PHP ', '')}</Text>
+                        </View>
 
                         {/* Note 16: Administrative Costs */}
                         {renderNoteHeader(16, 'Administrative Costs')}

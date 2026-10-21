@@ -41,9 +41,29 @@ const FORBIDDEN_ADMIN_DIRS = [
     'franchise',
 ];
 
-const FORBIDDEN_ADMIN_FILES = ['remittances.tsx'];
+const FORBIDDEN_ADMIN_FILES = [
+    'remittances.tsx',
+    // the cooperative business-rules editor (savings interest, net-surplus split, ISC/patronage);
+    // its agri-relevant half now lives at settings/statutory-allocations.tsx
+    'settings/coop-computations.tsx',
+];
 
 const FORBIDDEN_ROOT_FILES = ['loan-application.tsx', 'loan-calculator.tsx'];
+
+// Services that posted cooperative lending data and were physically deleted with the lending
+// teardown. The coop-historical seed (`FinancialDataSeedService`) wrote audited FY2024/FY2025
+// loans-receivable, share-capital and patronage journal lines into the Agri-One ledger, so the
+// report screen that exposed it (`period-settings.tsx`) had its seed handler stripped. Absence here
+// is the durable assertion; a reintroduced file fails by name. (`CooperativeFundService` survives:
+// it was repurposed to the statutory-reserve appropriations that back the kept `statutory-reserves`
+// report and the `fund.*_allocation` settings the Agri-One editor writes.)
+const FORBIDDEN_SRC_FILES = [
+    'services/FinancialDataSeedService.ts',
+    'services/ShareCapitalService.ts',
+    'services/DividendService.ts',
+    'services/MembershipService.ts',
+    'services/CooperativeSavingsService.ts',
+];
 
 // The 10 general-ledger financial statements survive. `audit.tsx` (credit/ops audit),
 // `dashboard.tsx` (MfiKpi lending dashboard), `bank-export.tsx`, `monthly-sales.tsx` and
@@ -96,6 +116,12 @@ describe('agribusiness-only route manifest', () => {
 
     it('has no top-level loan screens', () => {
         const present = FORBIDDEN_ROOT_FILES.filter((file) => exists(file));
+        expect(present).toEqual([]);
+    });
+
+    it('has no deleted cooperative lending services', () => {
+        const srcDir = path.join(process.cwd(), 'src');
+        const present = FORBIDDEN_SRC_FILES.filter((file) => fs.existsSync(path.join(srcDir, file)));
         expect(present).toEqual([]);
     });
 

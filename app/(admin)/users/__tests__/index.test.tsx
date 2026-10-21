@@ -42,10 +42,10 @@ describe('UsersListScreen', () => {
                     query: jest.fn().mockReturnValue({
                         fetch: jest.fn().mockResolvedValue([
                             {
-                                id: 'usr-cashier-1',
-                                fullName: 'Juana Cashier',
-                                email: 'juana@poscursor.com',
-                                role: ROLES.branch_cashier,
+                                id: 'usr-encoder-1',
+                                fullName: 'Nena Encoder',
+                                email: 'nena@poscursor.com',
+                                role: ROLES.expenses_encoder,
                                 isActive: true,
                                 branchId: 'branch-bagacay',
                             },
@@ -61,13 +61,13 @@ describe('UsersListScreen', () => {
         });
     });
 
-    it('renders user list with branch cashier role and branch badge', async () => {
+    it('renders user list with expenses encoder role and branch badge', async () => {
         const { findByText } = render(<UsersListScreen />);
 
         await waitFor(async () => {
-            expect(await findByText('Juana Cashier')).toBeTruthy();
-            expect(await findByText('juana@poscursor.com')).toBeTruthy();
-            expect(await findByText('Branch Cashier')).toBeTruthy();
+            expect(await findByText('Nena Encoder')).toBeTruthy();
+            expect(await findByText('nena@poscursor.com')).toBeTruthy();
+            expect(await findByText('Expenses Encoder')).toBeTruthy();
             expect(await findByText('Bagacay (Benchmark)')).toBeTruthy();
         });
     });
@@ -77,7 +77,7 @@ describe('UsersListScreen', () => {
             id: 'usr-pending-1',
             fullName: 'Pending Applicant',
             email: 'applicant@example.com',
-            role: ROLES.collector,
+            role: ROLES.main_office,
             isActive: false,
             update: jest.fn(),
         };

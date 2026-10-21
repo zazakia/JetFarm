@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { SettingsService } from '../services/SettingsService';
 
-import { isLendingFeatureKey } from '../utils/featureFlags';
+import { isAgribusinessFeatureKey } from '../utils/featureFlags';
 
 export function useFeatureFlags() {
     const [flags, setFlags] = useState<Record<string, boolean>>({});
@@ -34,10 +34,12 @@ export function useFeatureFlags() {
 
     const isEnabled = useCallback((key?: string) => {
         if (!key) return true;
-        if (flags['system.lending'] === false && isLendingFeatureKey(key)) {
-            return false;
-        }
-        return flags[key] !== false;
+        if (flags[key] === true) return true;
+        if (flags[key] === false) return false;
+        // No feature_flags row for the key. Fail open only for the features this build actually
+        // ships - a stale row name from a pre-teardown database, or a typo, stays hidden rather
+        // than lighting up navigation that has no route behind it.
+        return isAgribusinessFeatureKey(key);
     }, [flags]);
 
     return { flags, loading, reload, isEnabled };

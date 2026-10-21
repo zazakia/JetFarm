@@ -2,19 +2,14 @@ import { UserRole } from '../constants/roles';
 
 export const LAST_AUTHORIZED_ROUTE_KEY = 'last_authorized_route';
 
+// Agribusiness-only variant: the collector, borrower, encoder, cashier, manager, supervisor,
+// commissary and executive route groups are deleted, so they must not survive here either -
+// PROTECTED_GROUPS is derived from this map, and a stale entry makes a non-existent group
+// "protected", which the route guard then refuses to redirect away from.
 const ROLE_GROUPS: Record<UserRole, string[]> = {
-    admin: ['(admin)', '(executive)', '(cashier)', '(branch-manager)', '(area-supervisor)', '(commissary)'],
-    main_office: ['(admin)', '(executive)', '(cashier)', '(branch-manager)', '(area-supervisor)', '(commissary)'],
-    collector: ['(collector)', '(payment-encoder)'],
-    borrower: ['(borrower)'],
-    loan_encoder: ['(loan-encoder)'],
-    payment_encoder: ['(payment-encoder)'],
+    admin: ['(admin)'],
+    main_office: ['(admin)'],
     expenses_encoder: ['(expenses-encoder)'],
-    branch_cashier: ['(cashier)'],
-    branch_manager: ['(branch-manager)', '(cashier)'],
-    area_supervisor: ['(area-supervisor)', '(branch-manager)'],
-    commissary_keeper: ['(commissary)'],
-    executive: ['(executive)', '(admin)', '(area-supervisor)', '(branch-manager)', '(cashier)', '(commissary)'],
 };
 
 const PROTECTED_GROUPS = new Set(Object.values(ROLE_GROUPS).flat());

@@ -64,7 +64,6 @@ export default function EditUserScreen() {
         resolver: zodResolver(schema),
     });
 
-    const selectedRole = watch('role');
     const isActiveValue = watch('isActive');
 
     useEffect(() => {
@@ -598,11 +597,6 @@ export default function EditUserScreen() {
                             <Text className="text-xs font-bold text-slate-700 uppercase tracking-widest">
                                 Assigned Branch / Store
                             </Text>
-                            {(selectedRole === ROLES.branch_cashier || selectedRole === ROLES.branch_manager) && (
-                                <View className="bg-emerald-100 px-2 py-0.5 rounded-md">
-                                    <Text className="text-emerald-800 text-[10px] font-bold uppercase">Required for Role</Text>
-                                </View>
-                            )}
                         </View>
                         <Text className="text-xs text-slate-500 mb-3">
                             Reassign or lock this user to a specific branch/store location.

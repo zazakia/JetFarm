@@ -1,4 +1,4 @@
-import { getFeatureKeyForRoute } from '../featureFlags';
+import { AGRIBUSINESS_FEATURE_KEYS, ROUTE_FEATURE_MAPPINGS, getFeatureKeyForRoute, isAgribusinessFeatureKey } from '../featureFlags';
 import { DEFAULT_FEATURE_FLAGS } from '../../constants/configDefaults';
 
 describe('getFeatureKeyForRoute', () => {
@@ -8,50 +8,72 @@ describe('getFeatureKeyForRoute', () => {
         expect(getFeatureKeyForRoute('/(admin)/users')).toBeNull();
         expect(getFeatureKeyForRoute('/(admin)/settings')).toBeNull();
         expect(getFeatureKeyForRoute('/(admin)/settings/feature-flags')).toBeNull();
+        expect(getFeatureKeyForRoute('/(admin)/agribusiness/parcels')).toBeNull();
     });
 
-    it('maps core module routes to their feature flags', () => {
-        expect(getFeatureKeyForRoute('/(admin)/borrowers')?.featureKey).toBe('module.borrowers');
-        expect(getFeatureKeyForRoute('/(admin)/borrowers/create')?.featureKey).toBe('module.borrowers');
-        expect(getFeatureKeyForRoute('/(admin)/loans')?.featureKey).toBe('module.loans');
-        expect(getFeatureKeyForRoute('/(admin)/payments')?.featureKey).toBe('module.payments');
+    it('maps the surviving finance routes to their feature flags', () => {
         expect(getFeatureKeyForRoute('/(admin)/expenses')?.featureKey).toBe('module.expenses');
-        expect(getFeatureKeyForRoute('/(admin)/payroll')?.featureKey).toBe('module.payroll');
         expect(getFeatureKeyForRoute('/(admin)/accounting')?.featureKey).toBe('module.accounting');
         expect(getFeatureKeyForRoute('/accounting/crj')?.featureKey).toBe('module.accounting');
         expect(getFeatureKeyForRoute('/(admin)/accounting/suppliers')?.featureKey).toBe('module.accounting');
+        expect(getFeatureKeyForRoute('/(admin)/reports/balance-sheet')?.featureKey).toBe('module.reports');
+        expect(getFeatureKeyForRoute('/(admin)/cash-on-hand')?.featureKey).toBe('module.cash_on_hand');
+        expect(getFeatureKeyForRoute('/(admin)/bank-accounts')?.featureKey).toBe('module.bank_accounts');
     });
 
-    // The coop business-unit module framework (Water Station / Agri-Store / Pharmacy /
-    // Transport consoles) and the marketplace are physically removed on this branch, so
-    // their routes carry no feature gate any more. Guard against re-introducing the mapping.
-    it('gates no retired module or marketplace route', () => {
-        expect(getFeatureKeyForRoute('/(admin)/modules')).toBeNull();
-        expect(getFeatureKeyForRoute('/(admin)/modules/agri-store')).toBeNull();
-        expect(getFeatureKeyForRoute('/(admin)/modules/water-station')).toBeNull();
-        expect(getFeatureKeyForRoute('/(admin)/marketplace')).toBeNull();
-        const keys = DEFAULT_FEATURE_FLAGS.map(f => f.key);
-        expect(keys).not.toContain('feature.modules.water_station.enabled');
-        expect(keys).not.toContain('feature.modules.agri_store.enabled');
-        expect(keys).not.toContain('feature.modules.pharmacy.enabled');
-        expect(keys).not.toContain('feature.modules.transport.enabled');
+    // The lending, module and marketplace screens are physically deleted on this branch. A mapping
+    // that survives its route is a gate on nothing, so these assert the absence rather than the
+    // FeatureDisabledNotice behaviour the main-branch version of this file checked.
+    it('gates no retired lending, module or marketplace route', () => {
+        for (const retired of [
+            '/(admin)/borrowers',
+            '/(admin)/loans',
+            '/(admin)/payments',
+            '/(admin)/payroll',
+            '/(admin)/collectors',
+            '/(admin)/file-cases',
+            '/(admin)/cic',
+            '/(admin)/modules',
+            '/(admin)/modules/water-station',
+            '/(admin)/marketplace',
+        ]) {
+            expect(getFeatureKeyForRoute(retired)).toBeNull();
+        }
     });
 });
 
-describe('default feature flag posture', () => {
-    // Guard: loan management ships dark. If someone flips the master switch back on,
-    // every lending E2E spec and the FeatureDisabledNotice coverage needs revisiting.
-    it('ships the system.lending master switch disabled', () => {
-        const lending = DEFAULT_FEATURE_FLAGS.find(f => f.key === 'system.lending');
-        expect(lending).toBeDefined();
-        expect(lending!.enabled).toBe(false);
+describe('agribusiness feature flag posture', () => {
+    it('ships exactly the flags whose route groups still exist', () => {
+        expect(DEFAULT_FEATURE_FLAGS.map(f => f.key).sort()).toEqual([
+            'module.accounting',
+            'module.bank_accounts',
+            'module.cash_on_hand',
+            'module.expenses',
+            'module.reports',
+        ]);
     });
 
-    it('keeps non-lending modules enabled by default', () => {
-        const enabledKeys = DEFAULT_FEATURE_FLAGS.filter(f => f.enabled).map(f => f.key);
-        expect(enabledKeys).toContain('module.accounting');
-        expect(enabledKeys).toContain('module.reports');
-        expect(enabledKeys).not.toContain('system.lending');
-        expect(enabledKeys).not.toContain('module.file_cases');
+    it('has no lending master switch and no retired module key', () => {
+        const keys = DEFAULT_FEATURE_FLAGS.map(f => f.key);
+        for (const retired of ['system.lending', 'module.borrowers', 'module.loans', 'module.payments',
+            'module.remittances', 'module.file_cases', 'module.savings', 'module.payroll',
+            'module.employees', 'module.business_modules', 'module.marketplace', 'module.cic']) {
+            expect(keys).not.toContain(retired as never);
+            expect(isAgribusinessFeatureKey(retired)).toBe(false);
+        }
+        // Deleting the switch is what makes the fail-open isEnabled on main harmless here: nothing
+        // can re-enable a lending flag this build has no screen for.
+        expect(AGRIBUSINESS_FEATURE_KEYS).not.toContain('system.lending' as never);
+    });
+
+    it('ships every flag enabled and gates nothing dark', () => {
+        expect(DEFAULT_FEATURE_FLAGS.filter(f => !f.enabled)).toEqual([]);
+    });
+
+    it('only maps routes to allowlisted keys', () => {
+        const offList = ROUTE_FEATURE_MAPPINGS
+            .map(m => m.featureKey)
+            .filter(key => !isAgribusinessFeatureKey(key));
+        expect(offList).toEqual([]);
     });
 });

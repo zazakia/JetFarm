@@ -2,12 +2,12 @@
  * CashDisbursementsJournalService
  *
  * Generates the Cash Disbursements Journal (CDJ) — a columnar register of all
- * cash outflows. Queries journal_entries where cash account lines (1010, 1020, etc.)
- * are CREDITED, grouped by disbursement type.
+ * cash and bank outflows. Queries journal_entries whose cash/bank account lines
+ * (1010, 1011, 1020, 1030, 1040) are CREDITED, grouped by disbursement type.
  *
  * CDJ Columns:
- * Date | Voucher No. | Payee/Description | Loan Releases | Operating Expenses
- *      | Savings Withdrawals | SC Refunds | Bank Deposits | Other | Cash Credit (1010)
+ * Date | Voucher No. | Payee/Description | Settlements & Wages | Operating Expenses
+ *      | Receivable Advances | Capital Refunds | Transfers | Other | Cash/Bank Credit
  */
 
 import { Q, Database } from '@nozbe/watermelondb';
@@ -17,16 +17,23 @@ import JournalEntryLine from '../database/models/JournalEntryLine';
 
 const CASH_CREDIT_ACCOUNTS = ['1010', '1011', '1015', '1016', '1020', '1030', '1040'];
 
+/** Land-owner crop shares and field wages cleared in cash. */
+const SETTLEMENT_CODES = ['2035', '2036'];
+/** Cash advanced into a receivable (offtaker / grower advances). */
+const RECEIVABLE_CODES = ['1300', '1500'];
+/** Owner or capital-partner equity returned. */
+const CAPITAL_CODES = ['2020', '3010', '3015'];
+
 export interface CDJRow {
     date: Date;
     referenceNumber: string;
     description: string;
     sourceType: string;
-    loanDisbursements: number;
+    settlementsAndWages: number;
     operatingExpenses: number;
-    savingsWithdrawals: number;
-    scRefunds: number;
-    bankDeposits: number;
+    receivableAdvances: number;
+    capitalRefunds: number;
+    internalTransfers: number;
     otherDisbursements: number;
     totalCash: number;
     entryId: string;
@@ -34,11 +41,11 @@ export interface CDJRow {
 
 export interface CDJSummary {
     rows: CDJRow[];
-    totalLoanDisbursements: number;
+    totalSettlementsAndWages: number;
     totalOperatingExpenses: number;
-    totalSavingsWithdrawals: number;
-    totalScRefunds: number;
-    totalBankDeposits: number;
+    totalReceivableAdvances: number;
+    totalCapitalRefunds: number;
+    totalInternalTransfers: number;
     totalOtherDisbursements: number;
     grandTotalCash: number;
     periodStart: Date;
@@ -95,22 +102,22 @@ export class CashDisbursementsJournalServiceClass {
             if (!cashCreditLine) continue;
 
             const totalCash = cashCreditLine.creditAmount ?? 0;
-            let loanDisbursements = 0;
+            let settlementsAndWages = 0;
             let operatingExpenses = 0;
-            let savingsWithdrawals = 0;
-            let scRefunds = 0;
-            let bankDeposits = 0;
+            let receivableAdvances = 0;
+            let capitalRefunds = 0;
+            let internalTransfers = 0;
             let otherDisbursements = 0;
 
             for (const line of lines) {
                 const debit = line.debitAmount ?? 0;
                 if (debit <= 0) continue;
                 const code = line.accountCode;
-                if (code === '1100' || code === '1200') loanDisbursements += debit;
+                if (CASH_CREDIT_ACCOUNTS.includes(code)) internalTransfers += debit;
+                else if (SETTLEMENT_CODES.includes(code)) settlementsAndWages += debit;
+                else if (RECEIVABLE_CODES.includes(code)) receivableAdvances += debit;
+                else if (CAPITAL_CODES.includes(code)) capitalRefunds += debit;
                 else if (code.startsWith('5')) operatingExpenses += debit;
-                else if (code === '2010') savingsWithdrawals += debit;
-                else if (code === '3010') scRefunds += debit;
-                else if (['1020', '1030', '1040'].includes(code)) bankDeposits += debit;
                 else otherDisbursements += debit;
             }
 
@@ -119,11 +126,11 @@ export class CashDisbursementsJournalServiceClass {
                 referenceNumber: entry.referenceNumber,
                 description: entry.description,
                 sourceType: entry.sourceTable ?? 'manual',
-                loanDisbursements,
+                settlementsAndWages,
                 operatingExpenses,
-                savingsWithdrawals,
-                scRefunds,
-                bankDeposits,
+                receivableAdvances,
+                capitalRefunds,
+                internalTransfers,
                 otherDisbursements,
                 totalCash,
                 entryId: entry.id,
@@ -132,11 +139,11 @@ export class CashDisbursementsJournalServiceClass {
 
         return {
             rows: cdjRows,
-            totalLoanDisbursements: cdjRows.reduce((s, r) => s + r.loanDisbursements, 0),
+            totalSettlementsAndWages: cdjRows.reduce((s, r) => s + r.settlementsAndWages, 0),
             totalOperatingExpenses: cdjRows.reduce((s, r) => s + r.operatingExpenses, 0),
-            totalSavingsWithdrawals: cdjRows.reduce((s, r) => s + r.savingsWithdrawals, 0),
-            totalScRefunds: cdjRows.reduce((s, r) => s + r.scRefunds, 0),
-            totalBankDeposits: cdjRows.reduce((s, r) => s + r.bankDeposits, 0),
+            totalReceivableAdvances: cdjRows.reduce((s, r) => s + r.receivableAdvances, 0),
+            totalCapitalRefunds: cdjRows.reduce((s, r) => s + r.capitalRefunds, 0),
+            totalInternalTransfers: cdjRows.reduce((s, r) => s + r.internalTransfers, 0),
             totalOtherDisbursements: cdjRows.reduce((s, r) => s + r.otherDisbursements, 0),
             grandTotalCash: cdjRows.reduce((s, r) => s + r.totalCash, 0),
             periodStart: startDate,
@@ -147,11 +154,11 @@ export class CashDisbursementsJournalServiceClass {
     private _emptySummary(startDate: Date, endDate: Date): CDJSummary {
         return {
             rows: [],
-            totalLoanDisbursements: 0,
+            totalSettlementsAndWages: 0,
             totalOperatingExpenses: 0,
-            totalSavingsWithdrawals: 0,
-            totalScRefunds: 0,
-            totalBankDeposits: 0,
+            totalReceivableAdvances: 0,
+            totalCapitalRefunds: 0,
+            totalInternalTransfers: 0,
             totalOtherDisbursements: 0,
             grandTotalCash: 0,
             periodStart: startDate,

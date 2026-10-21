@@ -139,6 +139,14 @@ export default function IncomeStatementScreen() {
         );
     };
 
+    // The allocation rows only appropriate the statutory percentages, so the surplus they leave
+    // behind is displayed rather than implied — otherwise "Net Surplus as Distributed" would not
+    // equal the rows above it.
+    const allocatedCurrent = reportData?.allocations.reduce((s, a) => s + a.amount, 0) ?? 0;
+    const allocatedPrior = reportData?.allocations.reduce((s, a) => s + a.priorAmount, 0) ?? 0;
+    const unallocatedSurplus = (reportData?.netSurplus.current ?? 0) - allocatedCurrent;
+    const priorUnallocated = (reportData?.netSurplus.prior ?? 0) - allocatedPrior;
+
     if (loading && !refreshing && !reportData) {
         return (
             <View className="flex-1 justify-center items-center bg-gray-50">
@@ -174,15 +182,9 @@ export default function IncomeStatementScreen() {
                     </Pressable>
                     <Pressable 
                         onPress={() => router.push('/(admin)/reports/period-settings')}
-                        className="p-2 bg-blue-50 rounded-lg active:bg-blue-100 mr-1"
+                        className="p-2 bg-blue-50 rounded-lg active:bg-blue-100"
                     >
                         <MaterialIcons name="settings" size={18} color="#1D4ED8" />
-                    </Pressable>
-                    <Pressable 
-                        onPress={() => router.push({ pathname: '/(admin)/reports/surplus-allocation', params: { year } })}
-                        className="p-2 bg-emerald-50 rounded-lg active:bg-emerald-100"
-                    >
-                        <MaterialIcons name="pie-chart" size={18} color="#059669" />
                     </Pressable>
                 </View>
             </View>
@@ -228,15 +230,11 @@ export default function IncomeStatementScreen() {
                             <View className="bg-slate-100 px-4 py-1.5 border-b border-gray-200">
                                 <Text className="font-black text-[10px] uppercase text-slate-800 tracking-wider">Revenues</Text>
                             </View>
-                            {renderRow('Income from Credit Operations', 13, reportData.revenues.totalCreditOps.current, reportData.revenues.totalCreditOps.prior, reportData.revenues.totalCreditOps.variance, true)}
-                            {renderRow('Interest Income from Loans', null, reportData.revenues.interestOnLoans.current, reportData.revenues.interestOnLoans.prior, reportData.revenues.interestOnLoans.variance, false, false, true)}
-                            {renderRow('Service Fees', null, reportData.revenues.serviceCharges.current, reportData.revenues.serviceCharges.prior, reportData.revenues.serviceCharges.variance, false, false, true)}
-                            {renderRow('Fines and penalties', null, reportData.revenues.penalties.current, reportData.revenues.penalties.prior, reportData.revenues.penalties.variance, false, false, true)}
-                            
-                            {renderRow('Other Income', 14, reportData.revenues.totalOtherIncome.current, reportData.revenues.totalOtherIncome.prior, reportData.revenues.totalOtherIncome.variance, true)}
-                            {renderRow('Membership Fees', null, reportData.revenues.membershipFees.current, reportData.revenues.membershipFees.prior, reportData.revenues.membershipFees.variance, false, false, true)}
-                            {renderRow('Interest income on investments', null, reportData.revenues.interestOnInvestments.current, reportData.revenues.interestOnInvestments.prior, reportData.revenues.interestOnInvestments.variance, false, false, true)}
-                            {renderRow('Miscellaneous Income', null, reportData.revenues.miscellaneousIncome.current, reportData.revenues.miscellaneousIncome.prior, reportData.revenues.miscellaneousIncome.variance, false, false, true)}
+                            {renderRow('Harvest Revenue', 13, reportData.revenues.offtakeRevenue.current + reportData.revenues.byproductRevenue.current, reportData.revenues.offtakeRevenue.prior + reportData.revenues.byproductRevenue.prior, reportData.revenues.offtakeRevenue.variance + reportData.revenues.byproductRevenue.variance, true)}
+                            {renderRow('Off-take delivered to buyer', null, reportData.revenues.offtakeRevenue.current, reportData.revenues.offtakeRevenue.prior, reportData.revenues.offtakeRevenue.variance, false, false, true)}
+                            {renderRow('By-product & residue sales', null, reportData.revenues.byproductRevenue.current, reportData.revenues.byproductRevenue.prior, reportData.revenues.byproductRevenue.variance, false, false, true)}
+
+                            {renderRow('Other Revenue', 14, reportData.revenues.otherRevenue.current, reportData.revenues.otherRevenue.prior, reportData.revenues.otherRevenue.variance, true)}
 
                             {renderRow('TOTAL REVENUES', null, reportData.revenues.totalRevenues.current, reportData.revenues.totalRevenues.prior, reportData.revenues.totalRevenues.variance, true, true)}
 
@@ -244,8 +242,12 @@ export default function IncomeStatementScreen() {
                             <View className="bg-slate-100 px-4 py-1.5 border-b border-gray-200 border-t border-gray-200">
                                 <Text className="font-black text-[10px] uppercase text-slate-800 tracking-wider">Expenses</Text>
                             </View>
-                            {renderRow('Financing Costs', 15, reportData.expenses.financingCosts.current, reportData.expenses.financingCosts.prior, reportData.expenses.financingCosts.variance, true)}
-                            {renderRow('Interest on Deposit Liabilities', null, reportData.expenses.financingCosts.current, reportData.expenses.financingCosts.prior, reportData.expenses.financingCosts.variance, false, false, true)}
+                            {renderRow('Farm Production Costs', 15, reportData.expenses.farmProductionCosts.current, reportData.expenses.farmProductionCosts.prior, reportData.expenses.farmProductionCosts.variance, true)}
+                            {renderRow('Land-owner settlements', null, reportData.expenses.landOwnerSettlements.current, reportData.expenses.landOwnerSettlements.prior, reportData.expenses.landOwnerSettlements.variance, false, false, true)}
+                            {renderRow('Field labor', null, reportData.expenses.farmLabor.current, reportData.expenses.farmLabor.prior, reportData.expenses.farmLabor.variance, false, false, true)}
+                            {renderRow('Farm inputs', null, reportData.expenses.farmInputs.current, reportData.expenses.farmInputs.prior, reportData.expenses.farmInputs.variance, false, false, true)}
+                            {renderRow('Machinery & logistics', null, reportData.expenses.machineryAndLogistics.current, reportData.expenses.machineryAndLogistics.prior, reportData.expenses.machineryAndLogistics.variance, false, false, true)}
+                            {renderRow('Other farm costs', null, reportData.expenses.otherFarmCosts.current, reportData.expenses.otherFarmCosts.prior, reportData.expenses.otherFarmCosts.variance, false, false, true)}
 
                             {renderRow('Administrative Costs', 16, reportData.expenses.totalAdminCosts.current, reportData.expenses.totalAdminCosts.prior, reportData.expenses.totalAdminCosts.variance, true)}
                             {renderRow('Salaries and Wages', null, reportData.expenses.salaries.current, reportData.expenses.salaries.prior, reportData.expenses.salaries.variance, false, false, true)}
@@ -261,9 +263,7 @@ export default function IncomeStatementScreen() {
                             
                             {renderRow('TOTAL EXPENSES', null, reportData.expenses.totalExpenses.current, reportData.expenses.totalExpenses.prior, reportData.expenses.totalExpenses.variance, true, true)}
 
-                            {renderRow('NET SURPLUS BEFORE OTHER ITEMS', null, reportData.netSurplus.current, reportData.netSurplus.prior, reportData.netSurplus.variance, true, true)}
-                            {renderRow('Less: Loss on Robbery', null, 0, 0, 0, false, false, false)}
-                            {renderRow('NET SURPLUS (LOSS) FOR ALLOCATION', null, reportData.netSurplus.current, reportData.netSurplus.prior, reportData.netSurplus.variance, true, true)}
+                            {renderRow('NET SURPLUS (LOSS) FOR THE YEAR', null, reportData.netSurplus.current, reportData.netSurplus.prior, reportData.netSurplus.variance, true, true)}
 
                             {/* DISTRIBUTIONS SECTION */}
                             <View className="bg-slate-900 px-4 py-2 border-b border-gray-200 border-t border-gray-200">
@@ -277,6 +277,7 @@ export default function IncomeStatementScreen() {
                                     <Text className="flex-[1.25] text-right text-gray-500 text-[11px]">{formatRowAmount(alloc.priorAmount)}</Text>
                                 </View>
                             ))}
+                            {renderRow('Retained — not appropriated', null, unallocatedSurplus, priorUnallocated, unallocatedSurplus - priorUnallocated, false, false, true)}
 
                             <View className="flex-row px-4 py-3 bg-emerald-50 border-t border-emerald-100 items-center">
                                 <Text className="flex-[2.5] text-emerald-900 font-bold text-xs uppercase">Net Surplus as Distributed</Text>
@@ -320,55 +321,63 @@ export default function IncomeStatementScreen() {
                         <ScrollView className="p-5">
                             {selectedNote === 13 && (
                                 <View>
-                                    <Text className="text-slate-900 font-black text-xs uppercase mb-3">Income from Credit Operations</Text>
+                                    <Text className="text-slate-900 font-black text-xs uppercase mb-3">Harvest Revenue</Text>
                                     <Text className="text-xs text-gray-600 leading-relaxed mb-4">
-                                        Revenues generated from loan extensions, processing charges, and fines. Under cooperative rules, credit operations revenue is recognized upon collection (cash basis).
+                                        Revenue recognized when the delivered kilos are weighed in and the off-take price per kilo is agreed. By-product and residue sales from the same cycle are shown alongside it.
                                     </Text>
                                     <View className="flex-row justify-between py-2 border-b border-gray-100">
-                                        <Text className="text-[11px] text-gray-700">Interest Income from Loans</Text>
-                                        <Text className="text-[11px] font-bold text-slate-800">{formatPHP(reportData?.revenues.interestOnLoans.current)}</Text>
+                                        <Text className="text-[11px] text-gray-700">Off-take revenue (4140)</Text>
+                                        <Text className="text-[11px] font-bold text-slate-800">{formatPHP(reportData?.revenues.offtakeRevenue.current)}</Text>
                                     </View>
                                     <View className="flex-row justify-between py-2 border-b border-gray-100">
-                                        <Text className="text-[11px] text-gray-700">Service Fees</Text>
-                                        <Text className="text-[11px] font-bold text-slate-800">{formatPHP(reportData?.revenues.serviceCharges.current)}</Text>
-                                    </View>
-                                    <View className="flex-row justify-between py-2 border-b border-gray-100">
-                                        <Text className="text-[11px] text-gray-700">Fines and penalties</Text>
-                                        <Text className="text-[11px] font-bold text-slate-800">{formatPHP(reportData?.revenues.penalties.current)}</Text>
+                                        <Text className="text-[11px] text-gray-700">By-product revenue (4145)</Text>
+                                        <Text className="text-[11px] font-bold text-slate-800">{formatPHP(reportData?.revenues.byproductRevenue.current)}</Text>
                                     </View>
                                 </View>
                             )}
 
                             {selectedNote === 14 && (
                                 <View>
-                                    <Text className="text-slate-900 font-black text-xs uppercase mb-3">Other Income</Text>
+                                    <Text className="text-slate-900 font-black text-xs uppercase mb-3">Other Revenue</Text>
                                     <Text className="text-xs text-gray-600 leading-relaxed mb-4">
-                                        Income derived from non-lending sources such as member application fees, investments, and miscellaneous receipts.
+                                        Every 4xxx account the presentation above does not name. It is computed as the whole revenue class less the harvest codes, so a new or legacy income account cannot be left out of TOTAL REVENUES.
                                     </Text>
-                                    <View className="flex-row justify-between py-2 border-b border-gray-100">
-                                        <Text className="text-[11px] text-gray-700">Membership Fees</Text>
-                                        <Text className="text-[11px] font-bold text-slate-800">{formatPHP(reportData?.revenues.membershipFees.current)}</Text>
-                                    </View>
-                                    <View className="flex-row justify-between py-2 border-b border-gray-100">
-                                        <Text className="text-[11px] text-gray-700">Interest Income on Investments</Text>
-                                        <Text className="text-[11px] font-bold text-slate-800">{formatPHP(reportData?.revenues.interestOnInvestments.current)}</Text>
-                                    </View>
-                                    <View className="flex-row justify-between py-2 border-b border-gray-100">
-                                        <Text className="text-[11px] text-gray-700">Miscellaneous Income</Text>
-                                        <Text className="text-[11px] font-bold text-slate-800">{formatPHP(reportData?.revenues.miscellaneousIncome.current)}</Text>
+                                    <View className="flex-row justify-between py-3 bg-slate-50 px-2 rounded">
+                                        <Text className="text-xs font-bold text-slate-900">Balance</Text>
+                                        <Text className="text-xs font-bold text-slate-900">{formatPHP(reportData?.revenues.otherRevenue.current)}</Text>
                                     </View>
                                 </View>
                             )}
 
                             {selectedNote === 15 && (
                                 <View>
-                                    <Text className="text-slate-900 font-black text-xs uppercase mb-3">Financing Costs</Text>
+                                    <Text className="text-slate-900 font-black text-xs uppercase mb-3">Farm Production Costs</Text>
                                     <Text className="text-xs text-gray-600 leading-relaxed mb-4">
-                                        Cooperative funding costs, specifically interest allocations on member deposit liabilities.
+                                        Direct cost of the crop cycles: the land-owner settlement payout for the kilos weighed in, field labor for work performed, inputs applied to the parcels, and machinery and haulage charged to the cycle.
                                     </Text>
-                                    <View className="flex-row justify-between py-3 bg-slate-50 px-2 rounded">
-                                        <Text className="text-xs font-bold text-slate-900">Interest on Deposit Liabilities</Text>
-                                        <Text className="text-xs font-bold text-slate-900">{formatPHP(reportData?.expenses.financingCosts.current)}</Text>
+                                    <View className="flex-row justify-between py-1.5 border-b border-gray-100">
+                                        <Text className="text-[10px] text-gray-700">Land-owner settlements (5160)</Text>
+                                        <Text className="text-[10px] font-bold text-slate-800">{formatPHP(reportData?.expenses.landOwnerSettlements.current)}</Text>
+                                    </View>
+                                    <View className="flex-row justify-between py-1.5 border-b border-gray-100">
+                                        <Text className="text-[10px] text-gray-700">Field labor (5161)</Text>
+                                        <Text className="text-[10px] font-bold text-slate-800">{formatPHP(reportData?.expenses.farmLabor.current)}</Text>
+                                    </View>
+                                    <View className="flex-row justify-between py-1.5 border-b border-gray-100">
+                                        <Text className="text-[10px] text-gray-700">Farm inputs (5162, 5163, 5165)</Text>
+                                        <Text className="text-[10px] font-bold text-slate-800">{formatPHP(reportData?.expenses.farmInputs.current)}</Text>
+                                    </View>
+                                    <View className="flex-row justify-between py-1.5 border-b border-gray-100">
+                                        <Text className="text-[10px] text-gray-700">Machinery &amp; logistics (5164, 5167, 5168)</Text>
+                                        <Text className="text-[10px] font-bold text-slate-800">{formatPHP(reportData?.expenses.machineryAndLogistics.current)}</Text>
+                                    </View>
+                                    <View className="flex-row justify-between py-1.5 border-b border-gray-100">
+                                        <Text className="text-[10px] text-gray-700">Other farm costs (5169)</Text>
+                                        <Text className="text-[10px] font-bold text-slate-800">{formatPHP(reportData?.expenses.otherFarmCosts.current)}</Text>
+                                    </View>
+                                    <View className="flex-row justify-between py-3 bg-slate-50 px-2 rounded mt-2">
+                                        <Text className="text-xs font-bold text-slate-900">Total Farm Production Costs</Text>
+                                        <Text className="text-xs font-bold text-slate-900">{formatPHP(reportData?.expenses.farmProductionCosts.current)}</Text>
                                     </View>
                                 </View>
                             )}

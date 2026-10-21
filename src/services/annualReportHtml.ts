@@ -3,7 +3,8 @@
  *
  * Builds a multi-page HTML string for expo-print to render as PDF.
  * Matches the layout of the official Auditor's Report and Financial Statements
- * for POS Cursor Cooperative (SCSCC).
+ * filed under the Cooperative Development Authority (CDA) reporting format. The
+ * statement lines themselves are the agribusiness ledger, not the retired lending book.
  *
  * Usage:
  *   const html = buildAnnualReportHtml(data);
@@ -215,9 +216,9 @@ function buildAuditorsOpinion(year: number): string {
       The following matter was addressed in the context of our audit of the financial statements as a whole:
     </p>
     <p class="body-text" style="padding-left:16px;">
-      <strong>Valuation of Loan Receivables</strong> — The cooperative's loan portfolio represents a significant portion of total assets.
-      We assessed the adequacy of the allowance for impairment by reviewing individual loan files, repayment histories,
-      and applying the cooperative's credit risk policies.
+      <strong>Valuation of Standing Crops, Harvested Produce and Farm Inputs</strong> — The farm asset block represents a significant portion of total assets.
+      We assessed carrying values by reviewing parcel-level crop-cycle records, input and labour postings, and the harvest weigh-in sheets,
+      and by applying the enterprise's production cost policies.
     </p>
 
     <h3 style="color:#C0392B;font-size:13px;margin:16px 0 8px;">Responsibilities of Management</h3>
@@ -285,14 +286,15 @@ function buildSupplementalStatement(year: number): string {
 
     <h3 style="font-size:12px;font-weight:700;margin:16px 0 6px;color:#1E3A8A;">3. Capital Build-Up</h3>
     <p class="body-text">
-      Members continued to increase their share capital contributions during the year,
-      strengthening the cooperative's financial base and enabling greater lending capacity for the membership.
+      Members and crop partners continued to increase their capital contributions during the year,
+      strengthening the enterprise's financial base and expanding the area brought under cultivation.
     </p>
 
-    <h3 style="font-size:12px;font-weight:700;margin:16px 0 6px;color:#1E3A8A;">4. Loan Operations</h3>
+    <h3 style="font-size:12px;font-weight:700;margin:16px 0 6px;color:#1E3A8A;">4. Farm Operations</h3>
     <p class="body-text">
-      The cooperative continued its primary function of extending credit to members for productive and provident purposes.
-      Loan products are designed to address the financial needs of members while maintaining portfolio quality.
+      The enterprise continued its primary function of developing agricultural land into crop production cycles
+      shared with land owners and investors. Parcels are planned, planted, tended and settled on a per-kilo basis,
+      with field labour and land-owner payouts cleared weekly.
     </p>
 
     <div style="margin-top:48px;font-size:11px;">
@@ -317,20 +319,23 @@ function buildFinancialCondition(fc: FinancialConditionData): string {
     ${sectionHeader('Current Assets')}
     ${phpRow('Cash on Hand', fc.assets.cashOnHand.current, fc.assets.cashOnHand.prior, false, true)}
     ${phpRow('Cash in Bank', fc.assets.cashInBank.current, fc.assets.cashInBank.prior, false, true)}
-    ${phpRow('Loan Receivables, Net', fc.assets.loanReceivable.current, fc.assets.loanReceivable.prior, false, true)}
+    ${phpRow('Standing Crops, Produce & Farm Inputs', fc.assets.farmAssets.current, fc.assets.farmAssets.prior, false, true)}
     ${phpRow('Other Receivables', fc.assets.otherReceivables.current, fc.assets.otherReceivables.prior, false, true)}
     ${subtotalRow('Total Current Assets', fc.assets.totalCurrentAssets.current, fc.assets.totalCurrentAssets.prior)}
+    ${phpRow('Sundry Assets (Non-Current)', fc.assets.sundryAssets.current, fc.assets.sundryAssets.prior, false, true)}
     ${blankRow()}
     ${totalRow('TOTAL ASSETS', fc.assets.totalAssets.current, fc.assets.totalAssets.prior)}
     ${blankRow()}
     ${sectionHeader('LIABILITIES')}
-    ${phpRow('Member Savings Deposits', fc.liabilities.savingsDeposits.current, fc.liabilities.savingsDeposits.prior, false, true)}
-    ${phpRow('Share Capital Payable', fc.liabilities.shareCapitalPayable.current, fc.liabilities.shareCapitalPayable.prior, false, true)}
+    ${phpRow('Land-Owner Settlements Payable', fc.liabilities.settlementsPayable.current, fc.liabilities.settlementsPayable.prior, false, true)}
+    ${phpRow('Field Labor Payable', fc.liabilities.laborPayable.current, fc.liabilities.laborPayable.prior, false, true)}
+    ${phpRow('Accounts Payable', fc.liabilities.accountsPayable.current, fc.liabilities.accountsPayable.prior, false, true)}
     ${phpRow('Other Payables', fc.liabilities.otherPayables.current, fc.liabilities.otherPayables.prior, false, true)}
     ${subtotalRow('Total Liabilities', fc.liabilities.totalLiabilities.current, fc.liabilities.totalLiabilities.prior)}
     ${blankRow()}
     ${sectionHeader('FUND BALANCE (EQUITY)')}
     ${phpRow('Share Capital', fc.fundBalance.shareCapital.current, fc.fundBalance.shareCapital.prior, false, true)}
+    ${phpRow('Project & Partner Equity', fc.fundBalance.projectEquity.current, fc.fundBalance.projectEquity.prior, false, true)}
     ${phpRow('General Reserve Fund', fc.fundBalance.reserveFund.current, fc.fundBalance.reserveFund.prior, false, true)}
     ${phpRow('Education & Training Fund (CETF)', fc.fundBalance.educationFund.current, fc.fundBalance.educationFund.prior, false, true)}
     ${phpRow('Community Development Fund', fc.fundBalance.communityDevFund.current, fc.fundBalance.communityDevFund.prior, false, true)}
@@ -360,17 +365,17 @@ function buildFinancialCondition(fc: FinancialConditionData): string {
 function buildActivities(act: ActivitiesData): string {
     const rows = `
     ${sectionHeader('REVENUES')}
-    ${phpRow('Interest Income on Loans', act.revenues.interestOnLoans.current, act.revenues.interestOnLoans.prior, false, true)}
-    ${phpRow('Service Charges and Fees', act.revenues.serviceCharges.current, act.revenues.serviceCharges.prior, false, true)}
-    ${phpRow('Membership Fees', act.revenues.membershipFees.current, act.revenues.membershipFees.prior, false, true)}
+    ${phpRow('Harvest Off-take Revenue', act.revenues.offtakeRevenue.current, act.revenues.offtakeRevenue.prior, false, true)}
+    ${phpRow('By-product Revenue', act.revenues.byproductRevenue.current, act.revenues.byproductRevenue.prior, false, true)}
     ${phpRow('Other Income', act.revenues.otherIncome.current, act.revenues.otherIncome.prior, false, true)}
     ${subtotalRow('Total Revenues', act.revenues.totalRevenues.current, act.revenues.totalRevenues.prior)}
     ${blankRow()}
     ${sectionHeader('EXPENSES')}
+    ${phpRow('Farm Production Costs', act.expenses.farmProductionCosts.current, act.expenses.farmProductionCosts.prior, false, true)}
     ${phpRow('Salaries and Wages', act.expenses.salariesAndWages.current, act.expenses.salariesAndWages.prior, false, true)}
     ${phpRow('Office and Administrative Expenses', act.expenses.officeExpenses.current, act.expenses.officeExpenses.prior, false, true)}
     ${phpRow('Depreciation and Amortization', act.expenses.depreciationAndAmortization.current, act.expenses.depreciationAndAmortization.prior, false, true)}
-    ${phpRow('Other Expenses', act.expenses.otherExpenses.current, act.expenses.otherExpenses.prior, false, true)}
+    ${phpRow('Other Administrative Expenses', act.expenses.otherExpenses.current, act.expenses.otherExpenses.prior, false, true)}
     ${subtotalRow('Total Expenses', act.expenses.totalExpenses.current, act.expenses.totalExpenses.prior)}
     ${blankRow()}
     ${totalRow('NET SURPLUS / (DEFICIT)', act.netSurplus.current, act.netSurplus.prior)}`;
@@ -406,7 +411,7 @@ function buildChangesInFundBalance(chg: ChangesInFundBalanceData): string {
     ${phpRow('Optional Fund (7%)', chg.statutoryAllocations.optionalFund.current, chg.statutoryAllocations.optionalFund.prior, false, true)}
     ${subtotalRow('Total Statutory Allocations', chg.statutoryAllocations.totalAllocations.current, chg.statutoryAllocations.totalAllocations.prior)}
     ${blankRow()}
-    ${phpRow('Dividends Declared to Members', chg.dividendsDeclared.current, chg.dividendsDeclared.prior, false, true)}
+    ${phpRow('Surplus Not Appropriated (Retained)', chg.unallocatedSurplus.current, chg.unallocatedSurplus.prior, false, true)}
     ${blankRow()}
     ${totalRow('Fund Balance, End of Year', chg.closing.current, chg.closing.prior)}`;
 
@@ -489,7 +494,7 @@ function buildNotes(notes: NotesData): string {
     </div>
 
     ${noteSection(1, 'General Information',
-        `<p class="body-text"><strong>${n.organization.name}</strong> (the "Cooperative") is a savings and credit cooperative
+        `<p class="body-text"><strong>${n.organization.name}</strong> (the "Cooperative") is an agricultural-production cooperative
         organized and registered under the Cooperative Code of the Philippines (R.A. 9520).
         The Cooperative's principal address is ${n.organization.address}.</p>
         <p class="body-text">The primary purpose of the Cooperative is: ${n.organization.primaryPurpose}</p>`
@@ -547,7 +552,7 @@ function buildNotes(notes: NotesData): string {
     )}
 
     ${noteSection(6, 'Statutory Funds',
-        `<p class="body-text">Pursuant to R.A. 9520, the cooperative allocates a portion of its net surplus to statutory funds before any distribution to members:</p>
+        `<p class="body-text">Pursuant to R.A. 9520, the cooperative allocates a portion of its net surplus to statutory funds before the balance is retained:</p>
         <table style="width:100%;border-collapse:collapse;font-size:11px;margin:8px 0;">
           <tr style="background:#EFF6FF;font-weight:700;">
             <td style="padding:6px;">Fund</td>

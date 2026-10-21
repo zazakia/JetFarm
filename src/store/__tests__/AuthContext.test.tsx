@@ -14,7 +14,6 @@ const mockUnsubscribe = { data: { subscription: { unsubscribe: jest.fn() } } };
 jest.mock('../../services/AuthService', () => ({
     AuthService: {
         getCurrentUserRole: jest.fn(),
-        resolveCollectorId: jest.fn(),
         signOut: jest.fn(),
     },
 }));
@@ -62,7 +61,6 @@ describe('AuthContext', () => {
         (supabase.auth.getSession as jest.Mock).mockResolvedValue({ data: { session: null }, error: null });
         (supabase.auth.refreshSession as jest.Mock).mockResolvedValue({ data: { session: null }, error: null });
         (AuthService.getCurrentUserRole as jest.Mock).mockResolvedValue('admin');
-        (AuthService.resolveCollectorId as jest.Mock).mockResolvedValue(null);
         (AuthService.signOut as jest.Mock).mockResolvedValue(undefined);
         (SyncService.checkAndSync as jest.Mock).mockResolvedValue(undefined);
         (clearPersistedAuthSession as jest.Mock).mockResolvedValue(undefined);
@@ -87,15 +85,13 @@ describe('AuthContext', () => {
         expect(result.current.roleResolved).toBe(true);
     });
 
-    it('resolves collector ID correctly during session check', async () => {
+    it('resolves a kept role during session check', async () => {
         const mockUser = { id: 'u1' };
         (supabase.auth.getSession as jest.Mock).mockResolvedValue({ data: { session: { user: mockUser } } });
-        (AuthService.getCurrentUserRole as jest.Mock).mockResolvedValue('collector');
-        (AuthService.resolveCollectorId as jest.Mock).mockResolvedValue('cid-123');
+        (AuthService.getCurrentUserRole as jest.Mock).mockResolvedValue('expenses_encoder');
 
         const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
-        await waitFor(() => expect(result.current.role).toBe('collector'));
-        expect(result.current.collectorId).toBe('cid-123');
+        await waitFor(() => expect(result.current.role).toBe('expenses_encoder'));
         expect(result.current.roleResolved).toBe(true);
     });
 
@@ -159,7 +155,7 @@ describe('AuthContext', () => {
         expect(result.current.role).toBe('admin');
     });
 
-    it('handles auth state change events including collector resolution', async () => {
+    it('handles auth state change events including role resolution', async () => {
         let callback: any;
         (supabase.auth.onAuthStateChange as jest.Mock).mockImplementation((cb) => {
             callback = cb;
@@ -169,17 +165,15 @@ describe('AuthContext', () => {
         const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
         await waitFor(() => expect(result.current.initialized).toBe(true));
         
-        // Test SIGNED_IN as collector
+        // Test SIGNED_IN as a kept operational role
         const mockUser = { id: 'u2', email: 'u2@test.com' };
-        (AuthService.getCurrentUserRole as jest.Mock).mockResolvedValue('collector');
-        (AuthService.resolveCollectorId as jest.Mock).mockResolvedValue('cid-456');
+        (AuthService.getCurrentUserRole as jest.Mock).mockResolvedValue('main_office');
         
         await act(async () => {
             await callback('SIGNED_IN', { user: mockUser });
         });
         await flushDeferredAuthStateChange();
-        expect(result.current.role).toBe('collector');
-        expect(result.current.collectorId).toBe('cid-456');
+        expect(result.current.role).toBe('main_office');
         expect(result.current.roleResolved).toBe(true);
 
         // Test sign out (null user)
@@ -249,11 +243,11 @@ describe('AuthContext', () => {
     it('RBAC Guard: redirects from wrong group', async () => {
         const mockUser = { id: 'u1' };
         (supabase.auth.getSession as jest.Mock).mockResolvedValue({ data: { session: { user: mockUser } } });
-        (AuthService.getCurrentUserRole as jest.Mock).mockResolvedValue('collector');
+        (AuthService.getCurrentUserRole as jest.Mock).mockResolvedValue('expenses_encoder');
         (useSegments as jest.Mock).mockReturnValue(['(admin)', 'dashboard']);
 
         render(<AuthProvider children={null} />);
-        await waitFor(() => expect(mockRouter.replace).toHaveBeenCalledWith('/(collector)'));
+        await waitFor(() => expect(mockRouter.replace).toHaveBeenCalledWith('/(expenses-encoder)'));
     });
 
     it('Redirects from login to loading screen if logged in', async () => {
@@ -372,24 +366,17 @@ describe('AuthContext', () => {
         }
     });
 
-    it('allows guests to open the public online calculator directly', async () => {
+    it('bounces a guest off a deleted public marketing route to login', async () => {
+        // The variant ships no guest-facing screens: loan-calculator and loan-application were
+        // deleted with the lending domain, so PUBLIC_ROUTES is gone and every unauthenticated
+        // visit lands on /login.
         (useSegments as jest.Mock).mockReturnValue(['loan-calculator']);
         (usePathname as jest.Mock).mockReturnValue('/loan-calculator');
 
         const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
 
         await waitFor(() => expect(result.current.initialized).toBe(true));
-        expect(mockRouter.replace).not.toHaveBeenCalledWith('/login');
-    });
-
-    it('allows guests to open the public online loan application directly', async () => {
-        (useSegments as jest.Mock).mockReturnValue(['loan-application']);
-        (usePathname as jest.Mock).mockReturnValue('/loan-application');
-
-        const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
-
-        await waitFor(() => expect(result.current.initialized).toBe(true));
-        expect(mockRouter.replace).not.toHaveBeenCalledWith('/login');
+        expect(mockRouter.replace).toHaveBeenCalledWith('/login');
     });
 
     it('skips one automatic sync after a local database reset flag is present', async () => {
@@ -535,15 +522,15 @@ describe('AuthContext', () => {
             data: { session: { user: mockUser } },
             error: null,
         });
-        (useSegments as jest.Mock).mockReturnValue(['(admin)', 'borrowers']);
-        (usePathname as jest.Mock).mockReturnValue('/borrowers');
+        (useSegments as jest.Mock).mockReturnValue(['(admin)', 'agribusiness', 'parcels']);
+        (usePathname as jest.Mock).mockReturnValue('/agribusiness/parcels');
 
         render(<AuthProvider children={null} />);
 
         await waitFor(() => {
             expect(AsyncStorage.setItem).toHaveBeenCalledWith(
                 LAST_AUTHORIZED_ROUTE_KEY,
-                '/(admin)/borrowers'
+                '/(admin)/agribusiness/parcels'
             );
         });
     });

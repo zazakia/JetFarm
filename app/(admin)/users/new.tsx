@@ -33,19 +33,17 @@ export default function NewUserScreen() {
     const [saving, setSaving] = useState(false);
     const [businessUnits, setBusinessUnits] = useState<{ id: string; name: string }[]>([]);
 
-    const { control, handleSubmit, watch, setValue, formState: { errors } } = useForm<FormData>({
+    const { control, handleSubmit, setValue, formState: { errors } } = useForm<FormData>({
         resolver: zodResolver(schema),
         defaultValues: {
             fullName: '',
             email: '',
-            role: ROLES.branch_cashier,
+            role: ROLES.admin,
             isActive: true,
             branchId: 'branch-bagacay',
             areaId: '',
         }
     });
-
-    const selectedRole = watch('role');
 
     useEffect(() => {
         loadBranches();
@@ -228,11 +226,6 @@ export default function NewUserScreen() {
                         <Text className="text-xs font-bold text-slate-700 uppercase tracking-widest">
                             Assigned Branch / Store
                         </Text>
-                        {(selectedRole === ROLES.branch_cashier || selectedRole === ROLES.branch_manager) && (
-                            <View className="bg-emerald-100 px-2 py-0.5 rounded-md">
-                                <Text className="text-emerald-800 text-[10px] font-bold uppercase">Required for Role</Text>
-                            </View>
-                        )}
                     </View>
                     <Text className="text-xs text-slate-500 mb-3">
                         Locks this user's shifts, inventory, and sync records to their store location.

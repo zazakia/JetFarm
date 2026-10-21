@@ -4,7 +4,11 @@ let runtimeOverride: DeploymentMode | null = null;
 
 /**
  * Returns the current deployment mode.
- * Priority: runtime override > EXPO_PUBLIC_BUSINESS_TYPE > EXPO_PUBLIC_DEPLOYMENT_MODE > 'agri' (default)
+ * Priority: runtime override > EXPO_PUBLIC_BUSINESS_TYPE > EXPO_PUBLIC_DEPLOYMENT_MODE > 'agri'
+ *
+ * On the agribusiness-only branch 'agri' is the fallback: the POS and cooperative screens this
+ * fallback used to select are physically deleted, so an unset env must not resolve to a mode whose
+ * features do not exist.
  */
 export function getDeploymentMode(): DeploymentMode {
     if (runtimeOverride !== null) {
@@ -18,8 +22,11 @@ export function getDeploymentMode(): DeploymentMode {
     if (envMode === 'cooperative' || envMode === 'coop') {
         return 'cooperative';
     }
+    if (envMode === 'crispy-king') {
+        return 'crispy-king';
+    }
 
-    return 'crispy-king';
+    return 'agri';
 }
 
 /**

@@ -1709,9 +1709,11 @@ export class SyncService {
                 clean.area_supervisor_id = clean.areaSupervisorId;
                 delete clean.areaSupervisorId;
             }
-            if (!clean.module_id || typeof clean.module_id !== 'string' || clean.module_id.trim() === '') {
-                clean.module_id = 'crispy-king';
-            }
+            // Retired 2026-10-20 (agribusiness-only teardown, Stage 8): this block synthesised
+            // 'crispy-king' for an empty business_units.module_id. That id names a QSR franchise
+            // tenant that no longer exists on this branch, so an unset module_id is now pushed as
+            // NULL and the surviving NOT NULL/tenant semantics stay with the operator who creates
+            // the unit (BusinessUnitService writes the real slug).
         }
 
         if (tableName === 'journal_entries') {

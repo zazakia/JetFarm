@@ -6,7 +6,6 @@ export default class CashTransaction extends Model {
 
     @date('transaction_date') transactionDate!: number;
     @field('branch_id') branchId?: string;
-    @field('pos_session_id') posSessionId?: string;
     @field('particulars') particulars!: string;
     @field('type') type!: string; // 'in' | 'out' | 'starting_balance'
     @field('amount') amount!: number;

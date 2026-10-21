@@ -106,15 +106,7 @@ export default function UsersListScreen() {
         switch (role) {
             case 'admin': return 'stars';
             case 'main_office': return 'business';
-            case 'collector': return 'people';
-            case 'loan_encoder': return 'post-add';
-            case 'payment_encoder': return 'payments';
             case 'expenses_encoder': return 'receipt-long';
-            case 'branch_cashier': return 'point-of-sale';
-            case 'branch_manager': return 'storefront';
-            case 'area_supervisor': return 'map';
-            case 'commissary_keeper': return 'inventory-2';
-            case 'executive': return 'insights';
             default: return 'person';
         }
     };
@@ -123,16 +115,8 @@ export default function UsersListScreen() {
         switch (role) {
             case 'admin': return Colors.roleAdmin;
             case 'main_office': return Colors.roleAdmin;
-            case 'collector': return Colors.roleCollector;
-            case 'loan_encoder': return Colors.roleLoanEncoder;
-            case 'payment_encoder': return Colors.rolePaymentEncoder;
             case 'expenses_encoder': return Colors.roleExpensesEncoder;
-            case 'branch_cashier': return Colors.roleBranchCashier || '#047857';
-            case 'branch_manager': return Colors.roleBranchManager || '#0284c7';
-            case 'area_supervisor': return Colors.roleAreaSupervisor || '#b45309';
-            case 'commissary_keeper': return Colors.roleCommissaryKeeper || '#d97706';
-            case 'executive': return Colors.roleExecutive || '#4f46e5';
-            default: return Colors.roleBorrower;
+            default: return Colors.roleAdmin;
         }
     };
 

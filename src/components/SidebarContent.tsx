@@ -5,6 +5,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useAuth } from '../store/AuthContext';
 import { AppLogo } from './AppLogo';
 import { useFeatureFlags, useRolePermissions } from '../hooks/useSettingsConfig';
+import { isAgri } from '../config/deployment';
 import { COMPANY_NAME } from '../constants/brand';
 import { getAppVersion, APP_BUILD_NUMBER, APP_DOWNLOAD_URL } from '../constants/AppVersion';
 import { useOnboardingTour } from '../context/OnboardingTourContext';
@@ -20,6 +21,9 @@ export type MenuItem = {
 // ==========================================
 // 0. AGRIBUSINESS OUTGROWER PLATFORM (AGRI-ONE)
 // ==========================================
+// Every route below is one of the 13 screens under app/(admin)/agribusiness/. Adding an entry here
+// without the file, or deleting the file without the entry, fails
+// src/__tests__/agribusinessNavWhitelist.test.ts.
 export const AGRIBUSINESS_MENU: MenuItem[] = [
     { icon: 'eco', label: 'Operator Command Center', route: '/(admin)/agribusiness' },
     { icon: 'landscape', label: 'Land Parcels Registry', route: '/(admin)/agribusiness/parcels' },
@@ -28,69 +32,51 @@ export const AGRIBUSINESS_MENU: MenuItem[] = [
     { icon: 'scale', label: 'Harvest Scale Terminal', route: '/(admin)/agribusiness/harvest' },
     { icon: 'receipt-long', label: 'Land Owner Settlements', route: '/(admin)/agribusiness/settlements' },
     { icon: 'attach-money', label: 'BioGreen Investor Ledger', route: '/(admin)/agribusiness/investors' },
-    { icon: 'engineering', label: 'Farm Labor & Payroll', route: '/(admin)/agribusiness/labor' },
+    { icon: 'engineering', label: 'Farm Labor Ledger', route: '/(admin)/agribusiness/labor' },
     { icon: 'groups', label: 'Farm Laborers & Staff', route: '/(admin)/agribusiness/workers' },
     { icon: 'receipt', label: 'Farm Input Expenses', route: '/(admin)/agribusiness/expenses' },
+    { icon: 'account-balance', label: 'Farm Accounting', route: '/(admin)/agribusiness/accounting' },
     { icon: 'insights', label: 'P&L & Yield Analytics', route: '/(admin)/agribusiness/analytics' },
+    { icon: 'assignment-turned-in', label: 'Implementation Report', route: '/(admin)/agribusiness/implementation-report' },
 ];
 
 // ==========================================
-// 1. CRISPY KING STORE OPERATIONS & QSR
+// 1. FINANCIAL STATEMENTS
 // ==========================================
-export const CRISPY_KING_OPERATIONS: MenuItem[] = [
-    { icon: 'point-of-sale', label: 'Touch POS Terminal', route: '/(cashier)/pos' },
-    { icon: 'storefront', label: 'POS Register & Till', route: '/(cashier)' },
-    { icon: 'assignment-return', label: 'Sales Returns & Refunds', route: '/(admin)/returns' },
-    { icon: 'move-to-inbox', label: 'Store Receiving (Inbound)', route: '/(branch-manager)/receiving' },
-    { icon: 'local-shipping', label: 'Commissary Dispatch Hub', route: '/(commissary)/dispatch' },
-    { icon: 'delete-sweep', label: 'Spoilage & Bad Orders', route: '/(branch-manager)/waste-log' },
-    { icon: 'summarize', label: 'Digital MSR Report', route: '/(branch-manager)/msr' },
-    { icon: 'verified', label: 'Store Quality Audits', route: '/(admin)/franchise/audits' },
+// The lending, collector and coop share-capital report families were deleted with their screens;
+// this list is the 10 files that remain under app/(admin)/reports/.
+export const FINANCIAL_REPORTS_MENU: MenuItem[] = [
+    { icon: 'account-balance', label: 'Balance Sheet', route: '/(admin)/reports/balance-sheet', featureKey: 'module.reports' },
+    { icon: 'receipt', label: 'Income Statement', route: '/(admin)/reports/income-statement', featureKey: 'module.reports' },
+    { icon: 'waterfall-chart', label: 'Cash Flows', route: '/(admin)/reports/cash-flows', featureKey: 'module.reports' },
+    { icon: 'show-chart', label: 'Changes in Equity', route: '/(admin)/reports/changes-in-equity', featureKey: 'module.reports' },
+    { icon: 'menu-book', label: 'Notes to the Financial Statements', route: '/(admin)/reports/notes-to-fs', featureKey: 'module.reports' },
+    { icon: 'auto-stories', label: 'Annual Financial Report', route: '/(admin)/reports/annual-report', featureKey: 'module.reports' },
+    { icon: 'table-chart', label: 'Statutory Reserves', route: '/(admin)/reports/statutory-reserves', featureKey: 'module.reports' },
+    { icon: 'bar-chart', label: 'Expense Breakdown', route: '/(admin)/reports/expenses', featureKey: 'module.reports' },
+    { icon: 'compare-arrows', label: 'Segment Comparison', route: '/(admin)/reports/segment-comparison', featureKey: 'module.reports' },
+    { icon: 'date-range', label: 'Period Settings', route: '/(admin)/reports/period-settings', featureKey: 'module.reports' },
 ];
 
 // ==========================================
-// 2. FRANCHISE & ENTERPRISE MANAGEMENT
-// ==========================================
-export const FRANCHISE_MENU: MenuItem[] = [
-    { icon: 'handshake', label: 'Franchise Agreements CRM', route: '/(admin)/franchise' },
-    { icon: 'store', label: 'Branch & Warehouse Switcher', route: '/select-branch' },
-    { icon: 'security', label: 'POS Devices & Security', route: '/(admin)/settings/devices' },
-    { icon: 'business', label: 'Executive Network Hub', route: '/(executive)' },
-];
-
-// ==========================================
-// 3. LENDING & CREDIT SYSTEM (ISOLATED DOMAIN)
-// ==========================================
-export const LENDING_MENU: MenuItem[] = [
-    { icon: 'people', label: 'Borrowers & Members', route: '/(admin)/borrowers', featureKey: 'module.borrowers' },
-    { icon: 'receipt-long', label: 'Loans', route: '/(admin)/loans', featureKey: 'module.loans' },
-    { icon: 'pending-actions', label: 'Pending Loan Approval', route: '/(admin)/loans/pending-approval', featureKey: 'module.loans' },
-    { icon: 'payments', label: 'Loan Repayments', route: '/(admin)/payments', featureKey: 'module.payments' },
-    { icon: 'directions-walk', label: 'Field Collectors', route: '/(admin)/collectors', featureKey: 'system.lending' },
-    { icon: 'gavel', label: 'Legal & File Cases', route: '/(admin)/file-cases', featureKey: 'module.file_cases' },
-    { icon: 'verified-user', label: 'CIC Credit Bureau', route: '/(admin)/cic', featureKey: 'module.cic' },
-];
-
-// ==========================================
-// 4. GENERAL DASHBOARD & CORE OPERATIONS
+// 2. CORE OPERATIONS
 // ==========================================
 export const MAIN_MENU: MenuItem[] = [
     { icon: 'account-balance-wallet', label: 'Operating Expenses', route: '/(admin)/expenses', featureKey: 'module.expenses' },
-    { icon: 'monetization-on', label: 'Staff Payroll', route: '/(admin)/payroll', featureKey: 'module.payroll' },
 ];
 
 // ==========================================
-// 5. FINANCIALS & VAULT MANAGEMENT
+// 3. FINANCIALS & VAULT MANAGEMENT
 // ==========================================
 export const FINANCIALS_MENU: MenuItem[] = [
     { icon: 'account-balance', label: 'Cash on Hand & Vault', route: '/(admin)/cash-on-hand', featureKey: 'module.cash_on_hand' },
-    { icon: 'money', label: 'Petty Cash Fund', route: '/(admin)/cash-on-hand/petty-cash', featureKey: 'module.cash_on_hand' },
-    { icon: 'savings', label: 'Savings Portfolio', route: '/(admin)/reports/savings', featureKey: 'module.savings' },
+    { icon: 'savings', label: 'Petty Cash Fund', route: '/(admin)/cash-on-hand/petty-cash', featureKey: 'module.cash_on_hand' },
     { icon: 'account-balance-wallet', label: 'Bank Accounts', route: '/(admin)/bank-accounts', featureKey: 'module.bank_accounts' },
+    { icon: 'swap-horiz', label: 'Cash Transfers', route: '/(admin)/transfers', featureKey: 'module.cash_on_hand' },
 ];
 
 // ==========================================
-// 6. ACCOUNTING & GENERAL LEDGER
+// 4. ACCOUNTING & GENERAL LEDGER
 // ==========================================
 export const ACCOUNTING_MENU: MenuItem[] = [
     { icon: 'menu-book', label: 'Accounting Overview', route: '/(admin)/accounting', featureKey: 'module.accounting' },
@@ -101,7 +87,7 @@ export const ACCOUNTING_MENU: MenuItem[] = [
 ];
 
 // ==========================================
-// 7. BOOKS OF ACCOUNTS
+// 5. BOOKS OF ACCOUNTS
 // ==========================================
 export const BOOKS_OF_ACCOUNTS_MENU: MenuItem[] = [
     { icon: 'receipt', label: 'Cash Receipts (CRJ)', route: '/(admin)/accounting/crj', featureKey: 'module.accounting' },
@@ -115,66 +101,20 @@ export const BOOKS_OF_ACCOUNTS_MENU: MenuItem[] = [
 ];
 
 // ==========================================
-// 8. ADMIN & SYSTEM CONTROLS
+// 6. ADMIN & SYSTEM CONTROLS
 // ==========================================
 export const ADMIN_MENU: MenuItem[] = [
     { icon: 'storage', label: 'Data Maintenance & Lookups', route: '/(admin)/settings/data-maintenance' },
     { icon: 'manage-accounts', label: 'User Roles & Access', route: '/(admin)/users' },
-    { icon: 'assignment-ind', label: 'Employees Directory', route: '/(admin)/settings/employees', featureKey: 'module.employees' },
     { icon: 'history', label: 'Audit Trail', route: '/(admin)/settings/audit-trail' },
     { icon: 'delete-outline', label: 'Deleted Items', route: '/(admin)/settings/deleted' },
     { icon: 'settings', label: 'System Settings', route: '/(admin)/settings' },
 ];
 
-// ==========================================
-// 9. REPORTS SECTIONS
-// ==========================================
-export const DAILY_REPORTS: MenuItem[] = [
-    { icon: 'calendar-today', label: 'Daily Collection Sheet', route: '/(admin)/reports/daily-collection', featureKey: 'system.lending' },
-    { icon: 'bar-chart', label: 'Reports Overview', route: '/(admin)/reports/dashboard', featureKey: 'module.reports' },
-    { icon: 'pie-chart', label: 'Expense Breakdown', route: '/(admin)/reports/expenses', featureKey: 'module.reports' },
-];
-
-export const WEEKLY_REPORTS: MenuItem[] = [
-    { icon: 'list-alt', label: 'Collection Report', route: '/(admin)/reports/collection', featureKey: 'system.lending' },
-    { icon: 'view-list', label: 'Weekly Collection Sheet', route: '/(admin)/reports/weekly-collection', featureKey: 'system.lending' },
-    { icon: 'assignment-ind', label: 'Active Loans Collection', route: '/(admin)/reports/active-loans', featureKey: 'system.lending' },
-];
-
-export const MONTHLY_REPORTS: MenuItem[] = [
-    { icon: 'trending-up', label: 'Collector Efficiency', route: '/(admin)/reports/collector-efficiency', featureKey: 'system.lending' },
-    { icon: 'assignment-late', label: 'Portfolio Aging', route: '/(admin)/reports/portfolio-aging', featureKey: 'system.lending' },
-    { icon: 'repeat', label: 'Borrower Retention', route: '/(admin)/reports/renewals', featureKey: 'system.lending' },
-    { icon: 'analytics', label: 'MFI Metrics', route: '/(admin)/reports/mfi-kpis', featureKey: 'system.lending' },
-    { icon: 'receipt', label: 'Income Statement', route: '/(admin)/reports/income-statement', featureKey: 'module.reports' },
-    { icon: 'account-balance', label: 'Balance Sheet', route: '/(admin)/reports/balance-sheet', featureKey: 'module.reports' },
-    { icon: 'outbox', label: 'Disbursement History', route: '/(admin)/reports/disbursements', featureKey: 'system.lending' },
-    { icon: 'summarize', label: 'Monthly Sales', route: '/(admin)/reports/monthly-sales', featureKey: 'module.reports' },
-    { icon: 'fact-check', label: 'SOA Masterlist', route: '/(admin)/reports/soa-masterlist', featureKey: 'system.lending' },
-    { icon: 'payments', label: 'Cash Advances', route: '/(admin)/reports/cash-advances', featureKey: 'module.reports' },
-    { icon: 'warning', label: 'Delinquent Accounts', route: '/(admin)/reports/delinquent-accounts', featureKey: 'system.lending' },
-    { icon: 'event-busy', label: 'Past Due Report', route: '/(admin)/reports/past-due', featureKey: 'system.lending' },
-    { icon: 'receipt-long', label: 'Excess Cash Receipt', route: '/(admin)/reports/excess-cash-receipt', featureKey: 'system.lending' },
-    { icon: 'health-and-safety', label: 'Creditors Group Life', route: '/(admin)/reports/creditors-group-life', featureKey: 'system.lending' },
-    { icon: 'upload-file', label: 'Bank Export', route: '/(admin)/reports/bank-export', featureKey: 'module.reports' },
-];
-
-export const COOPERATIVE_REPORTS: MenuItem[] = [
-    { icon: 'auto-stories', label: 'Annual Financial Report', route: '/(admin)/reports/annual-report', featureKey: 'module.reports' },
-    { icon: 'account-balance', label: 'CBU Report', route: '/(admin)/reports/cbu', featureKey: 'system.lending' },
-    { icon: 'groups', label: 'Membership Registry', route: '/(admin)/reports/membership', featureKey: 'module.reports' },
-    { icon: 'pie-chart', label: 'Share Capital', route: '/(admin)/reports/share-capital', featureKey: 'module.reports' },
-    { icon: 'redeem', label: 'Dividends & Refunds', route: '/(admin)/reports/dividends', featureKey: 'module.reports' },
-    { icon: 'table-chart', label: 'Statutory Reserves', route: '/(admin)/reports/statutory-reserves', featureKey: 'module.reports' },
-    { icon: 'receipt', label: 'Monthly Cash Statement', route: '/(admin)/reports/monthly-receipts', featureKey: 'module.reports' },
-    { icon: 'waterfall-chart', label: 'Cash Flows', route: '/(admin)/reports/cash-flows', featureKey: 'module.reports' },
-    { icon: 'show-chart', label: 'Changes in Equity', route: '/(admin)/reports/changes-in-equity', featureKey: 'module.reports' },
-];
-
 export const SUPPORT_MENU: MenuItem[] = [
     { icon: 'campaign', label: 'System Updates', route: '/(admin)/settings/updates' },
     { icon: 'help-outline', label: 'Help & Operational Guide', route: '/(admin)/help' },
-    { icon: 'menu-book', label: 'Member Manual', route: '/(admin)/member-manual' },
+    { icon: 'menu-book', label: 'Operations Manual', route: '/(admin)/member-manual' },
 ];
 
 function NavItem({ item, isActive, onPress }: { item: MenuItem; isActive: boolean; onPress: () => void }) {
@@ -208,7 +148,7 @@ export function SidebarContent({ onClose }: { onClose?: () => void }) {
     const [searchQuery, setSearchQuery] = useState('');
 
     const normalizePath = (p: string) => {
-        const clean = p.replace('/(admin)', '').replace('/(cashier)', '');
+        const clean = p.replace('/(admin)', '');
         return clean === '' ? '/' : clean;
     };
     const currentPath = normalizePath(pathname);
@@ -218,7 +158,11 @@ export function SidebarContent({ onClose }: { onClose?: () => void }) {
         if (onClose) onClose();
     };
 
-    const canShow = (item: MenuItem) => isEnabled(item.featureKey) && isAllowed(item.permissionKey ?? item.featureKey);
+    // isAgri() is the build selector (EXPO_PUBLIC_BUSINESS_TYPE). This branch only ships the
+    // agribusiness screens, so a bundle baked with the old POS or cooperative value shows an empty
+    // drawer rather than a menu of routes that were deleted from the app tree.
+    const canShow = (item: MenuItem) =>
+        isAgri() && isEnabled(item.featureKey) && isAllowed(item.permissionKey ?? item.featureKey);
 
     const renderMenuSection = (title: string, items: MenuItem[], highlight = false) => {
         const visibleItems = items.filter(canShow).filter((item) =>
@@ -285,8 +229,16 @@ export function SidebarContent({ onClose }: { onClose?: () => void }) {
                     {/* Agribusiness Outgrower Platform */}
                     {renderMenuSection('Agribusiness Outgrower Platform', AGRIBUSINESS_MENU, true)}
 
+                    {/* Financial Statements */}
+                    {renderMenuSection('Financial Statements', FINANCIAL_REPORTS_MENU)}
+
                     {/* General Operations */}
                     {renderMenuSection('Core Operations', MAIN_MENU)}
+                    {renderMenuSection('Financials & Vault', FINANCIALS_MENU)}
+
+                    {/* Accounting */}
+                    {renderMenuSection('Accounting & General Ledger', ACCOUNTING_MENU)}
+                    {renderMenuSection('Books of Accounts', BOOKS_OF_ACCOUNTS_MENU)}
 
                     {/* System Administration */}
                     {renderMenuSection('System Administration', ADMIN_MENU)}

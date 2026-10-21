@@ -75,7 +75,6 @@ export const mySchema = appSchema({
             columns: [
                 { name: 'transaction_date', type: 'number' },
                 { name: 'branch_id', type: 'string', isOptional: true, isIndexed: true },
-                { name: 'pos_session_id', type: 'string', isOptional: true, isIndexed: true },
                 { name: 'particulars', type: 'string' },
                 { name: 'type', type: 'string' },
                 { name: 'amount', type: 'number' },

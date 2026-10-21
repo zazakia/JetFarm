@@ -178,10 +178,11 @@ describe('Supabase migration regression guards', () => {
             expect(seed).not.toContain(retired);
         }
 
-        // seed only the identities this variant ships
+        // seed only the identities this variant ships, on the brand this variant carries
         const seeded = seed.slice(seed.indexOf('INSERT INTO seed_login_users'));
         const values = seeded.slice(0, seeded.indexOf(';'));
-        expect(values).toContain('admin@poscursor.com');
+        expect(values).toContain('admin@agri-one.com');
+        expect(values).not.toMatch(/poscursor\.com|jetfarm\.com/i);
         for (const retiredRole of [
             'collector', 'loan_encoder', 'payment_encoder', 'borrower', 'executive',
             'branch_cashier', 'branch_manager', 'area_supervisor', 'commissary_keeper',

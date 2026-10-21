@@ -1,7 +1,7 @@
-import { 
-    resolveOperator, 
-    formatEntityInfo, 
-    generateActionNarrative, 
+import {
+    resolveOperator,
+    formatEntityInfo,
+    generateActionNarrative,
     formatFieldChanges,
     buildAuditExportData,
     OperatorInfo,
@@ -12,7 +12,7 @@ describe('auditTrailFormatter', () => {
     describe('resolveOperator', () => {
         const userMap = new Map<string, { id: string; fullName: string; role: string; email: string }>([
             ['00000000-0000-0000-0000-000000000002', { id: '00000000-0000-0000-0000-000000000002', fullName: 'Cybergada Master', role: 'admin', email: 'cybergada@gmail.com' }],
-            ['user-uuid-123', { id: 'user-uuid-123', fullName: 'Maria Santos', role: 'collector', email: 'maria@poscursor.com' }]
+            ['user-uuid-123', { id: 'user-uuid-123', fullName: 'Maria Santos', role: 'expenses_encoder', email: 'maria@poscursor.com' }]
         ]);
 
         it('resolves known seed admin user UUID', () => {
@@ -25,7 +25,7 @@ describe('auditTrailFormatter', () => {
         it('resolves user from database userMap', () => {
             const operator = resolveOperator('user-uuid-123', userMap);
             expect(operator.name).toBe('Maria Santos');
-            expect(operator.role).toBe('Collector');
+            expect(operator.role).toBe('Expenses Encoder');
             expect(operator.initials).toBe('MS');
         });
 
@@ -52,88 +52,125 @@ describe('auditTrailFormatter', () => {
     describe('formatEntityInfo', () => {
         it('formats feature_flags with descriptive title and module', () => {
             const info = formatEntityInfo(
-                'feature_flags', 
-                'feature-pos-terminal-v2',
+                'feature_flags',
+                'flag-agri-analytics',
                 null,
-                { name: 'Touch POS Terminal', is_enabled: true }
+                { name: 'Yield Analytics Board', is_enabled: true }
             );
 
             expect(info.entityName).toBe('Feature Flag');
             expect(info.module).toBe('System & Config');
-            expect(info.title).toBe('Touch POS Terminal');
+            expect(info.title).toBe('Yield Analytics Board');
             expect(info.badgeColor).toBe('purple');
         });
 
-        it('formats loans with loan number and borrower name', () => {
+        it('formats agri_parcels with parcel code, name and area', () => {
             const info = formatEntityInfo(
-                'loans',
-                'loan-001',
+                'agri_parcels',
+                'parcel-001',
                 null,
-                { loan_number: 'LN-2026-001', total_amount: 15000, borrower_name: 'Juan Dela Cruz' }
+                { code: 'PRC-014', name: 'Aloha Block 3', area_hectares: 3.5, location_address: 'Aloha, Marawi City' }
             );
 
-            expect(info.entityName).toBe('Loan Account');
-            expect(info.module).toBe('Lending & Loans');
-            expect(info.title).toBe('Loan #LN-2026-001 • Juan Dela Cruz');
-            expect(info.badgeColor).toBe('blue');
+            expect(info.entityName).toBe('Farm Parcel');
+            expect(info.module).toBe('Agribusiness Operations');
+            expect(info.title).toBe('Aloha Block 3 (PRC-014)');
+            expect(info.subtitle).toBe('Area: 3.5 ha');
         });
 
-        it('formats payments with amount', () => {
+        it('formats agri_crop_cycles with cycle code and crop', () => {
             const info = formatEntityInfo(
-                'payments',
-                'pay-001',
+                'agri_crop_cycles',
+                'cycle-001',
                 null,
-                { amount: 1500, reference_number: 'OR-88231', payment_method: 'cash' }
+                { cycle_code: 'CYC-2026-01', crop_type: 'Cassava' }
             );
 
-            expect(info.entityName).toBe('Payment Entry');
-            expect(info.module).toBe('Lending & Loans');
-            expect(info.title).toContain('PHP 1,500.00');
+            expect(info.entityName).toBe('Crop Cycle');
+            expect(info.title).toBe('Crop Cycle CYC-2026-01');
+            expect(info.subtitle).toBe('Crop: Cassava');
         });
 
-        it('formats products with product name', () => {
+        it('formats agri_weekly_settlements with net payout due', () => {
             const info = formatEntityInfo(
-                'marketplace_products',
-                'prod-1',
+                'agri_weekly_settlements',
+                'set-001',
                 null,
-                { name: '1-pc Crispy Fried Chicken', price: 75 }
+                { week_number: 6, net_payout_due_this_week: 48500 }
             );
 
-            expect(info.entityName).toBe('Product');
-            expect(info.module).toBe('Crispy King POS');
-            expect(info.title).toBe('1-pc Crispy Fried Chicken');
+            expect(info.entityName).toBe('Harvest Settlement');
+            expect(info.title).toBe('Weekly Settlement #6');
+            expect(info.subtitle).toContain('PHP 48,500.00');
         });
 
-        it('formats sales orders with order reference and total', () => {
+        it('formats agri_investors as a capital partner entry', () => {
             const info = formatEntityInfo(
-                'marketplace_orders',
-                'ord-500',
+                'agri_investors',
+                'inv-001',
                 null,
-                { order_number: 'CK-1092', total_amount: 450 }
+                { company_name: 'BioGreen Partners', contact_number: '09170001111' }
             );
 
-            expect(info.entityName).toBe('POS Sales Order');
-            expect(info.module).toBe('Crispy King POS');
-            expect(info.title).toContain('CK-1092');
+            expect(info.entityName).toBe('Capital Partner');
+            expect(info.module).toBe('Agribusiness Operations');
+            expect(info.title).toBe('BioGreen Partners');
+            expect(info.subtitle).toBe('Contact: 09170001111');
         });
 
-        it('formats stock movements with stock type and quantity', () => {
+        it('formats journal entries with reference number', () => {
+            const info = formatEntityInfo(
+                'journal_entries',
+                'je-001',
+                null,
+                { description: 'Harvest offtake collection', reference_number: 'OR-AGR-001' }
+            );
+
+            expect(info.entityName).toBe('Journal Entry');
+            expect(info.module).toBe('Accounting & Finance');
+            expect(info.title).toBe('Harvest offtake collection');
+            expect(info.subtitle).toBe('Ref #OR-AGR-001');
+        });
+
+        it('formats stock movements as farm input movements', () => {
             const info = formatEntityInfo(
                 'stock_movements',
                 'sm-1',
                 null,
-                { product_name: 'Marinated Wings', quantity: 20, movement_type: 'inbound' }
+                { product_name: 'Fertilizer 14-14-14', quantity: 20, movement_type: 'inbound' }
             );
 
             expect(info.entityName).toBe('Stock Movement');
-            expect(info.module).toBe('Inventory & Bodega');
-            expect(info.title).toContain('Marinated Wings');
+            expect(info.module).toBe('Farm Inputs & Supplies');
+            expect(info.title).toContain('Fertilizer 14-14-14');
+        });
+
+        it('formats suppliers as an accounting contact', () => {
+            const info = formatEntityInfo(
+                'suppliers',
+                'sup-1',
+                null,
+                { name: 'Agri Inputs Trading', phone: '09171234567' }
+            );
+
+            expect(info.entityName).toBe('Supplier');
+            expect(info.title).toBe('Agri Inputs Trading');
+            expect(info.subtitle).toBe('Contact: 09171234567');
         });
 
         it('formats unknown tables gracefully', () => {
             const info = formatEntityInfo('custom_table', 'custom-1', null, { title: 'Special Item' });
             expect(info.entityName).toBe('Custom Table');
+            expect(info.module).toBe('General Operations');
             expect(info.title).toBe('Special Item');
+        });
+
+        it('no longer maps lending, POS, payroll or water-station tables to a business module', () => {
+            ['loans', 'payments', 'borrowers', 'marketplace_orders', 'franchise_contracts', 'payroll_runs', 'ws_deliveries']
+                .forEach(table => {
+                    const info = formatEntityInfo(table, 'x-1', null, {});
+                    expect(info.module).toBe('General Operations');
+                });
         });
     });
 
@@ -141,13 +178,13 @@ describe('auditTrailFormatter', () => {
         it('generates clear summary for CREATE', () => {
             const narrative = generateActionNarrative(
                 'CREATE',
-                'loans',
-                'l-1',
+                'agri_parcels',
+                'p-1',
                 null,
-                { loan_number: 'LN-100', principal_amount: 10000, borrower_name: 'Ana Cruz' }
+                { code: 'PRC-020', area_hectares: 2 }
             );
-            expect(narrative).toContain('Created Loan Account');
-            expect(narrative).toContain('LN-100');
+            expect(narrative).toContain('Created Farm Parcel');
+            expect(narrative).toContain('PRC-020');
         });
 
         it('generates clear summary for UPDATE with changed values', () => {
@@ -155,8 +192,8 @@ describe('auditTrailFormatter', () => {
                 'UPDATE',
                 'feature_flags',
                 'f-1',
-                { name: 'Touch POS', is_enabled: false },
-                { name: 'Touch POS', is_enabled: true }
+                { name: 'Yield Analytics Board', is_enabled: false },
+                { name: 'Yield Analytics Board', is_enabled: true }
             );
             expect(narrative).toContain('Updated Feature Flag');
             expect(narrative.toLowerCase()).toContain('enabled');
@@ -167,11 +204,11 @@ describe('auditTrailFormatter', () => {
                 'DELETE',
                 'expenses',
                 'exp-1',
-                { description: 'Office Supplies', amount: 500 },
+                { description: 'Fuel for haul truck', amount: 500 },
                 null
             );
-            expect(narrative).toContain('Deleted Store Expense');
-            expect(narrative).toContain('Office Supplies');
+            expect(narrative).toContain('Deleted Expense');
+            expect(narrative).toContain('Fuel for haul truck');
         });
     });
 
@@ -199,11 +236,11 @@ describe('auditTrailFormatter', () => {
                 {
                     id: 'log-1',
                     action: 'CREATE' as const,
-                    entityType: 'loans',
-                    entityId: 'loan-1',
+                    entityType: 'agri_crop_cycles',
+                    entityId: 'cycle-1',
                     performedBy: '00000000-0000-0000-0000-000000000002',
                     oldData: '',
-                    newData: JSON.stringify({ loan_number: 'LN-001', amount: 5000 }),
+                    newData: JSON.stringify({ cycle_code: 'CYC-001', crop_type: 'Cassava' }),
                     timestamp: 1773179200000,
                 }
             ];
@@ -212,7 +249,7 @@ describe('auditTrailFormatter', () => {
             expect(csv).toContain('Timestamp,Date & Time,Action,Module,Entity Type,Entity Title,Entity ID,Performed By,Role,Summary');
             expect(csv).toContain('CREATE');
             expect(csv).toContain('Cybergada Master');
-            expect(csv).toContain('LN-001');
+            expect(csv).toContain('CYC-001');
         });
     });
 });

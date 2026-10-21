@@ -4,16 +4,17 @@ import { AppLogo } from '../AppLogo';
 import { getAppVersion } from '../../constants/AppVersion';
 
 describe('AppLogo Component', () => {
-    it('renders company name and version badge by default', () => {
-        const { getByText, getByTestId } = render(<AppLogo />);
-        expect(getByText('JetFarm')).toBeTruthy();
+    it('renders the Agri-One name and version badge by default', () => {
+        const { getByText, getByTestId, queryByText } = render(<AppLogo />);
+        expect(getByText('Agri-One')).toBeTruthy();
+        expect(queryByText('JetFarm')).toBeNull();
         expect(getByTestId('app-logo-version-badge')).toBeTruthy();
         expect(getByText(`v${getAppVersion()}`)).toBeTruthy();
     });
 
     it('can hide version badge when showVersion is false', () => {
         const { getByText, queryByTestId } = render(<AppLogo showVersion={false} />);
-        expect(getByText('JetFarm')).toBeTruthy();
+        expect(getByText('Agri-One')).toBeTruthy();
         expect(queryByTestId('app-logo-version-badge')).toBeNull();
     });
 

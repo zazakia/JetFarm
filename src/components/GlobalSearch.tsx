@@ -5,31 +5,26 @@ import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import BaseModelService from '../services/BaseModelService';
 import {
     AGRIBUSINESS_MENU,
-    CRISPY_KING_OPERATIONS,
-    FRANCHISE_MENU,
-    LENDING_MENU,
+    FINANCIAL_REPORTS_MENU,
     MAIN_MENU,
     ADMIN_MENU,
-    DAILY_REPORTS,
-    WEEKLY_REPORTS,
-    MONTHLY_REPORTS,
-    COOPERATIVE_REPORTS,
     FINANCIALS_MENU,
     ACCOUNTING_MENU,
     BOOKS_OF_ACCOUNTS_MENU,
     SUPPORT_MENU
 } from './SidebarContent';
-import { isCrispyKing } from '../config/deployment';
 import { flexibleSearch, highlightMatches } from '../utils/flexibleSearch';
 import { formatPHP } from '../utils/currency';
 
-export type SearchCategoryType = 'all' | 'menu' | 'borrower' | 'parcel' | 'loan' | 'expense';
+// Borrower and loan search went with those tables; the two entity categories left are the ones
+// with a WatermelonDB model on this branch.
+export type SearchCategoryType = 'all' | 'menu' | 'parcel' | 'expense';
 
 export interface SearchResultItem {
     id: string;
     title: string;
     subtitle?: string;
-    type: 'menu' | 'borrower' | 'parcel' | 'loan' | 'expense';
+    type: 'menu' | 'parcel' | 'expense';
     route: string;
     icon?: string;
     badge?: string;
@@ -49,9 +44,7 @@ export interface GlobalSearchProps {
 const CATEGORY_TABS: Array<{ id: SearchCategoryType; label: string; icon: keyof typeof MaterialIcons.glyphMap }> = [
     { id: 'all', label: 'All', icon: 'search' },
     { id: 'menu', label: 'Menus', icon: 'menu' },
-    { id: 'borrower', label: 'Borrowers', icon: 'people' },
     { id: 'parcel', label: 'Parcels', icon: 'landscape' },
-    { id: 'loan', label: 'Loan Accounts', icon: 'attach-money' },
     { id: 'expense', label: 'Expenses', icon: 'receipt' },
 ];
 
@@ -68,9 +61,7 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
     const [isFocused, setIsFocused] = useState(false);
 
     // Dynamic data states
-    const [borrowers, setBorrowers] = useState<any[]>([]);
     const [parcels, setParcels] = useState<any[]>([]);
-    const [loans, setLoans] = useState<any[]>([]);
     const [expenses, setExpenses] = useState<any[]>([]);
     const blurTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -78,14 +69,9 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
     const allMenus = useMemo(() => {
         return [
             ...AGRIBUSINESS_MENU,
-            ...(isCrispyKing() ? [...CRISPY_KING_OPERATIONS, ...FRANCHISE_MENU] : []),
-            ...LENDING_MENU,
+            ...FINANCIAL_REPORTS_MENU,
             ...MAIN_MENU,
             ...ADMIN_MENU,
-            ...DAILY_REPORTS,
-            ...WEEKLY_REPORTS,
-            ...MONTHLY_REPORTS,
-            ...COOPERATIVE_REPORTS,
             ...FINANCIALS_MENU,
             ...ACCOUNTING_MENU,
             ...BOOKS_OF_ACCOUNTS_MENU,
@@ -97,18 +83,7 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
     useEffect(() => {
         let isMounted = true;
         const loadAllEntities = async () => {
-            // 1. Borrowers
-            try {
-                const fetched = await BaseModelService.fetchActive<any>('borrowers');
-                if (isMounted && Array.isArray(fetched)) {
-                    // Guard against mock collisions
-                    setBorrowers(fetched.filter(b => b && (b.fullName || b.memberId)));
-                }
-            } catch (e) {
-                console.error('[GlobalSearch] Failed to load borrowers:', e);
-            }
-
-            // 2. Agribusiness Parcels
+            // 1. Agribusiness Parcels
             try {
                 const fetched = await BaseModelService.fetchActive<any>('agri_parcels');
                 if (isMounted && Array.isArray(fetched)) {
@@ -118,17 +93,7 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
                 // Table might be absent or empty in test environments
             }
 
-            // 3. Loans
-            try {
-                const fetched = await BaseModelService.fetchActive<any>('loans');
-                if (isMounted && Array.isArray(fetched)) {
-                    setLoans(fetched.filter(l => l && (l.loanNumber || l.principalAmount !== undefined)));
-                }
-            } catch {
-                // Table might be absent or empty in test environments
-            }
-
-            // 4. Farm Expenses
+            // 2. Farm Expenses
             try {
                 const fetched = await BaseModelService.fetchActive<any>('agri_farm_expenses');
                 if (isMounted && Array.isArray(fetched)) {
@@ -166,20 +131,6 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
             });
         });
 
-        // Borrowers
-        borrowers.forEach(b => {
-            items.push({
-                id: `borrower_${b.id}`,
-                title: b.fullName || 'Unnamed Borrower',
-                subtitle: b.group ? `Borrower • ${b.group}` : 'Borrower',
-                type: 'borrower',
-                route: `/(admin)/borrowers/${b.id}`,
-                icon: 'person',
-                badge: b.group || 'Member',
-                metadata: b.memberId ? `ID: ${b.memberId}` : undefined,
-            });
-        });
-
         // Parcels
         parcels.forEach(p => {
             const haText = p.areaHectares ? `${p.areaHectares} ha` : '';
@@ -192,21 +143,6 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
                 icon: 'landscape',
                 badge: p.status || 'Parcel',
                 metadata: p.code ? `Code: ${p.code}` : undefined,
-            });
-        });
-
-        // Loans
-        loans.forEach(l => {
-            const amountStr = l.principalAmount ? formatPHP(l.principalAmount) : '';
-            items.push({
-                id: `loan_${l.id}`,
-                title: l.loanNumber ? `Loan #${l.loanNumber}` : 'Loan Account',
-                subtitle: `Principal: ${amountStr} • Status: ${l.status || 'Active'}`,
-                type: 'loan',
-                route: `/(admin)/loans/${l.id}`,
-                icon: 'attach-money',
-                badge: l.status || 'Loan',
-                amount: l.principalAmount,
             });
         });
 
@@ -226,7 +162,7 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
         });
 
         return items;
-    }, [allMenus, borrowers, parcels, loans, expenses]);
+    }, [allMenus, parcels, expenses]);
 
     // Perform flexible multi-token search with scoring
     const searchResults = useMemo<SearchResultItem[]>(() => {
@@ -251,9 +187,7 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
         const counts: Record<SearchCategoryType, number> = {
             all: searchResults.length,
             menu: 0,
-            borrower: 0,
             parcel: 0,
-            loan: 0,
             expense: 0,
         };
 
@@ -286,12 +220,8 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
 
     const getTypeColor = (type: SearchResultItem['type']) => {
         switch (type) {
-            case 'borrower':
-                return { bg: 'bg-blue-100', text: 'text-blue-700', iconColor: '#1D4ED8' };
             case 'parcel':
                 return { bg: 'bg-emerald-100', text: 'text-emerald-700', iconColor: '#047857' };
-            case 'loan':
-                return { bg: 'bg-amber-100', text: 'text-amber-700', iconColor: '#D97706' };
             case 'expense':
                 return { bg: 'bg-purple-100', text: 'text-purple-700', iconColor: '#7E22CE' };
             case 'menu':

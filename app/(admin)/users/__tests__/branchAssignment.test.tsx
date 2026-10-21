@@ -63,13 +63,6 @@ describe('NewUserScreen - Branch Assignment', () => {
                     }),
                 };
             }
-            if (tableName === 'borrowers') {
-                return {
-                    query: jest.fn().mockReturnValue({
-                        fetch: jest.fn().mockResolvedValue([]),
-                    }),
-                };
-            }
             return {
                 prepareCreate: mockPrepareCreate,
                 query: jest.fn().mockReturnValue({
@@ -86,11 +79,11 @@ describe('NewUserScreen - Branch Assignment', () => {
         expect(await findByText('Daro Crossing')).toBeTruthy();
     });
 
-    it('saves user with assigned branchId and role branch_cashier', async () => {
+    it('saves user with assigned branchId and the admin default role', async () => {
         const { getByPlaceholderText, getByText, findByText } = render(<NewUserScreen />);
 
-        fireEvent.changeText(getByPlaceholderText('Enter full name'), 'Maria Cashier');
-        fireEvent.changeText(getByPlaceholderText('user@example.com'), 'maria.cashier@poscursor.com');
+        fireEvent.changeText(getByPlaceholderText('Enter full name'), 'Maria Encoder');
+        fireEvent.changeText(getByPlaceholderText('user@example.com'), 'maria.encoder@poscursor.com');
 
         // Select Daro branch
         const daroBranchBtn = await findByText('Daro Crossing');
@@ -103,10 +96,10 @@ describe('NewUserScreen - Branch Assignment', () => {
         await waitFor(() => {
             expect(mockPrepareCreate).toHaveBeenCalled();
             expect(mockCreatedUser).not.toBeNull();
-            expect(mockCreatedUser.fullName).toBe('Maria Cashier');
-            expect(mockCreatedUser.email).toBe('maria.cashier@poscursor.com');
+            expect(mockCreatedUser.fullName).toBe('Maria Encoder');
+            expect(mockCreatedUser.email).toBe('maria.encoder@poscursor.com');
             expect(mockCreatedUser.branchId).toBe('branch-daro');
-            expect(mockCreatedUser.role).toBe(ROLES.branch_cashier);
+            expect(mockCreatedUser.role).toBe(ROLES.admin);
         });
-    });
+    });;
 });

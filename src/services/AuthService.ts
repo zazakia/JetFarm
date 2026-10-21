@@ -9,20 +9,31 @@ console.log('[AuthService] Module loaded V3');
 
 const E2E_AUTH_STORAGE_KEY = 'jetfarm:e2e-auth-user';
 // Keep in sync with supabase/seed.sql login users + login quick-access aliases.
+// These are the only identities the agribusiness variant seeds, and the only roles
+// src/constants/roles.ts still recognises.
 const E2E_TEST_USERS: Record<string, { id: string; role: string; full_name: string }> = {
-    'cybergada@gmail.com': { id: 'cybergada', role: 'admin', full_name: 'Click here to Login sir Jet' },
-    'admin@jetfarm.com': { id: 'admin', role: 'admin', full_name: 'Admin User' },
-    'collector@jetfarm.com': { id: 'master_collector', role: 'collector', full_name: 'Master Collector' },
-    // Alias used by login quick-access UI; seed canonical is loan_encoder@...
-    'encoder@jetfarm.com': { id: 'loan_encoder', role: 'loan_encoder', full_name: 'Loan Encoder' },
-    'loan_encoder@jetfarm.com': { id: 'loan_encoder', role: 'loan_encoder', full_name: 'Loan Encoder' },
-    'payment_encoder@jetfarm.com': { id: 'payment_encoder', role: 'payment_encoder', full_name: 'Payment Encoder' },
-    'expenses_encoder@jetfarm.com': { id: 'expenses_encoder', role: 'expenses_encoder', full_name: 'Expenses Encoder' },
-    'cresencio.junco@jetfarm.com': { id: 'cresencio', role: 'collector', full_name: 'Cresencio Junco' },
-    'gerald.gera@jetfarm.com': { id: 'gerald', role: 'collector', full_name: 'Gerald Gera' },
-    'bernie.casera@jetfarm.com': { id: 'bernie', role: 'collector', full_name: 'Bernie Casera' },
-    'member.test@jetfarm.com': { id: 'test_member', role: 'borrower', full_name: 'Test Member' },
+    'admin@agri-one.com': { id: 'admin', role: 'admin', full_name: 'Admin User' },
+    'cybergada@gmail.com': { id: 'cybergada', role: 'admin', full_name: 'Cybergada Master' },
+    'expenses_encoder@agri-one.com': { id: 'expenses_encoder', role: 'expenses_encoder', full_name: 'Expenses Encoder' },
+    'mainoffice@agri-one.com': { id: 'mainoffice', role: 'main_office', full_name: 'Main Office' },
 };
+
+/** Roles offered on the quick-login strip when running against the local E2E stack. */
+const QUICK_LOGIN_ROLES = ['admin', 'expenses_encoder', 'main_office'];
+/** Domains used by the seeded logins. Anything else is real-user data and stays hidden. */
+const QUICK_LOGIN_DOMAINS = ['@agri-one.com', '@gmail.com'];
+
+function isQuickLoginCandidate(email: string, fullName: string, role?: string): boolean {
+    const normalizedEmail = (email || '').toLowerCase();
+    if (process.env.NODE_ENV !== 'test') {
+        return E2E_TEST_USERS[normalizedEmail] !== undefined;
+    }
+    const name = (fullName || '').toLowerCase();
+    const isMockName = name.includes('diagnostic') || name.includes('mock') || name.includes('test') || name.includes('fix');
+    return QUICK_LOGIN_ROLES.includes(role || '')
+        && QUICK_LOGIN_DOMAINS.some(domain => normalizedEmail.endsWith(domain))
+        && !isMockName;
+}
 
 const readE2EUser = () => {
     if (!isLocalWebE2E()) return null;
@@ -269,73 +280,6 @@ export class AuthService {
         }
     }
 
-    static async resolveCollectorId(uid: string): Promise<string | null> {
-        const e2eUser = readE2EUser();
-        if (e2eUser?.id === uid && e2eUser.role === 'collector') {
-            return `collector-${uid}`;
-        }
-
-        if (!uid) return null;
-        try {
-            const collectorRecords = await database.collections.get<any>('collectors')
-                .query(Q.where('auth_id', uid))
-                .fetch();
-
-            if (collectorRecords.length > 0) {
-                return collectorRecords[0].id;
-            }
-
-            console.log('[AuthService] Collector not found locally, checking remote...');
-            const { data, error } = await supabase
-                .from('app_collectors')
-                .select('id')
-                .eq('auth_id', uid)
-                .is('deleted_at', null)
-                .maybeSingle();
-
-            if (error) {
-                console.warn('[AuthService] Remote collector lookup failed:', error.message);
-                return null;
-            }
-
-            if (data?.id) {
-                return data.id;
-            }
-
-            const { data: profile, error: profileError } = await supabase
-                .from('user_profiles')
-                .select('full_name, role, is_active, deleted_at')
-                .eq('id', uid)
-                .maybeSingle();
-
-            if (profileError) {
-                console.warn('[AuthService] Remote collector profile lookup failed:', profileError.message);
-                return null;
-            }
-
-            if (!profile || profile.role !== 'collector' || profile.is_active === false || profile.deleted_at || !profile.full_name) {
-                return null;
-            }
-
-            const { data: namedCollector, error: namedCollectorError } = await supabase
-                .from('app_collectors')
-                .select('id')
-                .eq('full_name', profile.full_name)
-                .is('deleted_at', null)
-                .maybeSingle();
-
-            if (namedCollectorError) {
-                console.warn('[AuthService] Remote named collector lookup failed:', namedCollectorError.message);
-                return null;
-            }
-
-            return namedCollector?.id || null;
-        } catch (e) {
-            ErrorService.handleError(e, '[AuthService] Error resolving collector ID:');
-            return null;
-        }
-    }
-
     static async getQuickLoginUsers() {
         if (!AuthService.isQuickLoginEnabled()) {
             return [];
@@ -347,20 +291,13 @@ export class AuthService {
             if (database && database.collections) {
                 try {
                     const localProfiles = await database.get<UserProfile>('user_profiles').query(
-                        Q.where('role', Q.oneOf(['admin', 'collector', 'loan_encoder', 'payment_encoder', 'expenses_encoder'])),
+                        Q.where('role', Q.oneOf(QUICK_LOGIN_ROLES)),
                         Q.where('is_active', true)
                     ).fetch();
                     localProfiles.forEach(p => {
                         const email = (p.email || '').toLowerCase();
-                        const name = (p.fullName || '').toLowerCase();
-                        const isAllowedDomain = email.endsWith('@jetfarm.com') || email.endsWith('@gmail.com');
-                        const isMockName = name.includes('diagnostic') || name.includes('mock') || name.includes('test') || name.includes('fix') || name.includes('collector 0') || name.includes('collector 1');
-                        
-                        const isE2E = process.env.NODE_ENV === 'test'
-                            ? (isAllowedDomain && !isMockName)
-                            : E2E_TEST_USERS[email] !== undefined;
 
-                        if (email && isE2E) {
+                        if (email && isQuickLoginCandidate(email, p.fullName, p.role)) {
                             usersMap.set(email, {
                                 id: p.id,
                                 full_name: p.fullName,
@@ -395,16 +332,9 @@ export class AuthService {
             if (remoteProfiles) {
                 remoteProfiles.forEach(p => {
                     const email = (p.email || '').toLowerCase();
-                    const role = p.role || 'collector';
-                    const name = (p.full_name || '').toLowerCase();
-                    const isAllowedDomain = email.endsWith('@jetfarm.com') || email.endsWith('@gmail.com');
-                    const isMockName = name.includes('diagnostic') || name.includes('mock') || name.includes('test') || name.includes('fix') || name.includes('collector 0') || name.includes('collector 1');
+                    const role = p.role || '';
 
-                    const isE2E = process.env.NODE_ENV === 'test'
-                        ? ((role === 'admin' || role === 'collector' || role === 'loan_encoder' || role === 'payment_encoder' || role === 'expenses_encoder' || role === 'borrower') && isAllowedDomain && !isMockName)
-                        : E2E_TEST_USERS[email] !== undefined;
-
-                    if (email && !usersMap.has(email) && isE2E) {
+                    if (email && !usersMap.has(email) && isQuickLoginCandidate(email, p.full_name, role)) {
                         usersMap.set(email, {
                             id: p.id,
                             full_name: p.full_name || 'Unknown User',

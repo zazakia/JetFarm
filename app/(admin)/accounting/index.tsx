@@ -313,7 +313,6 @@ export default function AccountingDashboard() {
                             { name: 'AR Ledger', desc: 'Receivables & Aging', route: '/(admin)/accounting/ar-ledger', icon: 'people-alt', color: '#1E3A8A', bg: 'bg-blue-50' },
                             { name: 'AP Journal', desc: 'Payables & Vendors', route: '/(admin)/accounting/ap-journal', icon: 'payments', color: '#B45309', bg: 'bg-amber-50' },
                             { name: 'Sales Journal', desc: 'Credit Sales (SJ)', route: '/(admin)/accounting/sales-journal', icon: 'store', color: '#4338CA', bg: 'bg-indigo-50' },
-                            { name: 'Sales Returns', desc: 'Returns & Allowances', route: '/(admin)/returns', icon: 'assignment-return', color: '#0F766E', bg: 'bg-teal-50' },
                             { name: 'Purchase Journal', desc: 'Credit Purchases (PJ)', route: '/(admin)/accounting/purchase-journal', icon: 'shopping-cart', color: '#0E7490', bg: 'bg-cyan-50' },
                             { name: 'Inventory Journal', desc: 'Stock Movements', route: '/(admin)/accounting/inventory-journal', icon: 'inventory-2', color: '#0F766E', bg: 'bg-teal-50' },
                             { name: 'Suppliers', desc: 'Vendor Masterlist', route: '/(admin)/accounting/suppliers', icon: 'business', color: '#374151', bg: 'bg-gray-100' },

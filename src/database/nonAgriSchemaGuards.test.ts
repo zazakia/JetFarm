@@ -210,6 +210,22 @@ describe('agribusiness-only schema and sync contract', () => {
         expect(schemaVersion()).toBe(50);
     });
 
+    it('declares no column pointing at a retired table', () => {
+        // The retire migration drops app_cash_transactions.pos_session_id on the remote side, so a
+        // local schema that still declares it would push a column Postgres no longer has, and
+        // PostgREST rejects the whole batch (PGRST204), not just that row.
+        const retiredColumns = ['pos_session_id'];
+        const schemaSrc = read(SCHEMA);
+        const modelSrc = read([...MODELS_DIR, 'CashTransaction.ts']);
+        for (const column of retiredColumns) {
+            expect(schemaSrc).not.toContain(`{ name: '${column}'`);
+            expect(modelSrc).not.toContain(`@field('${column}')`);
+        }
+        // positive control: the files parsed are the real ones, not an empty read
+        expect(schemaSrc).toContain("name: 'cash_transactions'");
+        expect(modelSrc).toContain("@field('particulars')");
+    });
+
     it('keeps every declared table mapped in the sync contract, or declared local/api-only', () => {
         const synced = new Set([...Object.keys(contract.remoteTableMap)]);
         const declared = new Set([

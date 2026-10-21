@@ -453,7 +453,7 @@ export class AutoPostingServiceClass {
 
         return this.journalEntryService.createEntry({
             entryDate,
-            description: `Farm Expense — ${opts.category}: ${opts.description}${cycleTag} (${isInvestorPaid ? 'BioGreen Partner Funded' : 'JetFarm Disbursed'})`,
+            description: `Farm Expense — ${opts.category}: ${opts.description}${cycleTag} (${isInvestorPaid ? 'BioGreen Partner Funded' : 'Agri-One Disbursed'})`,
             entryType: 'auto',
             sourceTable: 'agri_farm_expenses',
             sourceId: opts.expenseId,

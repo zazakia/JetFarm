@@ -155,7 +155,7 @@ describe('DataMaintenanceScreen', () => {
     });
 
     it('switches to directories tab and renders master directory cards', async () => {
-        const { getByText } = render(<DataMaintenanceScreen />);
+        const { getByText, queryByText } = render(<DataMaintenanceScreen />);
 
         fireEvent.press(getByText('Directories'));
 
@@ -163,7 +163,10 @@ describe('DataMaintenanceScreen', () => {
         expect(getByText('Expense Categories')).toBeTruthy();
         expect(getByText('Chart of Accounts')).toBeTruthy();
         expect(getByText('Company Bank Accounts')).toBeTruthy();
-        expect(getByText('Loan Products & Plans')).toBeTruthy();
+        expect(getByText('Geographic Areas & Zones')).toBeTruthy();
+
+        // the lending catalogue directory is deleted with the domain, not hidden
+        expect(queryByText(/Loan Products|Borrower|Share Capital/i)).toBeNull();
 
         fireEvent.press(getByText('Expense Categories'));
         expect(mockPush).toHaveBeenCalledWith('/(admin)/settings/expense-categories');

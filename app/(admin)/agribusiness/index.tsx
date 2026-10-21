@@ -126,7 +126,7 @@ export default function AgribusinessDashboard() {
                     <View className="flex-1 min-w-0 mr-2">
                         <View className="flex-row items-center gap-2 mb-1">
                             <MaterialIcons name="agriculture" size={28} color="#FFFFFF" />
-                            <Text testID="admin-portal-title" className="text-white text-2xl font-black">JetFarm Agribusiness</Text>
+                            <Text testID="admin-portal-title" className="text-white text-2xl font-black">Agri-One Agribusiness</Text>
                         </View>
                         <Text className="text-emerald-100 text-sm font-medium">
                             Agribusiness Dashboard • Operator Command Center • Managed by Mr. Jojet Montera (Jet)

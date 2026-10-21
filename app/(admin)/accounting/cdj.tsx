@@ -93,7 +93,7 @@ export default function CashDisbursementsJournal() {
                     {/* Grand Total Disbursed Card */}
                     <View className="bg-red-900 p-6 rounded-3xl mb-4 shadow-sm">
                         <Text className="text-red-200 text-xs font-bold uppercase tracking-wider mb-1">
-                            Total Cash Disbursed (Cr 1010/1020)
+                            Total Cash &amp; Bank Disbursed
                         </Text>
                         <Text className="text-white font-black text-3xl">
                             {formatPHP(summary?.grandTotalCash ?? 0)}
@@ -106,21 +106,21 @@ export default function CashDisbursementsJournal() {
                     {/* Breakdown Summary Grid */}
                     <View className="flex-row flex-wrap justify-between mb-4">
                         <View className="w-[48%] bg-white p-4 rounded-2xl border border-gray-100 mb-3">
-                            <Text className="text-gray-600 text-[10px] font-bold uppercase">Loan Releases</Text>
-                            <Text className="text-gray-900 font-bold text-sm mt-1">{formatPHP(summary?.totalLoanDisbursements ?? 0)}</Text>
+                            <Text className="text-gray-600 text-[10px] font-bold uppercase">Settlements &amp; Wages</Text>
+                            <Text className="text-gray-900 font-bold text-sm mt-1">{formatPHP(summary?.totalSettlementsAndWages ?? 0)}</Text>
                         </View>
                         <View className="w-[48%] bg-white p-4 rounded-2xl border border-gray-100 mb-3">
                             <Text className="text-gray-600 text-[10px] font-bold uppercase">Operating Expenses</Text>
                             <Text className="text-gray-900 font-bold text-sm mt-1">{formatPHP(summary?.totalOperatingExpenses ?? 0)}</Text>
                         </View>
                         <View className="w-[48%] bg-white p-4 rounded-2xl border border-gray-100 mb-3">
-                            <Text className="text-gray-600 text-[10px] font-bold uppercase">Savings Withdrawals</Text>
-                            <Text className="text-gray-900 font-bold text-sm mt-1">{formatPHP(summary?.totalSavingsWithdrawals ?? 0)}</Text>
+                            <Text className="text-gray-600 text-[10px] font-bold uppercase">Receivable Advances</Text>
+                            <Text className="text-gray-900 font-bold text-sm mt-1">{formatPHP(summary?.totalReceivableAdvances ?? 0)}</Text>
                         </View>
                         <View className="w-[48%] bg-white p-4 rounded-2xl border border-gray-100 mb-3">
-                            <Text className="text-gray-600 text-[10px] font-bold uppercase">Bank / Other</Text>
+                            <Text className="text-gray-600 text-[10px] font-bold uppercase">Capital / Transfers / Other</Text>
                             <Text className="text-gray-900 font-bold text-sm mt-1">
-                                {formatPHP((summary?.totalBankDeposits ?? 0) + (summary?.totalScRefunds ?? 0) + (summary?.totalOtherDisbursements ?? 0))}
+                                {formatPHP((summary?.totalCapitalRefunds ?? 0) + (summary?.totalInternalTransfers ?? 0) + (summary?.totalOtherDisbursements ?? 0))}
                             </Text>
                         </View>
                     </View>
@@ -138,11 +138,11 @@ export default function CashDisbursementsJournal() {
                                     <View style={{ width: 80 }}><Text className="text-gray-600 text-[10px] font-bold uppercase">Date</Text></View>
                                     <View style={{ width: 120 }}><Text className="text-gray-600 text-[10px] font-bold uppercase">Voucher No.</Text></View>
                                     <View style={{ width: 180 }}><Text className="text-gray-600 text-[10px] font-bold uppercase">Description</Text></View>
-                                    <View style={{ width: 100 }} className="items-end"><Text className="text-gray-600 text-[10px] font-bold uppercase">Loan Releases</Text></View>
+                                    <View style={{ width: 100 }} className="items-end"><Text className="text-gray-600 text-[10px] font-bold uppercase">Sett &amp; Wages</Text></View>
                                     <View style={{ width: 100 }} className="items-end"><Text className="text-gray-600 text-[10px] font-bold uppercase">Expenses</Text></View>
-                                    <View style={{ width: 100 }} className="items-end"><Text className="text-gray-600 text-[10px] font-bold uppercase">Savings WD</Text></View>
+                                    <View style={{ width: 100 }} className="items-end"><Text className="text-gray-600 text-[10px] font-bold uppercase">Advances</Text></View>
                                     <View style={{ width: 90 }} className="items-end"><Text className="text-gray-600 text-[10px] font-bold uppercase">Other</Text></View>
-                                    <View style={{ width: 110 }} className="items-end"><Text className="text-gray-600 text-[10px] font-bold uppercase">Cash (Cr 1010)</Text></View>
+                                    <View style={{ width: 110 }} className="items-end"><Text className="text-gray-600 text-[10px] font-bold uppercase">Cash Out</Text></View>
                                 </View>
 
                                 {/* Table Rows */}
@@ -165,18 +165,18 @@ export default function CashDisbursementsJournal() {
                                                 <Text className="text-gray-700 text-xs" numberOfLines={1}>{row.description}</Text>
                                             </View>
                                             <View style={{ width: 100 }} className="items-end">
-                                                <Text className="text-gray-900 text-xs">{row.loanDisbursements > 0 ? formatPHP(row.loanDisbursements) : '—'}</Text>
+                                                <Text className="text-gray-900 text-xs">{row.settlementsAndWages > 0 ? formatPHP(row.settlementsAndWages) : '—'}</Text>
                                             </View>
                                             <View style={{ width: 100 }} className="items-end">
                                                 <Text className="text-gray-900 text-xs">{row.operatingExpenses > 0 ? formatPHP(row.operatingExpenses) : '—'}</Text>
                                             </View>
                                             <View style={{ width: 100 }} className="items-end">
-                                                <Text className="text-gray-900 text-xs">{row.savingsWithdrawals > 0 ? formatPHP(row.savingsWithdrawals) : '—'}</Text>
+                                                <Text className="text-gray-900 text-xs">{row.receivableAdvances > 0 ? formatPHP(row.receivableAdvances) : '—'}</Text>
                                             </View>
                                             <View style={{ width: 90 }} className="items-end">
                                                 <Text className="text-gray-900 text-xs">
-                                                    {(row.scRefunds + row.bankDeposits + row.otherDisbursements) > 0
-                                                        ? formatPHP(row.scRefunds + row.bankDeposits + row.otherDisbursements)
+                                                    {(row.capitalRefunds + row.internalTransfers + row.otherDisbursements) > 0
+                                                        ? formatPHP(row.capitalRefunds + row.internalTransfers + row.otherDisbursements)
                                                         : '—'}
                                                 </Text>
                                             </View>
@@ -194,17 +194,17 @@ export default function CashDisbursementsJournal() {
                                             <Text className="text-red-950 font-black text-xs uppercase">Totals</Text>
                                         </View>
                                         <View style={{ width: 100 }} className="items-end">
-                                            <Text className="text-red-950 font-black text-xs">{formatPHP(summary.totalLoanDisbursements)}</Text>
+                                            <Text className="text-red-950 font-black text-xs">{formatPHP(summary.totalSettlementsAndWages)}</Text>
                                         </View>
                                         <View style={{ width: 100 }} className="items-end">
                                             <Text className="text-red-950 font-black text-xs">{formatPHP(summary.totalOperatingExpenses)}</Text>
                                         </View>
                                         <View style={{ width: 100 }} className="items-end">
-                                            <Text className="text-red-950 font-black text-xs">{formatPHP(summary.totalSavingsWithdrawals)}</Text>
+                                            <Text className="text-red-950 font-black text-xs">{formatPHP(summary.totalReceivableAdvances)}</Text>
                                         </View>
                                         <View style={{ width: 90 }} className="items-end">
                                             <Text className="text-red-950 font-black text-xs">
-                                                {formatPHP(summary.totalScRefunds + summary.totalBankDeposits + summary.totalOtherDisbursements)}
+                                                {formatPHP(summary.totalCapitalRefunds + summary.totalInternalTransfers + summary.totalOtherDisbursements)}
                                             </Text>
                                         </View>
                                         <View style={{ width: 110 }} className="items-end">

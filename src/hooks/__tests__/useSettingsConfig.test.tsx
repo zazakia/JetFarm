@@ -132,7 +132,7 @@ describe('useFeatureFlags', () => {
             expect(result.current.isEnabled('beta')).toBe(false);
         });
 
-        it('returns true for unknown flag key (not in map)', async () => {
+        it('returns false for an unknown flag key outside the agribusiness allowlist', async () => {
             mockFeatureMap().mockResolvedValue({ beta: true });
 
             const { result } = renderHook(() => useFeatureFlags());
@@ -141,9 +141,37 @@ describe('useFeatureFlags', () => {
                 expect(result.current.loading).toBe(false);
             });
 
-            // unknown_key not in map -> flags['unknown_key'] is undefined,
-            // undefined !== false is true
-            expect(result.current.isEnabled('unknown_key')).toBe(true);
+            // Fail-closed: a key this build no longer ships (a retired lending flag read from a
+            // stale feature_flags row, or a typo) must not light up navigation on its own.
+            expect(result.current.isEnabled('module.borrowers')).toBe(false);
+            expect(result.current.isEnabled('unknown_key')).toBe(false);
+        });
+
+        it('returns true for an allowlisted key the flag table has not seeded yet', async () => {
+            // A fresh local database has no feature_flags rows until SettingsService.ensureDefaults
+            // runs; the shipped agribusiness/finance features must not vanish in that window.
+            mockFeatureMap().mockResolvedValue({});
+
+            const { result } = renderHook(() => useFeatureFlags());
+
+            await waitFor(() => {
+                expect(result.current.loading).toBe(false);
+            });
+
+            expect(result.current.isEnabled('module.accounting')).toBe(true);
+            expect(result.current.isEnabled('module.expenses')).toBe(true);
+        });
+
+        it('returns false for an allowlisted key that is explicitly disabled', async () => {
+            mockFeatureMap().mockResolvedValue({ 'module.accounting': false });
+
+            const { result } = renderHook(() => useFeatureFlags());
+
+            await waitFor(() => {
+                expect(result.current.loading).toBe(false);
+            });
+
+            expect(result.current.isEnabled('module.accounting')).toBe(false);
         });
     });
 });

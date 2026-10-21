@@ -999,28 +999,10 @@ export default function DataMaintenanceScreen() {
                             onPress={() => router.push('/(admin)/bank-accounts')}
                         />
                         <DirectoryCard
-                            title="Loan Products & Plans"
-                            subtitle="Configured loan terms, interest calculation formulas, and fees"
-                            icon="receipt-long"
-                            onPress={() => router.push('/(admin)/settings/loan-products')}
-                        />
-                        <DirectoryCard
-                            title="Collection Groups & Centers"
-                            subtitle="Field routing, center meeting schedules, and collector assignments"
-                            icon="group-work"
-                            onPress={() => router.push('/(admin)/settings/collection-groups')}
-                        />
-                        <DirectoryCard
                             title="Geographic Areas & Zones"
-                            subtitle="Barangay, municipal clusters, and area supervisor zones"
+                            subtitle="Barangay and municipal clusters that scope farm parcels and harvest logistics"
                             icon="map"
                             onPress={() => router.push('/(admin)/areas')}
-                        />
-                        <DirectoryCard
-                            title="Employees Directory"
-                            subtitle="Staff master profiles, positions, and base salary records"
-                            icon="assignment-ind"
-                            onPress={() => router.push('/(admin)/settings/employees')}
                         />
                     </View>
                 </ScrollView>

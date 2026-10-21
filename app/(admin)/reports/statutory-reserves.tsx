@@ -14,35 +14,26 @@ export default function StatutoryReservesScreen() {
     const [result, setResult] = useState<SurplusDistribution | null>(null);
     const [computed, setComputed] = useState(false);
     const [percentages, setPercentages] = useState({
-        netSurplus: 70,
         reserve: 10,
         education: 10,
         community: 3,
         optional: 7,
-        isc: 70,
-        pr: 30,
     });
 
     useFocusEffect(
         useCallback(() => {
             let active = true;
             async function load() {
-                const ns = await SettingsService.getNumberSetting('fund.net_surplus_allocation', 0.70);
                 const rf = await SettingsService.getNumberSetting('fund.reserve_fund_allocation', 0.10);
                 const ed = await SettingsService.getNumberSetting('fund.education_fund_allocation', 0.10);
                 const cf = await SettingsService.getNumberSetting('fund.community_development_fund_allocation', 0.03);
                 const op = await SettingsService.getNumberSetting('fund.optional_fund_allocation', 0.07);
-                const isc = await SettingsService.getNumberSetting('fund.isc_distribution', 0.70);
-                const pr = await SettingsService.getNumberSetting('fund.pr_distribution', 0.30);
                 if (active) {
                     setPercentages({
-                        netSurplus: Math.round(ns * 100),
                         reserve: Math.round(rf * 100),
                         education: Math.round(ed * 100),
                         community: Math.round(cf * 100),
                         optional: Math.round(op * 100),
-                        isc: Math.round(isc * 100),
-                        pr: Math.round(pr * 100),
                     });
                 }
             }
@@ -100,15 +91,6 @@ export default function StatutoryReservesScreen() {
             icon: 'savings' as const,
             color: '#059669',
             bg: '#ECFDF5',
-        },
-        {
-            key: 'interestAndPatronageRefund',
-            label: 'Net Surplus for Distribution',
-            pct: `${percentages.netSurplus}%`,
-            description: 'Member distribution bucket before ISC and patronage split',
-            icon: 'people' as const,
-            color: '#D97706',
-            bg: '#FFFBEB',
         },
     ];
 
@@ -195,15 +177,19 @@ export default function StatutoryReservesScreen() {
                         ))}
 
                         <View className="bg-amber-50 border border-amber-100 rounded-2xl p-4 mt-1 mb-3">
-                            <Text className="text-amber-900 font-black text-sm mb-3">Sharing in Net Surplus</Text>
+                            <Text className="text-amber-900 font-black text-sm mb-3">Surplus After Appropriations</Text>
                             <View className="flex-row justify-between mb-2">
-                                <Text className="text-amber-800 font-bold text-xs flex-1">Interest on Share Capital ({percentages.isc}%)</Text>
-                                <Text className="text-amber-900 font-black text-xs">{formatPHP(result.interestOnShareCapital)}</Text>
+                                <Text className="text-amber-800 font-bold text-xs flex-1">Total Statutory Funds</Text>
+                                <Text className="text-amber-900 font-black text-xs">{formatPHP(result.totalStatutoryFunds)}</Text>
                             </View>
                             <View className="flex-row justify-between">
-                                <Text className="text-amber-800 font-bold text-xs flex-1">Patronage Refund ({percentages.pr}%)</Text>
-                                <Text className="text-amber-900 font-black text-xs">{formatPHP(result.patronageRefund)}</Text>
+                                <Text className="text-amber-800 font-bold text-xs flex-1">Retained Surplus</Text>
+                                <Text className="text-amber-900 font-black text-xs">{formatPHP(result.retainedSurplus)}</Text>
                             </View>
+                            <Text className="text-amber-700 text-[10px] mt-2 leading-4">
+                                Retained surplus is not paid out as a member dividend. Crop partners are settled
+                                through their investor ledgers when the harvest is closed.
+                            </Text>
                         </View>
 
                         {/* Verify total */}
@@ -211,11 +197,7 @@ export default function StatutoryReservesScreen() {
                             <View className="flex-row justify-between">
                                 <Text className="text-gray-700 font-bold">Total Allocated</Text>
                                 <Text className="text-gray-900 font-black">
-                                    {formatPHP(
-                                        result.reserveFund + result.educationFund +
-                                        result.communityDevelopmentFund + result.optionalFund +
-                                        result.interestAndPatronageRefund
-                                    )}
+                                    {formatPHP(result.totalStatutoryFunds + result.retainedSurplus)}
                                 </Text>
                             </View>
                         </View>

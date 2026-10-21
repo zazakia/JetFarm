@@ -40,11 +40,7 @@ export default function AccountsReceivableLedger() {
         setModalVisible(true);
         setDetailLoading(true);
         try {
-            const sourceTable = cust.customerType === 'borrower' ? 'loans'
-                : cust.customerType === 'ws_customer' ? 'ws_deliveries'
-                : cust.customerType === 'marketplace_buyer' ? 'marketplace_orders'
-                : 'loans';
-            const lines = await AccountsReceivableLedgerService.getSourceLedger(sourceTable, cust.customerId);
+            const lines = await AccountsReceivableLedgerService.getSourceLedger(cust.sourceTable, cust.customerId);
             setLedgerLines(lines);
         } catch (err) {
             console.error('Failed to load customer AR ledger:', err);
@@ -151,7 +147,7 @@ export default function AccountsReceivableLedger() {
                                     <View className="flex-row items-center">
                                         <Text className="text-gray-900 font-bold text-sm">{cust.customerName}</Text>
                                         <View className="bg-gray-100 px-2 py-0.5 rounded-full ml-2">
-                                            <Text className="text-gray-600 text-[8px] font-bold uppercase">{cust.customerType}</Text>
+                                            <Text className="text-gray-600 text-[8px] font-bold uppercase">{cust.sourceTable || 'manual'}</Text>
                                         </View>
                                     </View>
                                     <Text className="text-gray-600 text-[10px] mt-1">

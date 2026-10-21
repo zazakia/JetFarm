@@ -6,10 +6,18 @@ import {
 
 describe('authNavigation utility', () => {
     describe('isProtectedRouteGroup', () => {
-        it('returns true for protected segment groups', () => {
+        it('returns true for the protected segment groups this variant ships', () => {
             expect(isProtectedRouteGroup('(admin)')).toBe(true);
-            expect(isProtectedRouteGroup('(collector)')).toBe(true);
-            expect(isProtectedRouteGroup('(borrower)')).toBe(true);
+            expect(isProtectedRouteGroup('(expenses-encoder)')).toBe(true);
+        });
+
+        it('returns false for the deleted lending route groups', () => {
+            // A stale entry here would make a non-existent group "protected", so the guard would
+            // refuse to redirect away from it - see the comment in authNavigation.ts.
+            for (const group of ['(collector)', '(borrower)', '(cashier)', '(loan-encoder)',
+                '(payment-encoder)', '(branch-manager)', '(area-supervisor)', '(commissary)', '(executive)']) {
+                expect(isProtectedRouteGroup(group)).toBe(false);
+            }
         });
 
         it('returns false for public or undefined segment groups', () => {
@@ -25,20 +33,21 @@ describe('authNavigation utility', () => {
         });
 
         it('returns true if the role can access the segment group of the route', () => {
-            expect(isRouteAllowedForRole('/(admin)/dashboard', 'admin')).toBe(true);
-            expect(isRouteAllowedForRole('/(collector)/home', 'collector')).toBe(true);
-            expect(isRouteAllowedForRole('/(payment-encoder)/add', 'collector')).toBe(true);
-            expect(isRouteAllowedForRole('/(cashier)/pos', 'branch_cashier')).toBe(true);
-            expect(isRouteAllowedForRole('/(branch-manager)/receiving', 'branch_manager')).toBe(true);
-            expect(isRouteAllowedForRole('/(area-supervisor)/dashboard', 'area_supervisor')).toBe(true);
-            expect(isRouteAllowedForRole('/(commissary)/dispatch', 'commissary_keeper')).toBe(true);
-            expect(isRouteAllowedForRole('/(executive)/dashboard', 'executive')).toBe(true);
+            expect(isRouteAllowedForRole('/(admin)/agribusiness', 'admin')).toBe(true);
+            expect(isRouteAllowedForRole('/(admin)/accounting', 'main_office')).toBe(true);
+            expect(isRouteAllowedForRole('/(expenses-encoder)/entry', 'expenses_encoder')).toBe(true);
         });
 
-        it('returns false if the role cannot access the segment group of the route', () => {
-            expect(isRouteAllowedForRole('/(admin)/dashboard', 'collector')).toBe(false);
+        it('returns false when a role reaches outside its group or a deleted route group', () => {
+            expect(isRouteAllowedForRole('/(admin)/dashboard', 'expenses_encoder')).toBe(false);
+            expect(isRouteAllowedForRole('/(expenses-encoder)/entry', 'admin')).toBe(false);
+            expect(isRouteAllowedForRole('/(collector)/sheet', 'admin')).toBe(false);
             expect(isRouteAllowedForRole('/(borrower)/profile', 'admin')).toBe(false);
-            expect(isRouteAllowedForRole('/(executive)/dashboard', 'branch_cashier')).toBe(false);
+            expect(isRouteAllowedForRole('/(cashier)/pos', 'main_office')).toBe(false);
+        });
+
+        it('returns false for a retired role name', () => {
+            expect(isRouteAllowedForRole('/(admin)/dashboard', 'collector')).toBe(false);
             expect(isRouteAllowedForRole('/(admin)/dashboard', 'branch_cashier')).toBe(false);
         });
     });

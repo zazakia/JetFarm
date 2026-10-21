@@ -172,14 +172,14 @@ describe('LoadingScreen', () => {
 
         useSyncStore.mockReturnValue({
             status: 'syncing',
-            currentModel: 'loans',
+            currentModel: 'agri_parcels',
             progress: 0.2,
         });
 
         useAuth.mockReturnValue({
             initialized: true,
             user: { id: 'u1' },
-            role: 'collector',
+            role: 'expenses_encoder',
             roleResolved: true,
             initializationError: null,
         });
@@ -194,7 +194,37 @@ describe('LoadingScreen', () => {
         });
 
         expect(SyncService.checkAndSync).toHaveBeenCalledWith({ force: true });
-        expect(mockReplace).toHaveBeenCalledWith('/(collector)');
+        expect(mockReplace).toHaveBeenCalledWith('/(expenses-encoder)');
+    });
+
+    it('sends a retired role to login instead of an undefined route', async () => {
+        // collectors, borrowers, cashiers etc. have no ROLE_HOME_ROUTES entry on this branch;
+        // a stale auth session with one of those roles must fail closed to /login rather than
+        // router.replace(undefined).
+        const { useSyncStore } = require('../../src/stores/syncStore');
+        const { useAuth } = require('../../src/store/AuthContext');
+        const { SyncService } = require('../../src/services/SyncService');
+
+        useSyncStore.mockReturnValue({ status: 'completed', currentModel: '', progress: 1 });
+        useAuth.mockReturnValue({
+            initialized: true,
+            user: { id: 'u1' },
+            role: 'collector',
+            roleResolved: true,
+            initializationError: null,
+        });
+        SyncService.checkAndSync.mockResolvedValue(undefined);
+
+        render(<LoadingScreen />);
+
+        await act(async () => {
+            jest.advanceTimersByTime(2000);
+            await Promise.resolve();
+            await Promise.resolve();
+        });
+
+        expect(mockReplace).toHaveBeenCalledWith('/login');
+        expect(mockReplace).not.toHaveBeenCalledWith(undefined);
     });
 
     it('redirects admin to agribusiness dashboard when last route is legacy /(admin) or null', async () => {

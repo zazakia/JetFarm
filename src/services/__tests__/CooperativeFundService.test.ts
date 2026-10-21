@@ -7,41 +7,38 @@ jest.mock('../SettingsService', () => ({
 }));
 
 describe('CooperativeFundService', () => {
-    it('calculates the correct statutory distribution of net income', async () => {
-        const netIncome = 10000;
-        const distribution = await CooperativeFundService.calculateSurplusDistribution(netIncome);
+    it('calculates the statutory reserve appropriations from net income', async () => {
+        const distribution = await CooperativeFundService.calculateSurplusDistribution(10000);
 
         expect(distribution.netIncome).toBe(10000);
-        expect(distribution.netSurplus).toBe(7000); // 70%
         expect(distribution.reserveFund).toBe(1000); // 10%
         expect(distribution.educationFund).toBe(1000); // 10%
         expect(distribution.communityDevelopmentFund).toBe(300); // 3%
         expect(distribution.optionalFund).toBe(700); // 7%
-        expect(distribution.interestAndPatronageRefund).toBe(7000); // 70%
-        expect(distribution.interestOnShareCapital).toBe(4900); // 70% of 70%
-        expect(distribution.patronageRefund).toBe(2100); // 30% of 70%
+        expect(distribution.totalStatutoryFunds).toBe(3000);
+        expect(distribution.retainedSurplus).toBe(7000);
     });
 
-    it('handles rounding correctly for odd amounts', async () => {
-        const netIncome = 10000.55;
-        const distribution = await CooperativeFundService.calculateSurplusDistribution(netIncome);
+    it('handles rounding correctly for odd amounts and still adds back to net income', async () => {
+        const distribution = await CooperativeFundService.calculateSurplusDistribution(10000.55);
 
         expect(distribution.netIncome).toBe(10000.55);
-        expect(distribution.netSurplus).toBe(7000.38);
         expect(distribution.reserveFund).toBe(1000.06); // Math.round(1000.055 * 100) / 100
         expect(distribution.educationFund).toBe(1000.06);
         expect(distribution.communityDevelopmentFund).toBe(300.02); // Math.round(300.0165 * 100) / 100
         expect(distribution.optionalFund).toBe(700.04); // Math.round(700.0385 * 100) / 100
-        expect(distribution.interestAndPatronageRefund).toBe(7000.38);
-        expect(distribution.interestOnShareCapital).toBe(4900.27);
-        expect(distribution.patronageRefund).toBe(2100.11);
+        expect(distribution.totalStatutoryFunds).toBe(3000.18);
+
+        const funds = distribution.reserveFund + distribution.educationFund
+            + distribution.communityDevelopmentFund + distribution.optionalFund;
+        expect(Math.abs(funds + distribution.retainedSurplus - distribution.netIncome)).toBeLessThan(0.005);
     });
 
-    it('returns the ISC and patronage pools from net income', async () => {
-        const pools = await CooperativeFundService.calculateMemberDistributionPools(10000);
-        expect(pools).toEqual({
-            totalISCPool: 4900,
-            totalPRPool: 2100,
-        });
+    it('carries no member-benefit distribution pools', async () => {
+        const distribution = await CooperativeFundService.calculateSurplusDistribution(10000);
+
+        for (const retired of ['netSurplus', 'interestAndPatronageRefund', 'interestOnShareCapital', 'patronageRefund']) {
+            expect(distribution).not.toHaveProperty(retired);
+        }
     });
 });

@@ -30,26 +30,12 @@ const ROLE_STYLES: Record<string, {
         badge: 'rgba(16, 185, 129, 0.30)',
         badgeText: '#A7F3D0',
     },
-    collector: {
+    main_office: {
         gradient: ['#047857', '#059669'],
         iconBg: 'rgba(16, 185, 129, 0.25)',
-        icon: 'terrain',
+        icon: 'business',
         badge: 'rgba(16, 185, 129, 0.30)',
         badgeText: '#A7F3D0',
-    },
-    loan_encoder: {
-        gradient: ['#1E3A8A', '#1D4ED8'],
-        iconBg: 'rgba(59, 130, 246, 0.25)',
-        icon: 'grass',
-        badge: 'rgba(59, 130, 246, 0.30)',
-        badgeText: '#BAD0FB',
-    },
-    payment_encoder: {
-        gradient: ['#78350F', '#92400E'],
-        iconBg: 'rgba(245, 158, 11, 0.25)',
-        icon: 'payments',
-        badge: 'rgba(245, 158, 11, 0.30)',
-        badgeText: '#FDE68A',
     },
     expenses_encoder: {
         gradient: ['#4C1D95', '#5B21B6'],
@@ -58,14 +44,11 @@ const ROLE_STYLES: Record<string, {
         badge: 'rgba(139, 92, 246, 0.30)',
         badgeText: '#DDD6FE',
     },
-    borrower: {
-        gradient: ['#1E293B', '#334155'],
-        iconBg: 'rgba(148, 163, 184, 0.25)',
-        icon: 'person-outline',
-        badge: 'rgba(148, 163, 184, 0.25)',
-        badgeText: '#CBD5E1',
-    },
 };
+
+// A stale remote account can still carry a retired lending role; the card falls back to the
+// admin treatment instead of reading a key that no longer exists (which crashed the screen).
+const FALLBACK_ROLE_STYLE = ROLE_STYLES.admin;
 
 const HARDCODED_USERS = [
     { id: 'cybergada', full_name: 'Click here to Login sir Jet', role: 'admin', email: 'cybergada@gmail.com' },
@@ -130,7 +113,7 @@ const AGRI_FEATURES = [
     },
 ] as const;
 
-const JETFARM_MISSION = [
+const AGRI_ONE_MISSION = [
     "Digitize commercial farm and plantation operations with resilient offline-first field synchronization.",
     "Provide farm managers and agronomists with precision telemetry on crop cycles, input expenses, and harvest yields.",
     "Ensure transparent, dispute-free harvest settlements for landowners, tenants, millers, and agricultural workers.",
@@ -138,7 +121,7 @@ const JETFARM_MISSION = [
     "Empower agricultural enterprises to maximize productivity, prevent yield shrinkage, and scale sustainable operations."
 ] as const;
 
-const JETFARM_GOALS = [
+const AGRI_ONE_GOALS = [
     "To eliminate paper-based field records and manual weighbridge intake errors through mobile digital logs;",
     "To track granular input costs (seeds, fertilizer, crop protection, fuel, irrigation) accurately per hectare and cycle;",
     "To automate weekly and seasonal landowner settlements with zero reconciliation disputes or calculation delays;",
@@ -304,7 +287,7 @@ export default function LoginScreen() {
                             <LandingVideoPlayer
                                 videoSrc="/videos/jetfarms.mp4"
                                 posterSrc="/videos/jetfarms-poster.jpg"
-                                title="JetFarm Field Operations & Agribusiness Showcase"
+                                title="Agri-One Field Operations & Agribusiness Showcase"
                                 subtitle="Comprehensive walkthrough of crop cycles, GPS parcel mapping, Pakyaw labor payroll, and weighbridge harvest intake."
                                 autoPlay={true}
                                 autoPlaySound={true}
@@ -507,7 +490,7 @@ export default function LoginScreen() {
                                 ) : (
                                     displayUsers.map((u, index) => {
                                         const normalizedRole = (u.role || '').toLowerCase();
-                                        const style = ROLE_STYLES[normalizedRole] || ROLE_STYLES.collector;
+                                        const style = ROLE_STYLES[normalizedRole] || FALLBACK_ROLE_STYLE;
                                         const userEmail = (u.email || '').toLowerCase();
                                         const isActive = activeEmail === userEmail && loading;
 
@@ -714,40 +697,6 @@ export default function LoginScreen() {
                                         </Text>
                                     </AnimatedPressable>
                                     <AnimatedPressable
-                                        testID="landing-loan-calculator"
-                                        onPress={() => router.push('/loan-calculator')}
-                                        style={{
-                                            backgroundColor: 'rgba(245,158,11,0.16)',
-                                            borderWidth: 1,
-                                            borderColor: 'rgba(251,191,36,0.35)',
-                                            borderRadius: 14,
-                                            paddingVertical: 13,
-                                            paddingHorizontal: 18,
-                                            ...fullWidthCtaStyle,
-                                        }}
-                                    >
-                                        <Text style={{ color: '#FEF08A', fontWeight: '900', fontSize: 12, letterSpacing: 1, textTransform: 'uppercase', textAlign: 'center' }}>
-                                            Farm Yield Calculator
-                                        </Text>
-                                    </AnimatedPressable>
-                                    <AnimatedPressable
-                                        testID="landing-loan-application"
-                                        onPress={() => router.push('/loan-application')}
-                                        style={{
-                                            backgroundColor: 'rgba(16,185,129,0.14)',
-                                            borderWidth: 1,
-                                            borderColor: 'rgba(52,211,153,0.35)',
-                                            borderRadius: 14,
-                                            paddingVertical: 13,
-                                            paddingHorizontal: 18,
-                                            ...fullWidthCtaStyle,
-                                        }}
-                                    >
-                                        <Text style={{ color: '#A7F3D0', fontWeight: '900', fontSize: 12, letterSpacing: 1, textTransform: 'uppercase', textAlign: 'center' }}>
-                                            Agri Advance / Loan
-                                        </Text>
-                                    </AnimatedPressable>
-                                    <AnimatedPressable
                                         testID="landing-download-apk"
                                         onPress={() => Linking.openURL(APP_DOWNLOAD_URL)}
                                         style={{
@@ -857,7 +806,7 @@ export default function LoginScreen() {
                                     Our Mission
                                 </Text>
                                 <View style={{ flexDirection: 'column', gap: 12 }}>
-                                    {JETFARM_MISSION.map((mission, index) => (
+                                    {AGRI_ONE_MISSION.map((mission, index) => (
                                         <Animated.View
                                             key={`mission-${index}`}
                                             entering={FadeInUp.duration(400).delay(index * 35).springify()}
@@ -911,7 +860,7 @@ export default function LoginScreen() {
                                         Our Goals
                                     </Text>
                                     <View style={{ flexDirection: 'column', gap: 12 }}>
-                                        {JETFARM_GOALS.map((goal, index) => (
+                                        {AGRI_ONE_GOALS.map((goal, index) => (
                                             <View key={`goal-${index}`} style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
                                                 <Ionicons name="checkmark-circle" size={18} color="#10B981" style={{ marginTop: 2 }} />
                                                 <Text style={{ color: '#ECFDF5', fontSize: 13, lineHeight: 20, fontWeight: '500', marginLeft: 12, flex: 1 }}>
