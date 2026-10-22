@@ -221,7 +221,7 @@ export default function ReconcilePettyCashScreen() {
                                     keyboardType="number-pad"
                                     value={counts[d.key]}
                                     onChangeText={(text) => handleCountChange(d.key, text)}
-                                    placeholder="0"
+                                    placeholder="0" placeholderTextColor="#9CA3AF"
                                 />
                             </View>
                         </View>

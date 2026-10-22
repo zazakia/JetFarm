@@ -1,5 +1,23 @@
 [
     {
+        "id": "a9e7065d2e4e37a616823062b1b4e0b37488a2fc",
+        "version": "a9e7065",
+        "versionLabel": "Commit",
+        "date": "2026-10-22",
+        "title": "Add agribusiness CRUD write specs, UI assets, and auto-posting tests",
+        "category": "feature",
+        "icon": "new-releases",
+        "summary": "Add agribusiness CRUD write specs, UI assets, and auto-posting tests",
+        "changes": [
+            "Add agribusiness CRUD write specs, UI assets, and auto-posting tests"
+        ],
+        "codeChanges": [
+            "Updated app/(admin)/users/__tests__/index.test.tsx",
+            "Updated docs/images/agribusiness-analytics.png",
+            "Updated docs/images/agribusiness-command-center.png"
+        ]
+    },
+    {
         "id": "c97dc88acbaa8f90a1256f7f336e78aad7caebf5",
         "version": "c97dc88",
         "versionLabel": "Commit",
