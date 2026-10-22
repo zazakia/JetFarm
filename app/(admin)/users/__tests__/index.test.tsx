@@ -64,12 +64,10 @@ describe('UsersListScreen', () => {
     it('renders user list with expenses encoder role and branch badge', async () => {
         const { findByText } = render(<UsersListScreen />);
 
-        await waitFor(async () => {
-            expect(await findByText('Nena Encoder')).toBeTruthy();
-            expect(await findByText('nena@poscursor.com')).toBeTruthy();
-            expect(await findByText('Expenses Encoder')).toBeTruthy();
-            expect(await findByText('Bagacay (Benchmark)')).toBeTruthy();
-        });
+        expect(await findByText('Nena Encoder')).toBeTruthy();
+        expect(await findByText('nena@poscursor.com')).toBeTruthy();
+        expect(await findByText('Expenses Encoder')).toBeTruthy();
+        expect(await findByText('Bagacay (Benchmark)')).toBeTruthy();
     });
 
     it('renders pending user with Pending badge and Activate button', async () => {

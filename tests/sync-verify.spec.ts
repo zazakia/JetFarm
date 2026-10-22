@@ -192,11 +192,18 @@ test.describe('Bidirectional Sync Integrity', () => {
         expect(tableNamesAfter.length).toBeGreaterThan(0);
     });
 
+    // Mirror the app's own gate (src/utils/e2eEnvironment.ts isLocalWebE2E): the primary
+    // condition is the build/run flag EXPO_PUBLIC_E2E_MODE=1, NOT a single dev-server port.
+    // The browser host/port sniff below is only the fallback used for deployed preview hosts
+    // where the flag is not inlined. Playwright.config sets the flag in the runner env, so the
+    // specs can read it directly; previously only the (stale) 19009/19119 port branch existed,
+    // which let these remote tests execute while the app ran mocked sync on the 19129 default.
+    const runnerE2EMode = process.env.EXPO_PUBLIC_E2E_MODE === '1';
+
     test('5 · REMOTE REACHABLE — App communicates with Supabase', async ({ page }) => {
         console.log('\n[Sync E2E] ── TEST 5: Remote Reachability ──');
-        
-        const isMockMode = await page.evaluate(() => {
-            if ((window as any).__EXPO_PUBLIC_E2E_MODE__ === '1') return true;
+
+        const isMockMode = runnerE2EMode || await page.evaluate(() => {
             const hostname = window.location?.hostname?.toLowerCase() || '';
             const port = window.location?.port || '';
             const isE2EPort = port === '19009' || port === '19119';
@@ -209,7 +216,11 @@ test.describe('Bidirectional Sync Integrity', () => {
         });
 
         if (isMockMode) {
+            // A bare return here counted the test as PASSED even though no remote assertion ran,
+            // inflating the suite tally. Report it as skipped instead (same idiom as the login and
+            // insert guards below) so the real executed/skipped split is visible.
             console.log('[Sync E2E] Skipping Test 5 because sync is mocked in local E2E/pages.dev mode.');
+            test.skip();
             return;
         }
 
@@ -226,7 +237,7 @@ test.describe('Bidirectional Sync Integrity', () => {
     test('6 · PULL DATA — Remote Supabase data appears in WatermelonDB after sync', async ({ page }) => {
         console.log('\n[Sync E2E] ── TEST 6: Bidirectional PULL Verification ──');
 
-        const isMockMode = await page.evaluate(() => {
+        const isMockMode = runnerE2EMode || await page.evaluate(() => {
             const hostname = window.location.hostname;
             const port = window.location.port;
             const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
@@ -240,6 +251,7 @@ test.describe('Bidirectional Sync Integrity', () => {
 
         if (isMockMode) {
             console.log('[Sync E2E] Skipping Test 6 because sync is mocked in local E2E/pages.dev mode.');
+            test.skip();
             return;
         }
 
@@ -298,7 +310,7 @@ test.describe('Bidirectional Sync Integrity', () => {
     test('7 · PUSH DATA — Local WatermelonDB data appears in Supabase after sync', async ({ page }) => {
         console.log('\n[Sync E2E] ── TEST 7: Bidirectional PUSH Verification ──');
 
-        const isMockMode = await page.evaluate(() => {
+        const isMockMode = runnerE2EMode || await page.evaluate(() => {
             const hostname = window.location.hostname;
             const port = window.location.port;
             const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
@@ -312,6 +324,7 @@ test.describe('Bidirectional Sync Integrity', () => {
 
         if (isMockMode) {
             console.log('[Sync E2E] Skipping Test 7 because sync is mocked in local E2E/pages.dev mode.');
+            test.skip();
             return;
         }
 

@@ -71,4 +71,33 @@ describe('FundTransferService', () => {
         const history = await FundTransferService.getTransferHistory(10);
         expect(Array.isArray(history)).toBe(true);
     });
+
+    // CHARACTERIZES D7 (fails once fixed). executeTransfer validates amount > 0, presence of
+    // both codes and code inequality (src/services/FundTransferService.ts:50-58) but never asks
+    // what the source account holds before crediting it, and the screen that was supposed to
+    // supply that figure hardcodes zero (app/(admin)/transfers/index.tsx:60-66, `account ? 0 : 0`,
+    // a value that is never rendered either). A ₱9,999,999 transfer out of Cash on Hand is
+    // therefore accepted and posted no matter what the ledger actually contains.
+    it('CHARACTERIZES D7 (fails once fixed): an amount no account can cover is still posted', async () => {
+        const result = await FundTransferService.executeTransfer({
+            sourceAccountCode: '1010',
+            sourceAccountName: 'Cash on Hand (COH)',
+            targetAccountCode: '1011',
+            targetAccountName: 'Petty Cash',
+            amount: 9999999,
+            description: 'E2E overdraft probe',
+            performedBy: 'user-admin-1',
+        });
+
+        // D7: a sufficiency check would reject this before any entry is written.
+        expect(result).toBeDefined();
+        expect(JournalEntryService.createEntry).toHaveBeenCalledTimes(1);
+
+        const payload = (JournalEntryService.createEntry as jest.Mock).mock.calls[0][0];
+        const creditLine = payload.lines.find((l: any) => l.accountCode === '1010');
+        // The source is credited for the full un-backed amount.
+        expect(creditLine.creditAmount).toBe(9999999);
+        const debitLine = payload.lines.find((l: any) => l.accountCode === '1011');
+        expect(debitLine.debitAmount).toBe(9999999);
+    });
 });

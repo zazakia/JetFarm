@@ -1,5 +1,84 @@
 [
     {
+        "id": "c97dc88acbaa8f90a1256f7f336e78aad7caebf5",
+        "version": "c97dc88",
+        "versionLabel": "Commit",
+        "date": "2026-10-21",
+        "title": "Derive the cloud backup scope from the sync contract",
+        "category": "fix",
+        "icon": "build-circle",
+        "summary": "SupabaseBackupService kept a hand-maintained list of remote tables that still",
+        "changes": [
+            "Derive the cloud backup scope from the sync contract",
+            "SupabaseBackupService kept a hand-maintained list of remote tables that still",
+            "named the retired lending relations (app_borrowers, app_loans, app_payments,"
+        ],
+        "codeChanges": [
+            "Updated src/services/SupabaseBackupService.ts",
+            "Updated src/services/__tests__/SupabaseBackupService.test.ts"
+        ]
+    },
+    {
+        "id": "40bd7d5490f3eb55a5e350d9ace23fbe595b26c9",
+        "version": "40bd7d5",
+        "versionLabel": "Commit",
+        "date": "2026-10-21",
+        "title": "Realign remaining tooling to the agri surface",
+        "category": "data",
+        "icon": "fact-check",
+        "summary": "Verification tooling still pointed at the retired lending tables, roles and",
+        "changes": [
+            "Realign remaining tooling to the agri surface",
+            "Verification tooling still pointed at the retired lending tables, roles and",
+            "demo accounts, so every remaining script and spec now walks only the kept"
+        ],
+        "codeChanges": [
+            "Updated scripts/_check-user.mjs",
+            "Updated scripts/check-prod-data-counts.mjs",
+            "Updated scripts/check-schema.mjs"
+        ]
+    },
+    {
+        "id": "438c82fa85326e4265513a3154f38b0cca83b6de",
+        "version": "438c82f",
+        "versionLabel": "Commit",
+        "date": "2026-10-21",
+        "title": "Delete lending and secret-bearing scripts plus stale lending E2E specs",
+        "category": "technical",
+        "icon": "code",
+        "summary": "The remote lending tables are gone on this variant, so the one-off scripts that",
+        "changes": [
+            "Delete lending and secret-bearing scripts plus stale lending E2E specs",
+            "The remote lending tables are gone on this variant, so the one-off scripts that",
+            "mutated them are dead code."
+        ],
+        "codeChanges": [
+            "Updated scripts/add-test-member.mjs",
+            "Updated scripts/audit-loan-totals.mjs",
+            "Updated scripts/audit-multiple-loans.mjs"
+        ]
+    },
+    {
+        "id": "7157a4fb5eb38df0dc8e0893bc33c6d3c68842d6",
+        "version": "7157a4f",
+        "versionLabel": "Commit",
+        "date": "2026-10-21",
+        "title": "Rewire brand, roles, nav, auth and finance residue to Agri-One",
+        "category": "feature",
+        "icon": "new-releases",
+        "summary": "The branch keeps only the agribusiness surface, so every remaining pointer at",
+        "changes": [
+            "Rewire brand, roles, nav, auth and finance residue to Agri-One",
+            "The branch keeps only the agribusiness surface, so every remaining pointer at",
+            "the retired lending coop had to move: brand strings, role home routes, nav"
+        ],
+        "codeChanges": [
+            "Updated app.json",
+            "Updated app/(admin)/_layout.tsx",
+            "Updated app/(admin)/accounting/ar-ledger.tsx"
+        ]
+    },
+    {
         "id": "c54bd687649a94cef6c7f35c8c7e4ae781721f47",
         "version": "c54bd68",
         "versionLabel": "Commit",

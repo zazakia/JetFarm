@@ -1,6 +1,7 @@
 import { test, expect, type Page } from '@playwright/test';
 import { loginAsAdmin, safeNavigate } from './playwright-auth';
 import { registerUnmeasuredParcel, chooseMode } from './mapping-helpers';
+import { getResponsiveTokens } from '../src/utils/responsiveLayout';
 
 /**
  * Responsive layout E2E for the client report of 2026-10-16:
@@ -178,12 +179,18 @@ test.describe('mobile portrait', () => {
     // bottom nav, and this screen's header, search strip, mode strip and save bar keep 335px.
     // That leaves viewport minus 496px, so the previous "at least 35% of the window" floor is
     // arithmetically incompatible with fitting the page at 640. The stronger contract is that
-    // the map exactly fills the row the column grants it: viewport-proportional, never crushed
-    // under the save bar, and never taller than its 45% token.
-    expect(short.box.height, `the map is not the granted row at 640`).toBeCloseTo(short.area, 0);
-    expect(tall.box.height, `the map is not the granted row at 900`).toBeCloseTo(tall.area, 0);
-    // Keep a usable floor wherever the screen can afford one: at 900px the granted row is
-    // 404px, so a 35% minimum is satisfiable together with fitting the page.
+    // the map fills the row its column grants, capped by its 45% height token (src/utils/
+    // responsiveLayout.ts): at 640px the granted row is the tighter bound, at 900px the token
+    // binds and leaves a little headroom above the save bar. Either bound being violated -
+    // a fixed slab, or a token that ignores the row - fails here.
+    const grantedRow = (height: number) => Math.min(
+      height === 640 ? short.area : tall.area,
+      getResponsiveTokens(390, height).mapHeight,
+    );
+    expect(short.box.height, `the map is neither the granted row nor its 45% token at 640`).toBeCloseTo(grantedRow(640), 0);
+    expect(tall.box.height, `the map is neither the granted row nor its 45% token at 900`).toBeCloseTo(grantedRow(900), 0);
+    // Keep a usable floor wherever the screen can afford one: at 900px the token is 405px,
+    // so a 35% minimum is satisfiable together with fitting the page.
     expect(tall.box.height).toBeGreaterThan(900 * 0.35);
     expect(short.box.height).toBeLessThan(640 * 0.55);
     expect(tall.box.height).toBeLessThan(900 * 0.55);

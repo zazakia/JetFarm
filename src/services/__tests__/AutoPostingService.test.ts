@@ -297,6 +297,39 @@ describe('AutoPostingService', () => {
         expect(lines1.find(l => l.accountCode === '3015')?.creditAmount).toBe(500000);
     });
 
+    // CHARACTERIZES D6 (fails once fixed). AutoPostingService.ts:676/685 sets the journal line's
+    // moduleSourceId to `opts.cropCycleId || opts.ledgerId`. When the operator records capital
+    // against a crop cycle (the investors screen always offers one), the line is stamped with the
+    // CYCLE id, so no journal line points back at the `agri_investor_ledgers` row it came from —
+    // only the parent entry's source_id does. Two ledger rows on the same cycle are therefore
+    // indistinguishable at line level. Asserting the observed value keeps the suite honest without
+    // silently changing GL/segment semantics, which needs human review (L3+/L4 surface).
+    it('CHARACTERIZES D6 (fails once fixed): cycle-linked capital loses the ledger id on the journal line', async () => {
+        await AutoPostingService.postAgriInvestorTransaction({
+            ledgerId: 'inv-leg-cycle',
+            investorName: 'BioGreen Corp',
+            type: 'capital_injection',
+            amount: 120000,
+            transactionDate: new Date(),
+            cropCycleId: 'cycle-001',
+            postedBy: 'CFO',
+        });
+
+        const entry = await JournalEntryService.getEntryBySource('agri_investor_ledgers', 'inv-leg-cycle');
+        expect(entry).toBeDefined();
+
+        // Independent recompute: the entry must balance, and the balance must equal the injected amount.
+        const lines = await JournalEntryService.getLinesForEntry(entry!.id);
+        const debit = lines.reduce((s, l) => s + (l.debitAmount || 0), 0);
+        const credit = lines.reduce((s, l) => s + (l.creditAmount || 0), 0);
+        expect(debit).toBe(120000);
+        expect(credit).toBe(120000);
+
+        // Observed (defective) provenance, pinned so a future fix is a deliberate change:
+        expect(lines.map(l => l.moduleSourceId)).toEqual(['cycle-001', 'cycle-001']);
+        expect(lines.some(l => l.moduleSourceId === 'inv-leg-cycle')).toBe(false);
+    });
+
 
     it('backfills unposted agri, expense and cash records without duplicates', async () => {
         await database.write(async () => {
