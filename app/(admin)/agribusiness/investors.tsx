@@ -7,7 +7,7 @@ import { database } from '../../../src/database';
 import AgriInvestor from '../../../src/database/models/AgriInvestor';
 import AgriInvestorLedger from '../../../src/database/models/AgriInvestorLedger';
 import AgriCropCycle from '../../../src/database/models/AgriCropCycle';
-import { formatPHP } from '../../../src/utils/currency';
+import { formatPHP, parsePHP } from '../../../src/utils/currency';
 import { Q } from '@nozbe/watermelondb';
 import { AutoPostingService } from '../../../src/services/AutoPostingService';
 import { TransactionConfirmationBanner } from '../../../src/components/TransactionConfirmationBanner';
@@ -127,7 +127,7 @@ export default function InvestorsScreen() {
                         record.companyName = companyName.trim();
                         record.contactPerson = contactPerson.trim() || null;
                         record.contactNumber = contactNumber.trim() || null;
-                        record.defaultOfftakePricePerKg = parseFloat(offtakeRate) || 4.0;
+                        record.defaultOfftakePricePerKg = parsePHP(offtakeRate) || 4.0;
                     });
                 });
 
@@ -149,7 +149,7 @@ export default function InvestorsScreen() {
                         record.companyName = companyName.trim();
                         record.contactPerson = contactPerson.trim() || null;
                         record.contactNumber = contactNumber.trim() || null;
-                        record.defaultOfftakePricePerKg = parseFloat(offtakeRate) || 4.0;
+                        record.defaultOfftakePricePerKg = parsePHP(offtakeRate) || 4.0;
                     });
                 });
 
@@ -241,8 +241,8 @@ export default function InvestorsScreen() {
     };
 
     const handleRecordCapital = async () => {
-        const amt = parseFloat(capitalAmount);
-        if (isNaN(amt) || amt <= 0 || !selectedInvestorId) {
+        const amt = parsePHP(capitalAmount);
+        if (amt <= 0 || !selectedInvestorId) {
             Alert.alert('Validation Error', 'Please enter valid capital amount.');
             return;
         }

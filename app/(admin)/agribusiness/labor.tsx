@@ -7,7 +7,7 @@ import { database } from '../../../src/database';
 import AgriFarmWorker from '../../../src/database/models/AgriFarmWorker';
 import AgriLaborLog from '../../../src/database/models/AgriLaborLog';
 import AgriCropCycle from '../../../src/database/models/AgriCropCycle';
-import { formatPHP } from '../../../src/utils/currency';
+import { formatPHP, parsePHP } from '../../../src/utils/currency';
 import { Q } from '@nozbe/watermelondb';
 import { AutoPostingService } from '../../../src/services/AutoPostingService';
 import Toast from '../../../src/components/AppToast';
@@ -128,7 +128,7 @@ export default function FarmLaborScreen() {
                     record.name = workerName.trim();
                     record.contactNumber = workerPhone.trim() || null;
                     record.specialization = specialization;
-                    record.dailyRate = parseFloat(dailyRate) || 450;
+                    record.dailyRate = parsePHP(dailyRate) || 450;
                     record.status = 'active';
                 });
             });
@@ -184,7 +184,7 @@ export default function FarmLaborScreen() {
         }
 
         const units = parseFloat(unitsCompleted) || 1;
-        const rate = parseFloat(ratePerUnit) || 0;
+        const rate = parsePHP(ratePerUnit) || 0;
         const totalPay = Number((units * rate).toFixed(2));
 
         setSavingTask(true);
@@ -661,7 +661,7 @@ export default function FarmLaborScreen() {
                             <View className="bg-cyan-50 p-3 rounded-xl border border-cyan-200 mb-4 flex-row justify-between items-center">
                                 <Text className="text-xs font-bold text-cyan-900">Total Wage Pay:</Text>
                                 <Text className="text-base font-black text-cyan-900">
-                                    {formatPHP((parseFloat(unitsCompleted) || 1) * (parseFloat(ratePerUnit) || 0))}
+                                    {formatPHP((parseFloat(unitsCompleted) || 1) * (parsePHP(ratePerUnit) || 0))}
                                 </Text>
                             </View>
                         </ScrollView>

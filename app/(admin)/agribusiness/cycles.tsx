@@ -9,7 +9,7 @@ import AgriParcel from '../../../src/database/models/AgriParcel';
 import AgriInvestor from '../../../src/database/models/AgriInvestor';
 import AgriGrowthCheckin from '../../../src/database/models/AgriGrowthCheckin';
 import { AgriCropCycleService } from '../../../src/services/AgriCropCycleService';
-import { formatPHP } from '../../../src/utils/currency';
+import { formatPHP, parsePHP } from '../../../src/utils/currency';
 import { Q } from '@nozbe/watermelondb';
 import { CropHealthGrowthChart } from '../../../src/components/CropHealthGrowthChart';
 import ConfirmDialog from '../../../src/components/ConfirmDialog';
@@ -146,7 +146,7 @@ export default function CropCyclesScreen() {
                 variety,
                 plantingDate: new Date(),
                 areaPlantedHa: ha,
-                offtakePricePerKg: parseFloat(offtakePrice) || 4.0,
+                offtakePricePerKg: parsePHP(offtakePrice) || 4.0,
                 landOwnerRatePerKg: 1.0,
                 landOwnerGuaranteedMin: 25000.0,
             });
@@ -186,8 +186,8 @@ export default function CropCyclesScreen() {
             Alert.alert('Validation Error', 'Please enter a valid positive number for planted hectares.');
             return;
         }
-        const price = parseFloat(editOfftakePrice);
-        if (isNaN(price) || price <= 0) {
+        const price = parsePHP(editOfftakePrice);
+        if (price <= 0) {
             Alert.alert('Validation Error', 'Please enter a valid off-take price in ₱/kg.');
             return;
         }

@@ -17,7 +17,7 @@ import { database } from '../../../src/database';
 import AgriFarmWorker from '../../../src/database/models/AgriFarmWorker';
 import AgriLaborLog from '../../../src/database/models/AgriLaborLog';
 import { AgriWorkerService } from '../../../src/services/AgriWorkerService';
-import { formatPHP } from '../../../src/utils/currency';
+import { formatPHP, parsePHP } from '../../../src/utils/currency';
 import { Q } from '@nozbe/watermelondb';
 import Toast from '../../../src/components/AppToast';
 import { BlockTaskDirectory } from '../../../src/components/ParcelMap/BlockTaskDirectory';
@@ -108,8 +108,8 @@ export default function FarmWorkersScreen() {
             return;
         }
 
-        const rate = parseFloat(dailyRate);
-        if (isNaN(rate) || rate <= 0) {
+        const rate = parsePHP(dailyRate);
+        if (rate <= 0) {
             Alert.alert('Validation Error', 'Please enter a valid daily wage rate.');
             return;
         }
@@ -163,8 +163,8 @@ export default function FarmWorkersScreen() {
             return;
         }
 
-        const rate = parseFloat(editDailyRate);
-        if (isNaN(rate) || rate <= 0) {
+        const rate = parsePHP(editDailyRate);
+        if (rate <= 0) {
             Alert.alert('Validation Error', 'Please enter a valid daily rate.');
             return;
         }

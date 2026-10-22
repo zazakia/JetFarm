@@ -6,7 +6,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { database } from '../../../src/database';
 import AgriFarmExpense from '../../../src/database/models/AgriFarmExpense';
 import AgriCropCycle from '../../../src/database/models/AgriCropCycle';
-import { formatPHP } from '../../../src/utils/currency';
+import { formatPHP, parsePHP } from '../../../src/utils/currency';
 import { Q } from '@nozbe/watermelondb';
 import { AutoPostingService } from '../../../src/services/AutoPostingService';
 import { DynamicSearchBar } from '../../../src/components/DynamicSearchBar';
@@ -197,8 +197,8 @@ export default function FarmExpensesScreen() {
             Alert.alert('Validation Error', 'Please enter a description for this expense.');
             return;
         }
-        const parsedAmount = parseFloat(formAmount);
-        if (isNaN(parsedAmount) || parsedAmount <= 0) {
+        const parsedAmount = parsePHP(formAmount);
+        if (parsedAmount <= 0) {
             Alert.alert('Validation Error', 'Please enter a valid expense amount.');
             return;
         }

@@ -7,7 +7,7 @@ import { database } from '../../../src/database';
 import AgriCropCycle from '../../../src/database/models/AgriCropCycle';
 import AgriParcel from '../../../src/database/models/AgriParcel';
 import { AgriFinanceAnalyticsService, CyclePnLResult, YieldForecastResult } from '../../../src/services/AgriFinanceAnalyticsService';
-import { formatPHP } from '../../../src/utils/currency';
+import { formatPHP, parsePHP } from '../../../src/utils/currency';
 import { Q } from '@nozbe/watermelondb';
 
 export default function AgriAnalyticsScreen() {
@@ -82,7 +82,7 @@ export default function AgriAnalyticsScreen() {
     // Recalculate forecast whenever input parameters change
     useEffect(() => {
         const area = parseFloat(forecastArea) || 0;
-        const price = parseFloat(forecastPrice) || 4.0;
+        const price = parsePHP(forecastPrice) || 4.0;
         const res = AgriFinanceAnalyticsService.forecastYield(area, forecastHealth, price, forecastVariety);
         setForecastResult(res);
     }, [forecastArea, forecastHealth, forecastVariety, forecastPrice]);
@@ -501,7 +501,7 @@ export default function AgriAnalyticsScreen() {
                                             {formatPHP(forecastResult.projectedGrossRevenue)}
                                         </Text>
                                         <Text className="text-[10px] text-emerald-700">
-                                            @ {formatPHP(parseFloat(forecastPrice) || 4.0)}/kg
+                                            @ {formatPHP(parsePHP(forecastPrice) || 4.0)}/kg
                                         </Text>
                                     </View>
 
