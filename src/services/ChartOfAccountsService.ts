@@ -433,7 +433,7 @@ export class ChartOfAccountsServiceClass {
         const coaCollection = this.db.get<ChartOfAccount>('chart_of_accounts');
         const allCoas = await coaCollection.query().fetch();
 
-        const incorrectCoas = allCoas.filter(coa => coa.id !== getDeterministicCoaId(coa.code));
+        const incorrectCoas = allCoas.filter(coa => coa._raw._status !== 'synced' && coa.id !== getDeterministicCoaId(coa.code));
         if (incorrectCoas.length === 0) return;
 
         await this.db.write(async () => {

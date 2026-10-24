@@ -710,7 +710,7 @@ test.describe('Land owner settlement writes (compute -> approve -> disburse -> G
         expect(await uncaughtEntries(page)).toEqual([]);
     });
 
-    test('CHARACTERIZES D22 (fails once fixed): disbursing an approved settlement debits the expense twice and never clears the payable', async ({ page }) => {
+    test('disbursing an approved settlement debits payable and credits cash without doubling expense (fixes D22)', async ({ page }) => {
         await installErrorCollector(page);
         await loginAsAdmin(page);
         await seedPostableAccounts(page, settlementAccounts());
@@ -753,13 +753,9 @@ test.describe('Land owner settlement writes (compute -> approve -> disburse -> G
             .flatMap(e => lines.filter(l => l.journal_entry_id === e.id))
             .filter(l => l.account_code === SETTLE_EXPENSE_CODE)
             .reduce((s, l) => s + money(l.debit_amount), 0));
-        expect(expenseDebit, 'D22: 5160 is debited 2 x the payout').toBe(net * 2);
+        expect(expenseDebit, '5160 expense is debited once for net payout').toBe(net);
         expect(sumBy(lines.filter(l => entries.some(e => e.id === l.journal_entry_id)), SETTLE_PAYABLE_CODE, 'debit'),
-            'D22: the 2035 payable is never released by the cash payment').toBe(0);
-        console.log(
-            `[D22] net payout ${net}: 5160 debited ${expenseDebit} across ${entries.length} entries, ` +
-            `2035 debit-side release = 0`,
-        );
+            '2035 payable is cleared on disbursement').toBe(net);
         expect(await uncaughtEntries(page)).toEqual([]);
     });
 

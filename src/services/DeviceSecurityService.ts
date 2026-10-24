@@ -23,6 +23,7 @@ class DeviceSecurityService {
     private isLockedState: boolean = false;
     private listeners: Set<LockListener> = new Set();
     private heartbeatTimer: any = null;
+    private isRemoteAvailable: boolean = true;
 
     static getInstance(): DeviceSecurityService {
         if (!DeviceSecurityService.instance) {
@@ -81,7 +82,7 @@ class DeviceSecurityService {
         };
 
         // E2E / preview hosts mock sync and often lack write RLS for non-admin roles.
-        if (!supabase || isLocalWebE2E()) {
+        if (!supabase || isLocalWebE2E() || !this.isRemoteAvailable) {
             return status;
         }
 
@@ -101,6 +102,17 @@ class DeviceSecurityService {
                 .maybeSingle();
 
             if (error) {
+                const errAny = error as any;
+                if (
+                    error.code === 'PGRST205' ||
+                    errAny.status === 404 ||
+                    error.message?.includes('does not exist') ||
+                    error.message?.includes('schema cache')
+                ) {
+                    this.isRemoteAvailable = false;
+                    this.stopHeartbeat();
+                    return status;
+                }
                 console.warn('[DeviceSecurity] Check error:', error.message);
                 return status;
             }

@@ -1,5 +1,41 @@
 [
     {
+        "id": "4bfcf197e5fc3c79f3ffd428c7b51cbf82518145",
+        "version": "4bfcf19",
+        "versionLabel": "Commit",
+        "date": "2026-10-22",
+        "title": "Use parsePHP for robust currency parsing across agribusiness screens",
+        "category": "fix",
+        "icon": "build-circle",
+        "summary": "Use parsePHP for robust currency parsing across agribusiness screens",
+        "changes": [
+            "Use parsePHP for robust currency parsing across agribusiness screens"
+        ],
+        "codeChanges": [
+            "Updated app/(admin)/agribusiness/analytics.tsx",
+            "Updated app/(admin)/agribusiness/cycles.tsx",
+            "Updated app/(admin)/agribusiness/expenses.tsx"
+        ]
+    },
+    {
+        "id": "70e308763456d3e9af354467129db0919dea1d8c",
+        "version": "70e3087",
+        "versionLabel": "Commit",
+        "date": "2026-10-22",
+        "title": "Enforce textinput placeholder colors and track e2e write specs",
+        "category": "fix",
+        "icon": "build-circle",
+        "summary": "Enforce textinput placeholder colors and track e2e write specs",
+        "changes": [
+            "Enforce textinput placeholder colors and track e2e write specs"
+        ],
+        "codeChanges": [
+            "Updated app/(admin)/cash-on-hand/reconcile-petty-cash.tsx",
+            "Updated app/(admin)/cash-on-hand/reconcile.tsx",
+            "Updated src/constants/generatedAppUpdates.json"
+        ]
+    },
+    {
         "id": "a9e7065d2e4e37a616823062b1b4e0b37488a2fc",
         "version": "a9e7065",
         "versionLabel": "Commit",

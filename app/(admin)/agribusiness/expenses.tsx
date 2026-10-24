@@ -14,6 +14,7 @@ import { useDynamicSearch } from '../../../src/hooks/useDynamicSearch';
 import { AgriFarmingStepsService, CycleStepsSummary } from '../../../src/services/AgriFarmingStepsService';
 import { TransactionConfirmationBanner } from '../../../src/components/TransactionConfirmationBanner';
 import Toast from '../../../src/components/AppToast';
+import { ImagePickerField } from '../../../src/components/ImagePickerField';
 
 export const EXPENSE_CATEGORIES = [
     { id: 'fertilizer', label: 'Fertilizer', icon: 'eco' as const, badgeBg: 'bg-emerald-100', badgeText: 'text-emerald-800' },
@@ -53,6 +54,7 @@ export default function FarmExpensesScreen() {
     const [formAmount, setFormAmount] = useState('');
     const [formPaidBy, setFormPaidBy] = useState<'jet' | 'investor'>('jet');
     const [formReceiptRef, setFormReceiptRef] = useState('');
+    const [formReceiptPhoto, setFormReceiptPhoto] = useState<string | null>(null);
     const [saving, setSaving] = useState(false);
     const [confirmationMessage, setConfirmationMessage] = useState<string | null>(null);
 
@@ -173,6 +175,7 @@ export default function FarmExpensesScreen() {
         setFormDescription('');
         setFormAmount('');
         setFormReceiptRef('');
+        setFormReceiptPhoto(null);
         setFormPaidBy('jet');
         setFormCategory('fertilizer');
         if (cycles.length > 0 && !formCycleId) {
@@ -186,6 +189,7 @@ export default function FarmExpensesScreen() {
         setFormDescription(item.expense.description || '');
         setFormAmount(item.expense.amount ? item.expense.amount.toString() : '');
         setFormReceiptRef(item.expense.receiptPhotoUri || '');
+        setFormReceiptPhoto(null); // existing text ref stays in formReceiptRef; new photo upload goes in formReceiptPhoto
         setFormPaidBy(item.expense.paidBy as 'jet' | 'investor');
         setFormCategory(item.expense.category || 'fertilizer');
         setFormCycleId(item.expense.cropCycleId || (cycles[0]?.id || ''));
@@ -215,7 +219,8 @@ export default function FarmExpensesScreen() {
                         record.description = formDescription.trim();
                         record.amount = parsedAmount;
                         record.paidBy = formPaidBy;
-                        record.receiptPhotoUri = formReceiptRef.trim() || null;
+                        // photo upload takes precedence over plain text ref
+                        record.receiptPhotoUri = formReceiptPhoto || formReceiptRef.trim() || null;
                     });
                 });
 
@@ -241,7 +246,8 @@ export default function FarmExpensesScreen() {
                         record.description = formDescription.trim();
                         record.amount = parsedAmount;
                         record.paidBy = formPaidBy;
-                        record.receiptPhotoUri = formReceiptRef.trim() || null;
+                        // photo upload takes precedence over plain text ref
+                        record.receiptPhotoUri = formReceiptPhoto || formReceiptRef.trim() || null;
                     });
                 });
 
@@ -266,6 +272,7 @@ export default function FarmExpensesScreen() {
                 setFormDescription('');
                 setFormAmount('');
                 setFormReceiptRef('');
+                setFormReceiptPhoto(null);
                 setFormPaidBy('jet');
                 setFormCategory('fertilizer');
 
@@ -1228,11 +1235,19 @@ export default function FarmExpensesScreen() {
                                 Receipt / Official Invoice Ref (Optional)
                             </Text>
                             <TextInput
-                                className="bg-gray-50 border border-gray-300 rounded-xl px-3 py-2.5 text-sm text-gray-900 mb-4"
+                                className="bg-gray-50 border border-gray-300 rounded-xl px-3 py-2.5 text-sm text-gray-900 mb-3"
                                 placeholder="e.g. OR #10492 / Agro Supply"
                                 placeholderTextColor="#9CA3AF"
                                 value={formReceiptRef}
                                 onChangeText={setFormReceiptRef}
+                            />
+
+                            <ImagePickerField
+                                value={formReceiptPhoto}
+                                onChange={setFormReceiptPhoto}
+                                folder="farm-expenses"
+                                label="Receipt Photo (Optional)"
+                                disabled={saving}
                             />
 
                             {/* Action Buttons */}

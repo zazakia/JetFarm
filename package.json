@@ -1,6 +1,6 @@
 {
   "name": "jetfarm",
-  "version": "0.1.5",
+  "version": "0.1.8",
   "main": "index.js",
   "scripts": {
     "prepare:app": "npm run generate:updates && node scripts/check-auth-schema.mjs",
@@ -79,6 +79,7 @@
     "expo-file-system": "~55.0.25",
     "expo-font": "~55.0.8",
     "expo-haptics": "~55.0.17",
+    "expo-image-picker": "~55.0.24",
     "expo-intent-launcher": "~55.0.16",
     "expo-linear-gradient": "~55.0.17",
     "expo-linking": "~55.0.17",

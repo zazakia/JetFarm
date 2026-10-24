@@ -281,7 +281,19 @@ export class SyncService {
         'invoice_date',
         'movement_date',
         'effective_from',
-        'effective_to'
+        'effective_to',
+        'planting_date',
+        'target_harvest_date',
+        'actual_harvest_date',
+        'checkin_date',
+        'harvest_date',
+        'work_date',
+        'week_start_date',
+        'week_end_date',
+        'disbursement_date',
+        'snapshot_date',
+        'update_date',
+        'boundary_saved_at',
     ];
 
     /**
@@ -289,6 +301,7 @@ export class SyncService {
      * These should NOT be converted to ISO strings.
      */
     private static readonly TABLE_BIGINT_FIELDS: Record<string, string[]> = {
+        agri_parcels: ['boundary_saved_at'],
         agri_parcel_blocks: ['created_at', 'updated_at', 'deleted_at'],
         agri_block_assignments: ['start_date', 'due_date', 'created_at', 'updated_at', 'deleted_at'],
         agri_block_progress: ['update_date', 'created_at', 'updated_at'],
@@ -320,6 +333,10 @@ export class SyncService {
         'area_supervisor_id',
         'entity_id',
         'performed_by',
+        'paid_by',
+        'submission_id',
+        'correction_of_id',
+        'operation_id',
         'source_table',
         'module_source_table',
         'reference_entity_id',
@@ -1323,6 +1340,39 @@ export class SyncService {
                     auditFailureRecordIds = [...createdToPush, ...updatedToPush].map((record: any) => record.id);
                     if (toUpsert.length > 0) {
                         assertAgriDatabaseUsable(this.db);
+                        // Prevent duplicate key violations on idx_chart_of_accounts_code:
+                        // If accounts are being pushed whose code matches an existing remote account with a different ID,
+                        // align incoming record ID to the remote ID so PostgREST ON CONFLICT (id) updates instead of inserting a duplicate.
+                        if (localTableName === 'chart_of_accounts') {
+                            const codes = toUpsert.map((r: any) => r.code).filter(Boolean);
+                            if (codes.length > 0) {
+                                try {
+                                    let coaQuery = this.supabase
+                                        .from(remoteName)
+                                        .select('id,code')
+                                        .in('code', codes);
+                                    if (typeof (coaQuery as any)?.is === 'function') {
+                                        coaQuery = (coaQuery as any).is('deleted_at', null);
+                                    }
+                                    const { data: remoteCoas } = await withSyncTimeout(
+                                        coaQuery,
+                                        TABLE_PAGE_TIMEOUT_MS,
+                                        `Check remote ${remoteName} by code`
+                                    );
+                                    if (remoteCoas && remoteCoas.length > 0) {
+                                        const remoteByCode = new Map(remoteCoas.map((r: any) => [r.code, r.id]));
+                                        for (const record of toUpsert) {
+                                            const remoteId = remoteByCode.get(record.code);
+                                            if (remoteId && record.id !== remoteId) {
+                                                record.id = remoteId;
+                                            }
+                                        }
+                                    }
+                                } catch (coaLookupErr) {
+                                    console.warn('[SyncService] Failed to check remote chart_of_accounts codes:', coaLookupErr);
+                                }
+                            }
+                        }
                         const upsertOptions = TABLE_UPSERT_OPTIONS[localTableName] || TABLE_UPSERT_OPTIONS[remoteName];
                         const { error } = await withSyncTimeout(
                             this.supabase.from(remoteName).upsert(toUpsert, upsertOptions),

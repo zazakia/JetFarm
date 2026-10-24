@@ -193,13 +193,8 @@ export default function WeeklySettlementsScreen() {
                     style: 'destructive',
                     onPress: async () => {
                         try {
-                            await database.write(async () => {
-                                const record = await database.get<AgriWeeklySettlement>('agri_weekly_settlements').find(settlement.id);
-                                await record.update(r => {
-                                    r.deletedAt = new Date();
-                                });
-                            });
-                            const msg = `Week ${settlement.weekNumber} settlement removed.`;
+                            await LandSettlementEngine.deleteSettlement(settlement.id, 'admin-user');
+                            const msg = `Week ${settlement.weekNumber} settlement removed and GL entries reversed.`;
                             setConfirmationMessage(msg);
                             Toast.show({
                                 type: 'success',

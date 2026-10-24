@@ -705,5 +705,125 @@ describe('SyncService', () => {
             undefined
         );
     });
+
+    it('converts agri timestamptz dates to ISO strings on push and epoch ms on pull', async () => {
+        const epoch = 1712345678901;
+        const iso = new Date(epoch).toISOString();
+
+        // Push sanitization
+        const pushRecord = (service as any).sanitizeRecord({
+            id: 'cycle-1',
+            planting_date: epoch,
+            target_harvest_date: epoch,
+            actual_harvest_date: epoch,
+        }, 'agri_crop_cycles');
+        expect(pushRecord.planting_date).toBe(iso);
+        expect(pushRecord.target_harvest_date).toBe(iso);
+        expect(pushRecord.actual_harvest_date).toBe(iso);
+
+        // Weekly settlement push sanitization
+        const pushSettlement = (service as any).sanitizeRecord({
+            id: 'settlement-1',
+            week_start_date: epoch,
+            week_end_date: epoch,
+            disbursement_date: epoch,
+        }, 'agri_weekly_settlements');
+        expect(pushSettlement.week_start_date).toBe(iso);
+        expect(pushSettlement.week_end_date).toBe(iso);
+        expect(pushSettlement.disbursement_date).toBe(iso);
+
+        // Growth checkin push sanitization
+        const pushCheckin = (service as any).sanitizeRecord({
+            id: 'checkin-1',
+            checkin_date: epoch,
+        }, 'agri_growth_checkins');
+        expect(pushCheckin.checkin_date).toBe(iso);
+
+        // Harvest log push sanitization
+        const pushHarvest = (service as any).sanitizeRecord({
+            id: 'harvest-1',
+            harvest_date: epoch,
+        }, 'agri_harvest_logs');
+        expect(pushHarvest.harvest_date).toBe(iso);
+
+        // Labor log push sanitization
+        const pushLabor = (service as any).sanitizeRecord({
+            id: 'labor-1',
+            work_date: epoch,
+        }, 'agri_labor_logs');
+        expect(pushLabor.work_date).toBe(iso);
+
+        // Pull conversion
+        mockSupabase.from.mockReturnValue({
+            select: jest.fn().mockReturnValue({
+                is: jest.fn(() => createQueryBuilder({
+                    data: [{
+                        id: 'cycle-1',
+                        planting_date: iso,
+                        target_harvest_date: iso,
+                        actual_harvest_date: iso,
+                    }],
+                    error: null,
+                })),
+                not: jest.fn(() => createQueryBuilder()),
+            }),
+        });
+
+        const pullResult = await (service as any).fetchTableChanges('agri_crop_cycles', null);
+        expect(pullResult.updated[0].planting_date).toBe(epoch);
+        expect(pullResult.updated[0].target_harvest_date).toBe(epoch);
+        expect(pullResult.updated[0].actual_harvest_date).toBe(epoch);
+    });
+
+    it('preserves non-uuid text fields paid_by and submission_id without nullifying', () => {
+        const expense = (service as any).sanitizeRecord({
+            id: '11111111-2222-3333-4444-555555555555',
+            paid_by: 'jet',
+            amount: 5000,
+        }, 'agri_farm_expenses');
+        expect(expense.paid_by).toBe('jet');
+
+        const assignment = (service as any).sanitizeRecord({
+            id: '11111111-2222-3333-4444-555555555555',
+            submission_id: 'sub-assignment-1234',
+        }, 'agri_block_assignments');
+        expect(assignment.submission_id).toBe('sub-assignment-1234');
+    });
+
+    it('aligns chart_of_accounts record id to existing remote row when account code matches', async () => {
+        const upsert = jest.fn().mockResolvedValue({ error: null });
+        const from = jest.fn().mockImplementation((table) => ({
+            select: jest.fn().mockImplementation(() => ({
+                in: jest.fn().mockImplementation(() => ({
+                    is: jest.fn().mockResolvedValue({
+                        data: table === 'chart_of_accounts' ? [{ id: 'server-coa-id-9999', code: '1000' }] : [],
+                        error: null,
+                    }),
+                    range: jest.fn().mockResolvedValue({ data: [], error: null }),
+                    then: (resolve) => resolve({ data: [], error: null }),
+                })),
+            })),
+            upsert,
+        }));
+        (service as any).supabase = { from };
+
+        await (service as any).pushChangesToSupabase({
+            chart_of_accounts: {
+                created: [{ id: 'local-coa-id-1111', code: '1000', name: 'Assets' }],
+                updated: [],
+                deleted: [],
+            },
+        });
+
+        expect(upsert).toHaveBeenCalledWith(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    id: 'server-coa-id-9999',
+                    code: '1000',
+                }),
+            ]),
+            undefined
+        );
+    });
 });
 

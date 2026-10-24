@@ -2,7 +2,7 @@
   "expo": {
     "name": "Agri-One",
     "slug": "agri-one",
-    "version": "0.1.5",
+    "version": "0.1.8",
     "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -19,7 +19,7 @@
       }
     },
     "android": {
-      "versionCode": 6,
+      "versionCode": 9,
       "adaptiveIcon": {
         "backgroundColor": "#155F2E",
         "foregroundImage": "./assets/android-icon-foreground.png",

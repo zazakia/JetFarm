@@ -1,4 +1,10 @@
 import { AgriHarvestService } from '../AgriHarvestService';
+import { createTestDatabase, closeTestDatabase } from '../../__tests__/test-utils';
+import { Database } from '@nozbe/watermelondb';
+import AgriCropCycle from '../../database/models/AgriCropCycle';
+import AgriHarvestLog from '../../database/models/AgriHarvestLog';
+import AgriParcel from '../../database/models/AgriParcel';
+import AgriLandOwner from '../../database/models/AgriLandOwner';
 
 describe('AgriHarvestService', () => {
     describe('calculateNetWeight', () => {
@@ -65,6 +71,74 @@ describe('AgriHarvestService', () => {
             }, mockDb);
             expect(mockDb.write).toHaveBeenCalled();
             expect(mockUpdate).toHaveBeenCalled();
+        });
+
+        it('recalculates crop cycle totalActualYieldKg when log is updated or deleted in database', async () => {
+            const database = createTestDatabase();
+            try {
+                let parcel: AgriParcel;
+                let cycle: AgriCropCycle;
+                let log1: AgriHarvestLog;
+                let log2: AgriHarvestLog;
+
+                await database.write(async () => {
+                    const landOwner = await database.get<AgriLandOwner>('agri_land_owners').create(r => {
+                        r.name = 'Test Landowner';
+                    });
+                    parcel = await database.get<AgriParcel>('agri_parcels').create(r => {
+                        r.name = 'Test Parcel';
+                        r.code = 'PCL-01';
+                        r.landOwnerId = landOwner.id;
+                        r.areaHectares = 2.0;
+                    });
+                    cycle = await database.get<AgriCropCycle>('agri_crop_cycles').create(r => {
+                        r.cycleCode = 'CYC-01';
+                        r.parcelId = parcel.id;
+                        r.cropType = 'Cassava';
+                        r.plantingDate = new Date('2026-01-01');
+                        r.areaPlantedHa = 2.0;
+                        r.status = 'harvesting';
+                        r.totalActualYieldKg = 15000;
+                    });
+                    log1 = await database.get<AgriHarvestLog>('agri_harvest_logs').create(r => {
+                        r.cropCycleId = cycle.id;
+                        r.parcelId = parcel.id;
+                        r.batchNumber = 'BATCH-001';
+                        r.harvestDate = new Date();
+                        r.grossWeightKg = 14000;
+                        r.tareWeightKg = 4000;
+                        r.netWeightKg = 10000;
+                    });
+                    log2 = await database.get<AgriHarvestLog>('agri_harvest_logs').create(r => {
+                        r.cropCycleId = cycle.id;
+                        r.parcelId = parcel.id;
+                        r.batchNumber = 'BATCH-002';
+                        r.harvestDate = new Date();
+                        r.grossWeightKg = 9000;
+                        r.tareWeightKg = 4000;
+                        r.netWeightKg = 5000;
+                    });
+                });
+
+                // Update log1 from 10,000 kg net to 8,000 kg net (12,000 - 4,000)
+                await AgriHarvestService.updateHarvestLog(log1!, {
+                    grossWeightKg: 12000,
+                    tareWeightKg: 4000,
+                }, database);
+
+                const refreshedCycleAfterUpdate = await database.get<AgriCropCycle>('agri_crop_cycles').find(cycle!.id);
+                // Total should now be 8,000 + 5,000 = 13,000 kg
+                expect(refreshedCycleAfterUpdate.totalActualYieldKg).toBe(13000);
+
+                // Soft-delete log2 (5,000 kg)
+                await AgriHarvestService.deleteHarvestLog(log2!, database);
+
+                const refreshedCycleAfterDelete = await database.get<AgriCropCycle>('agri_crop_cycles').find(cycle!.id);
+                // Total should now be 8,000 kg
+                expect(refreshedCycleAfterDelete.totalActualYieldKg).toBe(8000);
+            } finally {
+                await closeTestDatabase(database);
+            }
         });
     });
 });

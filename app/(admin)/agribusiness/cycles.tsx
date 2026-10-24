@@ -14,6 +14,7 @@ import { Q } from '@nozbe/watermelondb';
 import { CropHealthGrowthChart } from '../../../src/components/CropHealthGrowthChart';
 import ConfirmDialog from '../../../src/components/ConfirmDialog';
 import Toast from '../../../src/components/AppToast';
+import { ImagePickerField } from '../../../src/components/ImagePickerField';
 
 export default function CropCyclesScreen() {
     const params = useLocalSearchParams();
@@ -54,6 +55,7 @@ export default function CropCyclesScreen() {
     const [healthStatus, setHealthStatus] = useState('good');
     const [plantHeightCm, setPlantHeightCm] = useState('85');
     const [checkinNotes, setCheckinNotes] = useState('');
+    const [checkinPhoto, setCheckinPhoto] = useState<string | null>(null);
 
     // Delete confirmation (Alert.alert is a no-op on react-native-web).
     // One dialog instance is reused for confirm + error so two RN modals
@@ -262,10 +264,12 @@ export default function CropCyclesScreen() {
                 healthStatus,
                 plantHeightCm: parseFloat(plantHeightCm) || undefined,
                 notes: checkinNotes.trim() || undefined,
+                photoUri: checkinPhoto || undefined,
             });
 
             setCheckinModalVisible(false);
             setCheckinNotes('');
+            setCheckinPhoto(null);
             loadData();
             const stageLabel = checkinStage.replace('_', ' ').toUpperCase();
             const msg = `Growth stage checkin recorded: ${stageLabel} evaluated with ${healthStatus.toUpperCase()} health!`;
@@ -687,6 +691,14 @@ export default function CropCyclesScreen() {
                                 multiline
                                 numberOfLines={3}
                                 className="bg-gray-50 border border-gray-300 rounded-xl p-3 text-sm text-gray-900 mb-4"
+                            />
+
+                            <ImagePickerField
+                                value={checkinPhoto}
+                                onChange={setCheckinPhoto}
+                                folder="growth-checkins"
+                                label="Field Photo (Optional)"
+                                disabled={savingCheckin}
                             />
                         </ScrollView>
 

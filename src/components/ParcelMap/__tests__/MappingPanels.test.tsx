@@ -94,4 +94,50 @@ describe('mapping panels', () => {
         fireEvent.press(getByTestId('accept-division'));
         expect(onAccept).toHaveBeenCalledWith(['North field']);
     });
+
+    it('wraps buttons in a flex-wrap container on tablet/desktop viewports so all buttons are visible', () => {
+        const spy = jest.spyOn(require('../../../hooks/useResponsiveLayout'), 'useResponsiveLayout').mockReturnValue({
+            isTabletOrLarger: true,
+            isDesktopOrLarger: true,
+            pagePadding: 24,
+            contentMaxWidth: 1180,
+            bodyColumns: 2,
+            mapHeight: 450,
+            kpiCardMinWidth: 200,
+        });
+        try {
+            const ui = render(<MappingToolbar mode="browse" onMode={jest.fn()} onCurrentPosition={jest.fn()} onAssign={jest.fn()} />);
+            expect(ui.getByTestId('mapping-toolbar').props.className).toContain('flex-wrap');
+            expect(ui.getByRole('button', { name: 'Browse parcels' })).toBeTruthy();
+            expect(ui.getByRole('button', { name: 'Draw boundary' })).toBeTruthy();
+            expect(ui.getByRole('button', { name: 'Record GPS' })).toBeTruthy();
+            expect(ui.getByRole('button', { name: 'Enter coordinates' })).toBeTruthy();
+            expect(ui.getByRole('button', { name: 'Exclude area' })).toBeTruthy();
+            expect(ui.getByRole('button', { name: 'Divide with cut' })).toBeTruthy();
+            expect(ui.getByRole('button', { name: 'Outline block' })).toBeTruthy();
+            expect(ui.getByRole('button', { name: 'Add current position' })).toBeTruthy();
+            expect(ui.getByRole('button', { name: 'Assign workers' })).toBeTruthy();
+        } finally {
+            spy.mockRestore();
+        }
+    });
+
+    it('uses a horizontal scroll container with visible indicator on phone viewports', () => {
+        const spy = jest.spyOn(require('../../../hooks/useResponsiveLayout'), 'useResponsiveLayout').mockReturnValue({
+            isTabletOrLarger: false,
+            isDesktopOrLarger: false,
+            pagePadding: 16,
+            contentMaxWidth: Infinity,
+            bodyColumns: 1,
+            mapHeight: 300,
+            kpiCardMinWidth: 160,
+        });
+        try {
+            const ui = render(<MappingToolbar mode="browse" onMode={jest.fn()} onCurrentPosition={jest.fn()} onAssign={jest.fn()} />);
+            expect(ui.getByTestId('mapping-toolbar').props.showsHorizontalScrollIndicator).toBe(true);
+            expect(ui.getByTestId('mapping-toolbar').props.horizontal).toBe(true);
+        } finally {
+            spy.mockRestore();
+        }
+    });
 });

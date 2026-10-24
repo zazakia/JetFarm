@@ -93,4 +93,44 @@ describe('DeviceSecurityService', () => {
         expect(status.isLocked).toBe(false);
         expect(supabase.from).toHaveBeenCalledWith('device_registry');
     });
+
+    it('gracefully handles missing 404 device_registry and stops further queries', async () => {
+        const { isLocalWebE2E } = require('../../utils/e2eEnvironment');
+        isLocalWebE2E.mockReturnValue(false);
+
+        const { supabase } = require('../../database/supabase');
+        supabase.auth.getSession.mockResolvedValue({
+            data: { session: { user: { id: 'admin-1' } } },
+            error: null,
+        });
+
+        const mockMaybeSingle = jest.fn().mockResolvedValue({
+            data: null,
+            error: { code: 'PGRST205', status: 404, message: 'relation "device_registry" does not exist' },
+        });
+        const mockSelect = jest.fn().mockReturnValue({
+            eq: jest.fn().mockReturnValue({
+                maybeSingle: mockMaybeSingle,
+            }),
+        });
+
+        supabase.from.mockImplementation((table: string) => {
+            if (table === 'device_registry') {
+                return {
+                    select: mockSelect,
+                };
+            }
+            return {};
+        });
+
+        const { deviceSecurityService } = require('../DeviceSecurityService');
+        const status1 = await deviceSecurityService.checkAndReportStatus('branch-1');
+        expect(status1.deviceId).toBe('pos-web-test1234');
+        expect(supabase.from).toHaveBeenCalledTimes(1);
+
+        // Subsequent check should be short-circuited without pinging supabase again
+        const status2 = await deviceSecurityService.checkAndReportStatus('branch-1');
+        expect(status2.deviceId).toBe('pos-web-test1234');
+        expect(supabase.from).toHaveBeenCalledTimes(1);
+    });
 });

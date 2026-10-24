@@ -5,8 +5,9 @@ import AgriCropCycle from '../database/models/AgriCropCycle';
 import AgriParcel from '../database/models/AgriParcel';
 import AgriLandOwner from '../database/models/AgriLandOwner';
 import AgriHarvestLog from '../database/models/AgriHarvestLog';
+import JournalEntry from '../database/models/JournalEntry';
 import { formatPHP } from '../utils/currency';
-import { AutoPostingService } from './AutoPostingService';
+import { AutoPostingService, AutoPostingServiceClass } from './AutoPostingService';
 
 export interface SettlementCalculationResult {
     cumulativeKilos: number;
@@ -123,6 +124,11 @@ export class LandSettlementEngine {
             )
             .fetch();
 
+        const existingSameWeek = previousSettlements.find(s => s.weekNumber === weekNumber);
+        if (existingSameWeek && (existingSameWeek.paymentStatus === 'approved' || existingSameWeek.paymentStatus === 'paid')) {
+            throw new Error(`Week ${weekNumber} settlement is already ${existingSameWeek.paymentStatus}. Rejection or deletion required before re-calculating.`);
+        }
+
         const previousCumulativePayout = previousSettlements
             .filter(s => s.weekNumber < weekNumber && s.paymentStatus !== 'rejected')
             .reduce((acc, s) => acc + (s.netPayoutDueThisWeek || 0), 0);
@@ -149,22 +155,37 @@ export class LandSettlementEngine {
         let settlement: AgriWeeklySettlement | null = null;
 
         await db.write(async () => {
-            settlement = await db.get<AgriWeeklySettlement>('agri_weekly_settlements').create(record => {
-                record.cropCycleId = cropCycleId;
-                record.landOwnerId = landOwner.id;
-                record.weekNumber = weekNumber;
-                record.weekStartDate = weekStartDate;
-                record.weekEndDate = weekEndDate;
-                record.cumulativeKilos = calc.cumulativeKilos;
-                record.ratePerKilo = calc.ratePerKilo;
-                record.rawKiloEarnings = calc.rawKiloEarnings;
-                record.guaranteedMinimum = calc.guaranteedMinimum;
-                record.targetCumulativePayout = calc.targetCumulativePayout;
-                record.previousCumulativePayout = calc.previousCumulativePayout;
-                record.netPayoutDueThisWeek = calc.netPayoutDueThisWeek;
-                record.paymentStatus = 'draft';
-                record.calculationBreakdownJson = breakdownJson;
-            });
+            if (existingSameWeek && existingSameWeek.paymentStatus === 'draft') {
+                settlement = await existingSameWeek.update(record => {
+                    record.weekStartDate = weekStartDate;
+                    record.weekEndDate = weekEndDate;
+                    record.cumulativeKilos = calc.cumulativeKilos;
+                    record.ratePerKilo = calc.ratePerKilo;
+                    record.rawKiloEarnings = calc.rawKiloEarnings;
+                    record.guaranteedMinimum = calc.guaranteedMinimum;
+                    record.targetCumulativePayout = calc.targetCumulativePayout;
+                    record.previousCumulativePayout = calc.previousCumulativePayout;
+                    record.netPayoutDueThisWeek = calc.netPayoutDueThisWeek;
+                    record.calculationBreakdownJson = breakdownJson;
+                });
+            } else {
+                settlement = await db.get<AgriWeeklySettlement>('agri_weekly_settlements').create(record => {
+                    record.cropCycleId = cropCycleId;
+                    record.landOwnerId = landOwner.id;
+                    record.weekNumber = weekNumber;
+                    record.weekStartDate = weekStartDate;
+                    record.weekEndDate = weekEndDate;
+                    record.cumulativeKilos = calc.cumulativeKilos;
+                    record.ratePerKilo = calc.ratePerKilo;
+                    record.rawKiloEarnings = calc.rawKiloEarnings;
+                    record.guaranteedMinimum = calc.guaranteedMinimum;
+                    record.targetCumulativePayout = calc.targetCumulativePayout;
+                    record.previousCumulativePayout = calc.previousCumulativePayout;
+                    record.netPayoutDueThisWeek = calc.netPayoutDueThisWeek;
+                    record.paymentStatus = 'draft';
+                    record.calculationBreakdownJson = breakdownJson;
+                });
+            }
         });
 
         if (!settlement) {
@@ -182,9 +203,11 @@ export class LandSettlementEngine {
         markAsPaid: boolean = false,
         disbursementDate: Date = new Date(),
         receiptReference?: string,
-        db: Database = globalDatabase
+        db: Database = globalDatabase,
+        performedBy: string = 'system'
     ): Promise<AgriWeeklySettlement> {
         const record = await db.get<AgriWeeklySettlement>('agri_weekly_settlements').find(settlementId);
+        const wasApproved = record.paymentStatus === 'approved';
 
         await db.write(async () => {
             await record.update(r => {
@@ -208,7 +231,26 @@ export class LandSettlementEngine {
                     // Ignore missing land owner name
                 }
 
-                await AutoPostingService.postAgriWeeklySettlement({
+                // Check if an approval accrual journal entry was already posted
+                let isDisbursementOfExistingAccrual = false;
+                if (markAsPaid) {
+                    const existingEntries = await db
+                        .get<JournalEntry>('journal_entries')
+                        .query(
+                            Q.where('source_table', 'agri_weekly_settlements'),
+                            Q.where('source_id', record.id),
+                            Q.where('deleted_at', null)
+                        )
+                        .fetch();
+
+                    // If we already had an entry posted when it was approved, disburse clears liability
+                    if (existingEntries.length > 0 || wasApproved) {
+                        isDisbursementOfExistingAccrual = true;
+                    }
+                }
+
+                const autoPosting = db === globalDatabase ? AutoPostingService : new AutoPostingServiceClass(db);
+                await autoPosting.postAgriWeeklySettlement({
                     settlementId: record.id,
                     cropCycleId: record.cropCycleId,
                     weekNumber: record.weekNumber,
@@ -216,11 +258,42 @@ export class LandSettlementEngine {
                     netPayoutDue: record.netPayoutDueThisWeek,
                     paymentStatus: markAsPaid ? 'paid' : 'approved',
                     disbursementDate: markAsPaid ? disbursementDate : null,
-                    postedBy: 'system',
+                    isDisbursementOfExistingAccrual,
+                    postedBy: performedBy,
                 });
             } catch (postErr) {
                 console.warn('[LandSettlementEngine] Auto-post settlement warning:', postErr);
             }
+        }
+
+        return record;
+    }
+
+    /**
+     * Soft-delete a settlement and automatically reverse associated journal entries
+     */
+    static async deleteSettlement(
+        settlementId: string,
+        performedBy: string = 'system',
+        db: Database = globalDatabase
+    ): Promise<AgriWeeklySettlement> {
+        const record = await db.get<AgriWeeklySettlement>('agri_weekly_settlements').find(settlementId);
+
+        await db.write(async () => {
+            await record.update(r => {
+                r.deletedAt = new Date();
+            });
+        });
+
+        try {
+            const autoPosting = db === globalDatabase ? AutoPostingService : new AutoPostingServiceClass(db);
+            await autoPosting.reverseAutoPostedEntries({
+                sourceTable: 'agri_weekly_settlements',
+                sourceId: settlementId,
+                performedBy,
+            });
+        } catch (revErr) {
+            console.warn('[LandSettlementEngine] Auto-reverse settlement entries warning:', revErr);
         }
 
         return record;

@@ -1,5 +1,12 @@
 import { LandSettlementEngine } from '../LandSettlementEngine';
 import { formatPHP } from '../../utils/currency';
+import { createTestDatabase, closeTestDatabase } from '../../__tests__/test-utils';
+import { Database } from '@nozbe/watermelondb';
+import AgriLandOwner from '../../database/models/AgriLandOwner';
+import AgriParcel from '../../database/models/AgriParcel';
+import AgriCropCycle from '../../database/models/AgriCropCycle';
+import AgriHarvestLog from '../../database/models/AgriHarvestLog';
+import AgriWeeklySettlement from '../../database/models/AgriWeeklySettlement';
 
 describe('LandSettlementEngine', () => {
     describe('calculateSettlement (Mathematical Invariants)', () => {
@@ -110,6 +117,151 @@ describe('LandSettlementEngine', () => {
             // readable but breaks the printed alignment, so pin the width.
             const banner = slip.split('\n').find(line => line.includes('AGRI-ONE'));
             expect(banner).toHaveLength(50);
+        });
+    });
+
+    describe('computeWeeklySettlement database operations', () => {
+        let database: Database;
+
+        beforeEach(async () => {
+            database = createTestDatabase();
+        });
+
+        afterEach(async () => {
+            await closeTestDatabase(database);
+        });
+
+        it('updates existing draft settlement instead of creating duplicate records', async () => {
+            let landOwner: AgriLandOwner;
+            let parcel: AgriParcel;
+            let cycle: AgriCropCycle;
+
+            await database.write(async () => {
+                landOwner = await database.get<AgriLandOwner>('agri_land_owners').create(r => {
+                    r.name = 'Test Owner';
+                    r.defaultPerKiloRate = 1.0;
+                    r.defaultGuaranteedMinimum = 25000;
+                });
+                parcel = await database.get<AgriParcel>('agri_parcels').create(r => {
+                    r.name = 'Test Parcel';
+                    r.code = 'PCL-01';
+                    r.landOwnerId = landOwner.id;
+                    r.areaHectares = 2.0;
+                    r.status = 'planted';
+                });
+                cycle = await database.get<AgriCropCycle>('agri_crop_cycles').create(r => {
+                    r.cycleCode = 'CYC-01';
+                    r.parcelId = parcel.id;
+                    r.cropType = 'Cassava';
+                    r.plantingDate = new Date('2026-01-01');
+                    r.areaPlantedHa = 2.0;
+                    r.status = 'harvesting';
+                    r.totalActualYieldKg = 10000;
+                    r.landOwnerRatePerKg = 1.0;
+                    r.landOwnerGuaranteedMin = 25000;
+                });
+                await database.get<AgriHarvestLog>('agri_harvest_logs').create(r => {
+                    r.cropCycleId = cycle.id;
+                    r.parcelId = parcel.id;
+                    r.batchNumber = 'BATCH-001';
+                    r.harvestDate = new Date('2026-02-01');
+                    r.grossWeightKg = 14000;
+                    r.tareWeightKg = 4000;
+                    r.netWeightKg = 10000;
+                });
+            });
+
+            // 1st compute: creates draft
+            const settlement1 = await LandSettlementEngine.computeWeeklySettlement(
+                cycle!.id,
+                1,
+                new Date('2026-02-01'),
+                new Date('2026-02-07'),
+                database
+            );
+            expect(settlement1.paymentStatus).toBe('draft');
+            expect(settlement1.cumulativeKilos).toBe(10000);
+
+            // Add another harvest log for 5,000 kg
+            await database.write(async () => {
+                await database.get<AgriHarvestLog>('agri_harvest_logs').create(r => {
+                    r.cropCycleId = cycle.id;
+                    r.parcelId = parcel.id;
+                    r.batchNumber = 'BATCH-002';
+                    r.harvestDate = new Date('2026-02-03');
+                    r.grossWeightKg = 9000;
+                    r.tareWeightKg = 4000;
+                    r.netWeightKg = 5000;
+                });
+            });
+
+            // 2nd compute for same week: should update draft in-place, NOT create duplicate
+            const settlement2 = await LandSettlementEngine.computeWeeklySettlement(
+                cycle!.id,
+                1,
+                new Date('2026-02-01'),
+                new Date('2026-02-07'),
+                database
+            );
+
+            expect(settlement2.id).toBe(settlement1.id);
+            expect(settlement2.cumulativeKilos).toBe(15000);
+
+            // Verify total records in table for week 1 is exactly 1
+            const allSettlements = await database.get<AgriWeeklySettlement>('agri_weekly_settlements').query().fetch();
+            expect(allSettlements.length).toBe(1);
+        });
+
+        it('rejects recomputing if week settlement is already approved or paid', async () => {
+            let cycle: AgriCropCycle;
+            await database.write(async () => {
+                const landOwner = await database.get<AgriLandOwner>('agri_land_owners').create(r => {
+                    r.name = 'Test Owner 2';
+                    r.defaultPerKiloRate = 1.0;
+                    r.defaultGuaranteedMinimum = 25000;
+                });
+                const parcel = await database.get<AgriParcel>('agri_parcels').create(r => {
+                    r.name = 'Test Parcel 2';
+                    r.code = 'PCL-02';
+                    r.landOwnerId = landOwner.id;
+                    r.areaHectares = 2.0;
+                    r.status = 'planted';
+                });
+                cycle = await database.get<AgriCropCycle>('agri_crop_cycles').create(r => {
+                    r.cycleCode = 'CYC-02';
+                    r.parcelId = parcel.id;
+                    r.cropType = 'Cassava';
+                    r.plantingDate = new Date('2026-01-01');
+                    r.areaPlantedHa = 2.0;
+                    r.status = 'harvesting';
+                    r.totalActualYieldKg = 10000;
+                    r.landOwnerRatePerKg = 1.0;
+                    r.landOwnerGuaranteedMin = 25000;
+                });
+                await database.get<AgriWeeklySettlement>('agri_weekly_settlements').create(r => {
+                    r.cropCycleId = cycle.id;
+                    r.landOwnerId = landOwner.id;
+                    r.weekNumber = 1;
+                    r.weekStartDate = new Date('2026-02-01');
+                    r.weekEndDate = new Date('2026-02-07');
+                    r.cumulativeKilos = 10000;
+                    r.ratePerKilo = 1.0;
+                    r.rawKiloEarnings = 10000;
+                    r.guaranteedMinimum = 25000;
+                    r.targetCumulativePayout = 25000;
+                    r.previousCumulativePayout = 0;
+                    r.netPayoutDueThisWeek = 25000;
+                    r.paymentStatus = 'approved';
+                });
+            });
+
+            await expect(LandSettlementEngine.computeWeeklySettlement(
+                cycle!.id,
+                1,
+                new Date('2026-02-01'),
+                new Date('2026-02-07'),
+                database
+            )).rejects.toThrow(/already approved/i);
         });
     });
 });

@@ -12,6 +12,7 @@ import { formatPHP } from '../../../src/utils/currency';
 import { Q } from '@nozbe/watermelondb';
 import { TransactionConfirmationBanner } from '../../../src/components/TransactionConfirmationBanner';
 import Toast from '../../../src/components/AppToast';
+import { ImagePickerField } from '../../../src/components/ImagePickerField';
 
 export default function HarvestWeighInScreen() {
     const params = useLocalSearchParams();
@@ -36,6 +37,7 @@ export default function HarvestWeighInScreen() {
     const [supervisorName, setSupervisorName] = useState('Mr. Jojet Montera');
     const [qualityGrade, setQualityGrade] = useState('Grade A');
     const [notes, setNotes] = useState('');
+    const [harvestPhoto, setHarvestPhoto] = useState<string | null>(null);
 
     // Harvest logs & summary
     const [harvestLogs, setHarvestLogs] = useState<AgriHarvestLog[]>([]);
@@ -145,6 +147,7 @@ export default function HarvestWeighInScreen() {
                 truckPlateNumber: truckPlate.trim() || undefined,
                 weighInSupervisor: supervisorName.trim() || undefined,
                 notes: notes.trim() || undefined,
+                photoUri: harvestPhoto || undefined,
             });
 
             // Reset inputs
@@ -152,6 +155,7 @@ export default function HarvestWeighInScreen() {
             setTareWeight('');
             setTruckPlate('');
             setNotes('');
+            setHarvestPhoto(null);
             loadData();
 
             const batchCode = savedLog.batchNumber;
@@ -430,6 +434,14 @@ export default function HarvestWeighInScreen() {
                 />
 
                 {/* Save Weigh-in Button */}
+                <ImagePickerField
+                    value={harvestPhoto}
+                    onChange={setHarvestPhoto}
+                    folder="harvest"
+                    label="Weigh-In Slip Photo (Optional)"
+                    disabled={saving}
+                />
+
                 <Pressable
                     onPress={handleLogWeighIn}
                     disabled={saving}

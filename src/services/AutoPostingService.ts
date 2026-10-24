@@ -483,8 +483,9 @@ export class AutoPostingServiceClass {
 
     /**
      * Post a weekly land owner crop share settlement (₱1/kg vs ₱25k minimum guarantee).
-     * DR: Land Owner Crop Share & Guaranteed Settlement (5160)
-     * CR: Cash on Hand (1010) if paid, OR Land Owner Settlement Payable (2035) if approved
+     * - Approval (or unpaid accrual): DR 5160 (Expense) / CR 2035 (Payable)
+     * - Direct Payment (disbursed directly from draft): DR 5160 (Expense) / CR 1010 (Cash on Hand)
+     * - Disbursement of Existing Accrual: DR 2035 (Payable) / CR 1010 (Cash on Hand)
      */
     async postAgriWeeklySettlement(opts: {
         settlementId: string;
@@ -494,30 +495,43 @@ export class AutoPostingServiceClass {
         netPayoutDue: number;
         paymentStatus?: string;
         disbursementDate?: Date | null;
+        isDisbursementOfExistingAccrual?: boolean;
         postedBy?: string;
     }): Promise<JournalEntry | null> {
         if (opts.netPayoutDue <= 0) return null;
 
         const isPaid = (opts.paymentStatus || '').toLowerCase() === 'paid';
-        const creditAccountCode = isPaid ? ACCT.CASH_ON_HAND : ACCT.LAND_OWNER_SETTLEMENT_PAYABLE;
-        const creditAccountName = isPaid ? 'Cash on Hand (COH)' : 'Land Owner Crop Share / Settlement Payable';
+        const isDisbursementOfAccrual = Boolean(opts.isDisbursementOfExistingAccrual);
+
+        let debitAccountCode = ACCT.LAND_OWNER_SETTLEMENT_EXPENSE; // 5160
+        let debitAccountName = 'Land Owner Crop Share & Guaranteed Settlement';
+        let creditAccountCode = isPaid ? ACCT.CASH_ON_HAND : ACCT.LAND_OWNER_SETTLEMENT_PAYABLE;
+        let creditAccountName = isPaid ? 'Cash on Hand (COH)' : 'Land Owner Crop Share / Settlement Payable';
+
+        if (isDisbursementOfAccrual) {
+            debitAccountCode = ACCT.LAND_OWNER_SETTLEMENT_PAYABLE; // 2035 (clear liability)
+            debitAccountName = 'Land Owner Crop Share / Settlement Payable';
+            creditAccountCode = ACCT.CASH_ON_HAND; // 1010
+            creditAccountName = 'Cash on Hand (COH)';
+        }
 
         const entryDate = isPaid && opts.disbursementDate ? new Date(opts.disbursementDate) : new Date();
         const loName = opts.landOwnerName ? ` — ${opts.landOwnerName}` : '';
+        const descSuffix = isDisbursementOfAccrual ? 'Paid Disbursement' : isPaid ? 'Direct Paid' : 'Approved Accrual';
 
         return this.journalEntryService.createEntry({
             entryDate,
-            description: `Land Owner Settlement — Wk ${opts.weekNumber}${loName} [Cycle: ${opts.cropCycleId}] (${isPaid ? 'Paid' : 'Approved Payable'})`,
+            description: `Land Owner Settlement — Wk ${opts.weekNumber}${loName} [Cycle: ${opts.cropCycleId}] (${descSuffix})`,
             entryType: 'auto',
             sourceTable: 'agri_weekly_settlements',
             sourceId: opts.settlementId,
             postedBy: opts.postedBy,
             lines: [
                 {
-                    accountCode: ACCT.LAND_OWNER_SETTLEMENT_EXPENSE,
-                    accountName: 'Land Owner Crop Share & Guaranteed Settlement',
+                    accountCode: debitAccountCode,
+                    accountName: debitAccountName,
                     debitAmount: opts.netPayoutDue,
-                    description: `Crop share settlement Wk ${opts.weekNumber}`,
+                    description: isDisbursementOfAccrual ? `Clear settlement liability Wk ${opts.weekNumber}` : `Crop share settlement Wk ${opts.weekNumber}`,
                     businessUnitId: 'agribusiness',
                     moduleSourceTable: 'agri_weekly_settlements',
                     moduleSourceId: opts.cropCycleId,
@@ -533,6 +547,35 @@ export class AutoPostingServiceClass {
                 },
             ],
         }, opts.postedBy);
+    }
+
+    /**
+     * Automatically find and reverse posted journal entries linked to an operational transaction
+     */
+    async reverseAutoPostedEntries(opts: {
+        sourceTable: string;
+        sourceId: string;
+        performedBy?: string;
+    }): Promise<JournalEntry[]> {
+        const matchingEntries = await this.db.collections
+            .get<JournalEntry>('journal_entries')
+            .query(
+                Q.where('source_table', opts.sourceTable),
+                Q.where('source_id', opts.sourceId),
+                Q.where('deleted_at', null),
+                Q.where('is_posted', true)
+            )
+            .fetch();
+
+        const reversedEntries: JournalEntry[] = [];
+        for (const entry of matchingEntries) {
+            if (entry.entryType !== 'reversing') {
+                const reversed = await this.journalEntryService.reverseEntry(entry.id, opts.performedBy);
+                reversedEntries.push(reversed);
+            }
+        }
+
+        return reversedEntries;
     }
 
     /**
